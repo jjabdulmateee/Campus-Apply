@@ -8,7 +8,7 @@ export const PROVINCES = [
   "Gilgit-Baltistan",
 ];
 
-export const BOARDS = [
+export const MATRIC_FSC_BOARDS = [
   "FBISE (Federal Board)",
   "BISE Lahore",
   "BISE Rawalpindi",
@@ -33,9 +33,17 @@ export const BOARDS = [
   "BISE Bannu",
   "BISE Quetta",
   "Aga Khan University Examination Board",
-  "Cambridge (O/A Levels)",
   "Other",
 ];
+
+export const CAMBRIDGE_EDEXCEL_BOARDS = [
+  "Cambridge International (CIE)",
+  "Edexcel (Pearson)",
+  "Oxford AQA International",
+  "Other",
+];
+
+export const BOARDS = [...MATRIC_FSC_BOARDS, "Cambridge International (CIE)", "Edexcel (Pearson)"];
 
 export const ACADEMIC_LEVELS = [
   { value: "matric", label: "Matric (SSC)" },
@@ -46,15 +54,31 @@ export const ACADEMIC_LEVELS = [
   { value: "other", label: "Other" },
 ];
 
+export const MATRIC_GROUPS = [
+  "Science", "Arts / Humanities", "Commerce", "Vocational",
+];
+
+export const INTER_GROUPS = [
+  "Pre-Medical (Biology)", "Pre-Engineering (Physics/Maths)", "ICS (Computer Science)",
+  "I.Com (Commerce)", "Humanities (Arts/FA)", "General Science",
+];
+
+export const NTS_TEST_TYPES = [
+  { value: "NAT-I", label: "NAT-I (For Bachelor's admission)" },
+  { value: "NAT-II", label: "NAT-II (For Master's / MBA)" },
+  { value: "GAT-General", label: "GAT-General (For MS / MPhil)" },
+  { value: "GAT-Subject", label: "GAT-Subject (Discipline-specific)" },
+];
+
 export const TEST_NAMES = [
   { value: "ECAT", label: "ECAT (Engineering)" },
   { value: "MDCAT", label: "MDCAT (Medical)" },
-  { value: "NTS", label: "NTS (National Testing Service)" },
+  { value: "NTS", label: "NTS (NAT / GAT)" },
   { value: "HAT", label: "HAT (Higher Education)" },
   { value: "SAT", label: "SAT" },
   { value: "ACT", label: "ACT" },
   { value: "IELTS", label: "IELTS" },
-  { value: "TOEFL", label: "TOEFL" },
+  { value: "TOEFL", label: "TOEFL iBT" },
   { value: "other", label: "Other" },
 ];
 

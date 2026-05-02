@@ -1,5 +1,5 @@
 import AppLayout from "@/components/AppLayout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,9 +16,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ACADEMIC_LEVELS, BOARDS } from "@/lib/constants";
+import {
+  ACADEMIC_LEVELS,
+  MATRIC_FSC_BOARDS,
+  CAMBRIDGE_EDEXCEL_BOARDS,
+  BOARDS,
+  MATRIC_GROUPS,
+  INTER_GROUPS,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, GraduationCap, Loader2 } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Loader2, Info } from "lucide-react";
 
 const schema = z.object({
   institution: z.string().min(1, "Required"),
@@ -45,7 +52,7 @@ export default function Education() {
         qc.invalidateQueries({ queryKey: getGetMyAcademicsQueryKey() });
         setOpen(false);
         reset();
-        toast({ title: "Record added" });
+        toast({ title: "Academic record added", description: "Your education history has been saved." });
       },
     },
   });
@@ -64,16 +71,35 @@ export default function Education() {
     defaultValues: { passingYear: new Date().getFullYear() },
   });
 
+  const selectedLevel = watch("level");
+  const obtainedMarks = watch("obtainedMarks");
+  const totalMarks = watch("totalMarks");
+
+  const isMatricOrFsc = selectedLevel === "matric" || selectedLevel === "intermediate";
+  const isOALevel = selectedLevel === "o_levels" || selectedLevel === "a_levels";
+  const boardList = isOALevel ? CAMBRIDGE_EDEXCEL_BOARDS : isMatricOrFsc ? MATRIC_FSC_BOARDS : BOARDS;
+  const subjectGroups = selectedLevel === "matric" ? MATRIC_GROUPS : selectedLevel === "intermediate" ? INTER_GROUPS : null;
+
+  useEffect(() => {
+    if (obtainedMarks && totalMarks && totalMarks > 0) {
+      const pct = parseFloat(((obtainedMarks / totalMarks) * 100).toFixed(2));
+      setValue("percentage", pct);
+    }
+  }, [obtainedMarks, totalMarks, setValue]);
+
+  const levelLabel = (val: string) => ACADEMIC_LEVELS.find((l) => l.value === val)?.label ?? val;
+
   const onSubmit = (data: FormData) => {
     addRecord({ data });
   };
 
-  const levelLabel = (val: string) => ACADEMIC_LEVELS.find((l) => l.value === val)?.label ?? val;
-
   return (
     <AppLayout title="Education" subtitle="Add your academic history — Matric, Intermediate, A-Levels, and beyond">
       <div className="space-y-4">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-400">
+            {records ? `${records.length} record${records.length !== 1 ? "s" : ""} added` : ""}
+          </p>
           <Button onClick={() => setOpen(true)} className="bg-sky-600 hover:bg-sky-700 gap-2">
             <Plus className="w-4 h-4" /> Add Record
           </Button>
@@ -81,7 +107,7 @@ export default function Education() {
 
         {isLoading ? (
           <div className="space-y-3 animate-pulse">
-            {[1, 2].map((i) => <div key={i} className="h-24 bg-white rounded-2xl" />)}
+            {[1, 2].map((i) => <div key={i} className="h-28 bg-white rounded-2xl" />)}
           </div>
         ) : records && records.length > 0 ? (
           <div className="space-y-3">
@@ -94,23 +120,30 @@ export default function Education() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-semibold text-slate-800">{rec.institution}</div>
-                      <div className="text-sm text-slate-500 mt-0.5">{levelLabel(rec.level)} — {rec.passingYear}</div>
-                      {rec.board && <div className="text-xs text-slate-400 mt-0.5">{rec.board}</div>}
+                      <div className="text-sm text-slate-500 mt-0.5">
+                        {levelLabel(rec.level)} — {rec.passingYear}
+                      </div>
+                      {rec.board && (
+                        <div className="text-xs text-sky-600 font-medium mt-0.5">{rec.board}</div>
+                      )}
                     </div>
                     <button
                       onClick={() => deleteRecord({ recordId: rec.id })}
-                      className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors"
+                      className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-3">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {rec.percentage && (
-                      <Chip label="Percentage" value={`${rec.percentage}%`} />
+                      <Chip label={rec.level === "o_levels" || rec.level === "a_levels" ? "IBCC Equiv." : "Percentage"} value={`${rec.percentage}%`} />
                     )}
                     {rec.gradeOrGpa && <Chip label="Grade/GPA" value={rec.gradeOrGpa} />}
                     {rec.obtainedMarks && rec.totalMarks && (
                       <Chip label="Marks" value={`${rec.obtainedMarks}/${rec.totalMarks}`} />
+                    )}
+                    {rec.subjects && (
+                      <Chip label="Group/Subjects" value={rec.subjects} />
                     )}
                   </div>
                 </div>
@@ -122,75 +155,180 @@ export default function Education() {
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Academic Record</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 gap-4 py-4">
               <div>
-                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Institution Name</Label>
-                <Input {...register("institution")} placeholder="Lahore Grammar School" className="border-sky-100" />
+                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Institution / School Name</Label>
+                <Input {...register("institution")} placeholder="e.g. Lahore Grammar School" className="border-sky-100" />
                 {errors.institution && <p className="text-xs text-red-500 mt-1">{errors.institution.message}</p>}
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Level</Label>
-                  <Select onValueChange={(v) => setValue("level", v as FormData["level"])}>
+                  <Select
+                    value={selectedLevel ?? ""}
+                    onValueChange={(v) => {
+                      setValue("level", v as FormData["level"]);
+                      setValue("board", undefined);
+                    }}
+                  >
                     <SelectTrigger className="border-sky-100">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ACADEMIC_LEVELS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                      {ACADEMIC_LEVELS.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {errors.level && <p className="text-xs text-red-500 mt-1">Required</p>}
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Passing Year</Label>
-                  <Input type="number" {...register("passingYear", { valueAsNumber: true })} placeholder="2023" className="border-sky-100" />
+                  <Input
+                    type="number"
+                    {...register("passingYear", { valueAsNumber: true })}
+                    placeholder="2024"
+                    className="border-sky-100"
+                  />
+                  {errors.passingYear && <p className="text-xs text-red-500 mt-1">Required</p>}
                 </div>
               </div>
-              <div>
-                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Board / Examining Body</Label>
-                <Select onValueChange={(v) => setValue("board", v)}>
-                  <SelectTrigger className="border-sky-100">
-                    <SelectValue placeholder="Select board" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BOARDS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
+
+              {selectedLevel && (
                 <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Total Marks</Label>
-                  <Input type="number" {...register("totalMarks", { valueAsNumber: true })} placeholder="1100" className="border-sky-100" />
+                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">
+                    {isOALevel ? "Examining Body" : "BISE Board"}
+                  </Label>
+                  <Select value={watch("board") ?? ""} onValueChange={(v) => setValue("board", v)}>
+                    <SelectTrigger className="border-sky-100">
+                      <SelectValue placeholder={isOALevel ? "Select examining body" : "Select BISE board"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {boardList.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
+              )}
+
+              {subjectGroups && (
                 <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Obtained</Label>
-                  <Input type="number" {...register("obtainedMarks", { valueAsNumber: true })} placeholder="980" className="border-sky-100" />
+                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Subject Group</Label>
+                  <Select value={watch("subjects") ?? ""} onValueChange={(v) => setValue("subjects", v)}>
+                    <SelectTrigger className="border-sky-100">
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjectGroups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">%</Label>
-                  <Input type="number" step="0.01" {...register("percentage", { valueAsNumber: true })} placeholder="89.1" className="border-sky-100" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Grade / GPA</Label>
-                  <Input {...register("gradeOrGpa")} placeholder="A+" className="border-sky-100" />
-                </div>
+              )}
+
+              {!subjectGroups && (
                 <div>
                   <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Subjects</Label>
-                  <Input {...register("subjects")} placeholder="Physics, Maths..." className="border-sky-100" />
+                  <Input
+                    {...register("subjects")}
+                    placeholder="e.g. Physics, Maths, Chemistry"
+                    className="border-sky-100"
+                  />
                 </div>
-              </div>
+              )}
+
+              {isMatricOrFsc ? (
+                <>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Total Marks</Label>
+                      <Input
+                        type="number"
+                        {...register("totalMarks", { valueAsNumber: true })}
+                        placeholder="1100"
+                        className="border-sky-100"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Obtained</Label>
+                      <Input
+                        type="number"
+                        {...register("obtainedMarks", { valueAsNumber: true })}
+                        placeholder="980"
+                        className="border-sky-100"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Percentage</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...register("percentage", { valueAsNumber: true })}
+                        placeholder="auto"
+                        className="border-sky-100 bg-sky-50"
+                        readOnly={!!(obtainedMarks && totalMarks)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Grade</Label>
+                    <Input {...register("gradeOrGpa")} placeholder="e.g. A+" className="border-sky-100" />
+                  </div>
+                </>
+              ) : isOALevel ? (
+                <>
+                  <div className="bg-sky-50 rounded-xl p-3 flex gap-2">
+                    <Info className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-sky-700">
+                      For O/A-Level students, enter your <strong>IBCC equivalency percentage</strong> in the field
+                      below. This is issued by the Inter Board Committee of Chairmen after verification.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">IBCC Equivalency %</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...register("percentage", { valueAsNumber: true })}
+                        placeholder="e.g. 87.36"
+                        className="border-sky-100"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Overall Grade</Label>
+                      <Input {...register("gradeOrGpa")} placeholder="e.g. 3A* 2A" className="border-sky-100" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">CGPA / Percentage</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...register("percentage", { valueAsNumber: true })}
+                      placeholder="e.g. 3.75"
+                      className="border-sky-100"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Grade / Division</Label>
+                    <Input {...register("gradeOrGpa")} placeholder="e.g. First Division" className="border-sky-100" />
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => { setOpen(false); reset(); }}>Cancel</Button>
               <Button type="submit" disabled={isPending} className="bg-sky-600 hover:bg-sky-700">
-                {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Add Record
+                {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save Record
               </Button>
             </DialogFooter>
           </form>
@@ -202,7 +340,7 @@ export default function Education() {
 
 function Chip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-2.5 py-1 rounded-lg bg-sky-50 text-xs">
+    <div className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-100 text-xs">
       <span className="text-slate-400">{label}: </span>
       <span className="font-semibold text-sky-700">{value}</span>
     </div>
@@ -214,7 +352,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     <div className="bg-white rounded-2xl border border-dashed border-sky-200 p-12 text-center">
       <GraduationCap className="w-10 h-10 text-sky-200 mx-auto mb-4" />
       <h3 className="text-base font-semibold text-slate-700 mb-1">No academic records yet</h3>
-      <p className="text-sm text-slate-400 mb-4">Add your Matric, Intermediate, or other qualifications.</p>
+      <p className="text-sm text-slate-400 mb-4">Add your Matric, Intermediate, O-Levels, or A-Levels qualifications.</p>
       <Button onClick={onAdd} className="bg-sky-600 hover:bg-sky-700 gap-2">
         <Plus className="w-4 h-4" /> Add First Record
       </Button>

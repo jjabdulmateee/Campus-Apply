@@ -19,7 +19,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { ACTIVITY_CATEGORIES } from "@/lib/constants";
-import { Plus, Trash2, BookOpen, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, Trash2, BookOpen, Loader2, AlertCircle } from "lucide-react";
+
+const MAX_ACTIVITIES = 10;
+const MAX_DESC_CHARS = 150;
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -29,7 +33,7 @@ const schema = z.object({
   startYear: z.number().int().optional(),
   endYear: z.number().int().optional(),
   hoursPerWeek: z.number().int().optional(),
-  description: z.string().optional(),
+  description: z.string().max(MAX_DESC_CHARS, `Max ${MAX_DESC_CHARS} characters`).optional(),
   isCurrentlyActive: z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
@@ -39,6 +43,9 @@ export default function Activities() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+
+  const count = activities?.length ?? 0;
+  const atLimit = count >= MAX_ACTIVITIES;
 
   const { mutate: addActivity, isPending } = useAddActivity({
     mutation: {
@@ -65,8 +72,11 @@ export default function Activities() {
     defaultValues: { isCurrentlyActive: false },
   });
 
-  const catLabel = (val: string) => ACTIVITY_CATEGORIES.find((c) => c.value === val)?.label ?? val;
+  const description = watch("description") ?? "";
+  const descChars = description.length;
+  const descOver = descChars > MAX_DESC_CHARS;
 
+  const catLabel = (val: string) => ACTIVITY_CATEGORIES.find((c) => c.value === val)?.label ?? val;
   const catColors: Record<string, string> = {
     sports: "bg-green-100 text-green-700",
     arts: "bg-purple-100 text-purple-700",
@@ -81,11 +91,37 @@ export default function Activities() {
   return (
     <AppLayout title="Activities & Interests" subtitle="Showcase your extracurricular involvement and community participation">
       <div className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => setOpen(true)} className="bg-sky-600 hover:bg-sky-700 gap-2">
-            <Plus className="w-4 h-4" /> Add Activity
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {Array.from({ length: MAX_ACTIVITIES }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full transition-colors",
+                    i < count ? "bg-sky-500" : "bg-slate-200"
+                  )}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-slate-500 font-medium">{count}/{MAX_ACTIVITIES} activities</span>
+          </div>
+          <Button
+            onClick={() => setOpen(true)}
+            disabled={atLimit}
+            className="bg-sky-600 hover:bg-sky-700 gap-2 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            {atLimit ? "Maximum reached" : "Add Activity"}
           </Button>
         </div>
+
+        {atLimit && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            You've added the maximum of 10 activities. Remove one to add another.
+          </div>
+        )}
 
         {isLoading ? (
           <div className="animate-pulse space-y-3">
@@ -93,32 +129,43 @@ export default function Activities() {
           </div>
         ) : activities && activities.length > 0 ? (
           <div className="space-y-3">
-            {activities.map((a) => (
+            {activities.map((a, idx) => (
               <div key={a.id} className="bg-white rounded-2xl border border-sky-100 shadow-sm p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-slate-800">{a.name}</h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${catColors[a.category] ?? "bg-slate-100 text-slate-600"}`}>
-                        {catLabel(a.category)}
-                      </span>
-                      {a.isCurrentlyActive && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-600">Active</span>
-                      )}
-                    </div>
-                    <div className="text-sm text-slate-500 mt-1">
-                      {a.role}{a.organization ? ` — ${a.organization}` : ""}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      {a.startYear && `${a.startYear}${a.endYear ? ` – ${a.endYear}` : " – Present"}`}
-                      {a.hoursPerWeek && ` · ${a.hoursPerWeek} hrs/week`}
-                    </div>
-                    {a.description && <p className="text-sm text-slate-500 mt-2 line-clamp-2">{a.description}</p>}
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-sky-600 mt-0.5">
+                    {idx + 1}
                   </div>
-                  <button onClick={() => deleteActivity({ activityId: a.id })}
-                    className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-slate-800">{a.name}</h3>
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", catColors[a.category] ?? "bg-slate-100 text-slate-600")}>
+                            {catLabel(a.category)}
+                          </span>
+                          {a.isCurrentlyActive && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-600">Active</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {a.role}{a.organization ? ` — ${a.organization}` : ""}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {a.startYear && `${a.startYear}${a.endYear ? ` – ${a.endYear}` : " – Present"}`}
+                          {a.hoursPerWeek && ` · ${a.hoursPerWeek} hrs/week`}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteActivity({ activityId: a.id })}
+                        className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {a.description && (
+                      <p className="text-sm text-slate-500 mt-2 leading-relaxed">{a.description}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -127,7 +174,7 @@ export default function Activities() {
           <div className="bg-white rounded-2xl border border-dashed border-sky-200 p-12 text-center">
             <BookOpen className="w-10 h-10 text-sky-200 mx-auto mb-4" />
             <h3 className="text-base font-semibold text-slate-700 mb-1">No activities yet</h3>
-            <p className="text-sm text-slate-400 mb-4">Add sports, community service, clubs, or work experience.</p>
+            <p className="text-sm text-slate-400 mb-4">Add up to 10 activities — sports, community service, clubs, or work experience.</p>
             <Button onClick={() => setOpen(true)} className="bg-sky-600 hover:bg-sky-700 gap-2">
               <Plus className="w-4 h-4" /> Add First Activity
             </Button>
@@ -135,17 +182,17 @@ export default function Activities() {
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Activity</DialogTitle>
+            <DialogTitle>Add Activity ({count + 1}/{MAX_ACTIVITIES})</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit((d) => addActivity({ data: d }))}>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Activity Name</Label>
-                  <Input {...register("name")} placeholder="Cricket Team" className="border-sky-100" />
+                  <Input {...register("name")} placeholder="e.g. Cricket Team" className="border-sky-100" />
                   {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
                 </div>
                 <div>
@@ -153,15 +200,18 @@ export default function Activities() {
                   <Select onValueChange={(v) => setValue("category", v as FormData["category"])}>
                     <SelectTrigger className="border-sky-100"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
-                      {ACTIVITY_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {ACTIVITY_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {errors.category && <p className="text-xs text-red-500 mt-1">Required</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Your Role</Label>
-                  <Input {...register("role")} placeholder="Captain" className="border-sky-100" />
+                  <Input {...register("role")} placeholder="e.g. Team Captain" className="border-sky-100" />
                   {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role.message}</p>}
                 </div>
                 <div>
@@ -184,8 +234,24 @@ export default function Activities() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Description</Label>
-                <Textarea {...register("description")} placeholder="Briefly describe your involvement..." rows={3} className="border-sky-100 resize-none" />
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-xs font-semibold text-slate-600">
+                    Description <span className="text-slate-400 font-normal">(briefly describe your role)</span>
+                  </Label>
+                  <span className={cn(
+                    "text-xs font-medium tabular-nums",
+                    descOver ? "text-red-500" : descChars > 120 ? "text-amber-500" : "text-slate-400"
+                  )}>
+                    {descChars}/{MAX_DESC_CHARS}
+                  </span>
+                </div>
+                <Textarea
+                  {...register("description")}
+                  placeholder="e.g. Led a team of 11 players to regional championship; coordinated weekly training sessions."
+                  rows={3}
+                  className={cn("border-sky-100 resize-none", descOver && "border-red-300 focus:border-red-400")}
+                />
+                {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -197,8 +263,8 @@ export default function Activities() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending} className="bg-sky-600 hover:bg-sky-700">
+              <Button type="button" variant="outline" onClick={() => { setOpen(false); reset(); }}>Cancel</Button>
+              <Button type="submit" disabled={isPending || descOver} className="bg-sky-600 hover:bg-sky-700">
                 {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Add Activity
               </Button>
             </DialogFooter>

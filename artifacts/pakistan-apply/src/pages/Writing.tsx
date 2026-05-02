@@ -15,11 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, PenLine, Edit, Loader2 } from "lucide-react";
+import { Plus, Trash2, PenLine, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const WORD_LIMIT = 650;
 
 const ESSAY_TYPES = [
   { value: "personal_statement", label: "Personal Statement" },
@@ -34,7 +35,6 @@ const ESSAY_PROMPTS = [
   "Why do you want to study your chosen field?",
   "Describe your academic and career goals.",
   "What makes you unique as a candidate?",
-  "Custom prompt",
 ];
 
 const schema = z.object({
@@ -44,18 +44,22 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 export default function Writing() {
   const { data: essays, isLoading } = useGetMyEssays();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | "new" | null>(null);
 
   const { mutate: createEssay, isPending: creating } = useCreateEssay({
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetMyEssaysQueryKey() });
-        setOpen(false); reset();
+        setEditingId(null);
+        reset();
         toast({ title: "Essay created" });
       },
     },
@@ -65,7 +69,8 @@ export default function Writing() {
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetMyEssaysQueryKey() });
-        setOpen(false); reset(); setEditingId(null);
+        setEditingId(null);
+        reset();
         toast({ title: "Essay saved" });
       },
     },
@@ -85,21 +90,29 @@ export default function Writing() {
   });
 
   const content = watch("content") ?? "";
-  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = countWords(content);
+  const wordPct = Math.min((wordCount / WORD_LIMIT) * 100, 100);
+  const isOver = wordCount > WORD_LIMIT;
+  const isNearLimit = wordCount >= Math.floor(WORD_LIMIT * 0.9) && !isOver;
+  const isOnTrack = wordCount > 0 && !isNearLimit && !isOver;
+
+  const openNew = () => {
+    reset({ type: "personal_statement" as const, prompt: "", content: "" });
+    setEditingId("new");
+  };
 
   const openEdit = (essay: { id: number; prompt: string; content?: string | null; type: string }) => {
-    setEditingId(essay.id);
     setValue("prompt", essay.prompt);
     setValue("content", essay.content ?? "");
     setValue("type", essay.type as FormData["type"]);
-    setOpen(true);
+    setEditingId(essay.id);
   };
 
   const onSubmit = (data: FormData) => {
-    if (editingId) {
-      updateEssay({ essayId: editingId, data });
-    } else {
+    if (editingId === "new") {
       createEssay({ data });
+    } else if (typeof editingId === "number") {
+      updateEssay({ essayId: editingId, data });
     }
   };
 
@@ -110,11 +123,150 @@ export default function Writing() {
     short_answer: "bg-green-100 text-green-700",
   };
 
+  if (editingId !== null) {
+    const isNew = editingId === "new";
+    const isSaving = creating || updating;
+
+    return (
+      <AppLayout title={isNew ? "New Essay" : "Edit Essay"} subtitle="Write clearly and authentically — admissions officers value genuine voices">
+        <div className="space-y-4 max-w-3xl">
+          <button
+            onClick={() => { setEditingId(null); reset(); }}
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-sky-600 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to essays
+          </button>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Essay Type</Label>
+                  <Select
+                    value={watch("type") ?? ""}
+                    onValueChange={(v) => setValue("type", v as FormData["type"])}
+                  >
+                    <SelectTrigger className="border-sky-100">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESSAY_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.type && <p className="text-xs text-red-500 mt-1">Required</p>}
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Use Prompt Template</Label>
+                  <Select onValueChange={(v) => setValue("prompt", v)}>
+                    <SelectTrigger className="border-sky-100">
+                      <SelectValue placeholder="Choose a prompt…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESSAY_PROMPTS.map((p) => (
+                        <SelectItem key={p} value={p}>{p.length > 48 ? p.slice(0, 48) + "…" : p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Essay Prompt / Question</Label>
+                <Input
+                  {...register("prompt")}
+                  placeholder="Enter or edit the essay prompt..."
+                  className="border-sky-100"
+                />
+                {errors.prompt && <p className="text-xs text-red-500 mt-1">{errors.prompt.message}</p>}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-xs font-semibold text-slate-600">Your Response</Label>
+                <div className="flex items-center gap-3">
+                  {isOver && (
+                    <span className="text-xs font-medium text-red-500">{wordCount - WORD_LIMIT} words over limit</span>
+                  )}
+                  <span className={cn(
+                    "text-xs font-semibold tabular-nums",
+                    isOver ? "text-red-500" : isNearLimit ? "text-amber-500" : wordCount > 0 ? "text-sky-600" : "text-slate-400"
+                  )}>
+                    {wordCount} / {WORD_LIMIT} words
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-300",
+                    isOver ? "bg-red-500" : isNearLimit ? "bg-amber-400" : "bg-sky-500"
+                  )}
+                  style={{ width: `${wordPct}%` }}
+                />
+              </div>
+
+              <Textarea
+                {...register("content")}
+                placeholder="Start writing your essay here..."
+                rows={18}
+                className={cn(
+                  "border-sky-100 resize-y font-sans text-sm leading-relaxed",
+                  isOver && "border-red-300 focus:border-red-400"
+                )}
+              />
+
+              {wordCount > 0 && !isOver && (
+                <div className={cn(
+                  "mt-2 flex items-center gap-1.5 text-xs",
+                  isNearLimit ? "text-amber-600" : isOnTrack ? "text-sky-600" : "text-slate-400"
+                )}>
+                  {isOnTrack && <CheckCircle className="w-3.5 h-3.5" />}
+                  {isNearLimit
+                    ? `${WORD_LIMIT - wordCount} words remaining — you're almost at the limit.`
+                    : `${WORD_LIMIT - wordCount} words remaining`}
+                </div>
+              )}
+              {isOver && (
+                <p className="mt-2 text-xs text-red-500">
+                  Please reduce by {wordCount - WORD_LIMIT} words before saving.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={() => { setEditingId(null); reset(); }}
+                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <Button
+                type="submit"
+                disabled={isSaving || isOver}
+                className="bg-sky-600 hover:bg-sky-700 px-8"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isNew ? "Create Essay" : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Essays & Writing" subtitle="Write your personal statement and supplemental essays">
       <div className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => { setEditingId(null); reset(); setOpen(true); }} className="bg-sky-600 hover:bg-sky-700 gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-400">
+            {essays ? `${essays.length} essay${essays.length !== 1 ? "s" : ""} created` : ""}
+          </p>
+          <Button onClick={openNew} className="bg-sky-600 hover:bg-sky-700 gap-2">
             <Plus className="w-4 h-4" /> New Essay
           </Button>
         </div>
@@ -125,105 +277,70 @@ export default function Writing() {
           </div>
         ) : essays && essays.length > 0 ? (
           <div className="space-y-3">
-            {essays.map((e) => (
-              <div key={e.id} className="bg-white rounded-2xl border border-sky-100 shadow-sm p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium", typeColors[e.type] ?? "bg-slate-100 text-slate-600")}>
-                        {typeLabel(e.type)}
-                      </span>
-                      {e.wordCount !== undefined && e.wordCount !== null && (
-                        <span className="text-xs text-slate-400">{e.wordCount} words</span>
+            {essays.map((e) => {
+              const wc = e.wordCount ?? 0;
+              const pct = Math.min((wc / WORD_LIMIT) * 100, 100);
+              const hasContent = wc > 0;
+              return (
+                <div key={e.id} className="bg-white rounded-2xl border border-sky-100 shadow-sm p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium", typeColors[e.type] ?? "bg-slate-100 text-slate-600")}>
+                          {typeLabel(e.type)}
+                        </span>
+                        {hasContent ? (
+                          <span className={cn("text-xs font-medium", wc > WORD_LIMIT ? "text-red-500" : wc >= WORD_LIMIT * 0.9 ? "text-amber-500" : "text-sky-600")}>
+                            {wc} / {WORD_LIMIT} words
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-300 italic">Not started</span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-slate-800 line-clamp-1">{e.prompt}</p>
+                      {e.content && (
+                        <p className="text-sm text-slate-400 mt-1.5 line-clamp-2">{e.content}</p>
+                      )}
+                      {hasContent && (
+                        <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full", wc > WORD_LIMIT ? "bg-red-400" : wc >= WORD_LIMIT * 0.9 ? "bg-amber-400" : "bg-sky-400")}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-slate-800 line-clamp-1">{e.prompt}</p>
-                    {e.content && (
-                      <p className="text-sm text-slate-400 mt-1.5 line-clamp-2">{e.content}</p>
-                    )}
-                    {!e.content && (
-                      <p className="text-sm text-slate-300 italic mt-1.5">Not started yet</p>
-                    )}
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(e)} className="p-2 rounded-lg hover:bg-sky-50 text-slate-300 hover:text-sky-500 transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => deleteEssay({ essayId: e.id })} className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => openEdit(e)}
+                        className="px-3 py-1.5 rounded-lg bg-sky-50 text-sky-600 text-xs font-medium hover:bg-sky-100 transition-colors"
+                      >
+                        {hasContent ? "Edit" : "Start Writing"}
+                      </button>
+                      <button
+                        onClick={() => deleteEssay({ essayId: e.id })}
+                        className="p-2 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-dashed border-sky-200 p-12 text-center">
             <PenLine className="w-10 h-10 text-sky-200 mx-auto mb-4" />
             <h3 className="text-base font-semibold text-slate-700 mb-1">No essays yet</h3>
-            <p className="text-sm text-slate-400 mb-4">Write your personal statement and supplemental essays.</p>
-            <Button onClick={() => setOpen(true)} className="bg-sky-600 hover:bg-sky-700 gap-2">
+            <p className="text-sm text-slate-400 mb-1">Write your personal statement (max {WORD_LIMIT} words)</p>
+            <p className="text-sm text-slate-400 mb-4">and any supplemental essays required by universities.</p>
+            <Button onClick={openNew} className="bg-sky-600 hover:bg-sky-700 gap-2">
               <Plus className="w-4 h-4" /> Start Writing
             </Button>
           </div>
         )}
       </div>
-
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); reset(); } }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Essay" : "New Essay"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Essay Type</Label>
-                  <Select value={watch("type")} onValueChange={(v) => setValue("type", v as FormData["type"])}>
-                    <SelectTrigger className="border-sky-100"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>
-                      {ESSAY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Prompt Template</Label>
-                  <Select onValueChange={(v) => { if (v !== "Custom prompt") setValue("prompt", v); }}>
-                    <SelectTrigger className="border-sky-100"><SelectValue placeholder="Choose prompt..." /></SelectTrigger>
-                    <SelectContent>
-                      {ESSAY_PROMPTS.map((p) => <SelectItem key={p} value={p}>{p.length > 45 ? p.slice(0, 45) + "..." : p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Essay Prompt</Label>
-                <Input {...register("prompt")} placeholder="Enter or edit the essay prompt..." className="border-sky-100" />
-                {errors.prompt && <p className="text-xs text-red-500 mt-1">{errors.prompt.message}</p>}
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Label className="text-xs font-semibold text-slate-600">Your Response</Label>
-                  <span className="text-xs text-slate-400">{wordCount} words</span>
-                </div>
-                <Textarea
-                  {...register("content")}
-                  placeholder="Start writing your essay here..."
-                  rows={12}
-                  className="border-sky-100 resize-y font-sans text-sm leading-relaxed"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setOpen(false); setEditingId(null); reset(); }}>Cancel</Button>
-              <Button type="submit" disabled={creating || updating} className="bg-sky-600 hover:bg-sky-700">
-                {(creating || updating) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingId ? "Save Changes" : "Create Essay"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 }
