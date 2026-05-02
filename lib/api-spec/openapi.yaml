@@ -26,6 +26,8 @@ tags:
     description: University admin portal operations
   - name: account
     description: Account settings and user management
+  - name: support
+    description: Help center and student support tickets
 
 paths:
   /healthz:
@@ -989,6 +991,101 @@ paths:
         "400":
           description: Incorrect password
 
+  # ── Help & Support ────────────────────────────────────────────────────────
+  /support/tickets:
+    get:
+      operationId: listMyTickets
+      tags: [support]
+      summary: List the current student's own support tickets
+      responses:
+        "200":
+          description: Student's tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tickets:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SupportTicket"
+                required: [tickets]
+    post:
+      operationId: createSupportTicket
+      tags: [support]
+      summary: Submit a new support ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketBody"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    $ref: "#/components/schemas/SupportTicket"
+                required: [ticket]
+
+  /admin/support/tickets:
+    get:
+      operationId: listAdminSupportTickets
+      tags: [support]
+      summary: List all support tickets (admin only)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_progress, resolved]
+      responses:
+        "200":
+          description: All tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tickets:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SupportTicket"
+                required: [tickets]
+
+  /admin/support/tickets/{id}/reply:
+    put:
+      operationId: replyToTicket
+      tags: [support]
+      summary: Admin reply to a support ticket and set status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminReplyBody"
+      responses:
+        "200":
+          description: Ticket updated with reply
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    $ref: "#/components/schemas/SupportTicket"
+                required: [ticket]
+
 components:
   schemas:
     HealthStatus:
@@ -1937,3 +2034,76 @@ components:
           type: boolean
         weeklyDigest:
           type: boolean
+
+    SupportTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        studentName:
+          type: string
+        studentEmail:
+          type: string
+        category:
+          type: string
+          enum: [application_tips, document_uploads, technical_issues, university_specifics, other]
+        subject:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        adminReply:
+          type: string
+          nullable: true
+        adminName:
+          type: string
+          nullable: true
+        repliedAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - studentName
+        - studentEmail
+        - category
+        - subject
+        - message
+        - status
+
+    CreateTicketBody:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [application_tips, document_uploads, technical_issues, university_specifics, other]
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+      required:
+        - category
+        - subject
+        - message
+
+    AdminReplyBody:
+      type: object
+      properties:
+        reply:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+      required:
+        - reply
+        - status

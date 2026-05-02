@@ -19,6 +19,7 @@ import Applications from "@/pages/Applications";
 import Apply from "@/pages/Apply";
 import ReviewApplication from "@/pages/ReviewApplication";
 import DocumentLocker from "@/pages/DocumentLocker";
+import HelpSupport from "@/pages/HelpSupport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
 import { useEffect } from "react";
@@ -97,6 +98,7 @@ function Router() {
       <Route path="/applications/:id/review">{() => <ProtectedRoute component={ReviewApplication} />}</Route>
       <Route path="/apply/:universityId">{() => <ProtectedRoute component={Apply} />}</Route>
       <Route path="/documents">{() => <ProtectedRoute component={DocumentLocker} />}</Route>
+      <Route path="/help">{() => <ProtectedRoute component={HelpSupport} />}</Route>
       <Route path="/admin/dashboard">{() => <AdminRoute component={AdminDashboard} />}</Route>
       <Route path="/admin/applications/:id">{() => <AdminRoute component={AdminApplicationDetail} />}</Route>
       <Route component={NotFound} />

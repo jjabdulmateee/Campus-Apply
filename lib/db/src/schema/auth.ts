@@ -1,5 +1,14 @@
 import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
 
+export const ticketStatusEnum = pgEnum("ticket_status", ["open", "in_progress", "resolved"]);
+export const ticketCategoryEnum = pgEnum("ticket_category", [
+  "application_tips",
+  "document_uploads",
+  "technical_issues",
+  "university_specifics",
+  "other",
+]);
+
 export const userRoleEnum = pgEnum("user_role", ["student", "admin"]);
 
 export const usersTable = pgTable("users", {
@@ -51,3 +60,23 @@ export const userPreferencesTable = pgTable("user_preferences", {
 });
 
 export type UserPreferences = typeof userPreferencesTable.$inferSelect;
+
+export const supportTicketsTable = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  studentName: text("student_name").notNull(),
+  studentEmail: text("student_email").notNull(),
+  category: ticketCategoryEnum("category").notNull().default("other"),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: ticketStatusEnum("status").notNull().default("open"),
+  adminReply: text("admin_reply"),
+  adminId: integer("admin_id"),
+  adminName: text("admin_name"),
+  repliedAt: timestamp("replied_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SupportTicket = typeof supportTicketsTable.$inferSelect;
+export type InsertSupportTicket = typeof supportTicketsTable.$inferInsert;

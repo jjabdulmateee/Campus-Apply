@@ -10,6 +10,7 @@ import {
   documentsTable,
   universitiesTable,
   programsTable,
+  supportTicketsTable,
 } from "@workspace/db";
 import { eq, desc, ilike, or, and, ne } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
@@ -267,6 +268,61 @@ router.post("/applications/:id/remarks", async (req, res) => {
     );
 
   return res.status(201).json({ remark });
+});
+
+// ── GET /admin/support/tickets ─────────────────────────────────────────────
+router.get("/support/tickets", async (req, res) => {
+  try {
+    const { status } = req.query as Record<string, string>;
+    const tickets = status
+      ? await db.select().from(supportTicketsTable)
+          .where(eq(supportTicketsTable.status, status as "open" | "in_progress" | "resolved"))
+          .orderBy(desc(supportTicketsTable.createdAt))
+      : await db.select().from(supportTicketsTable)
+          .orderBy(desc(supportTicketsTable.createdAt));
+    return res.json({ tickets });
+  } catch (err) {
+    req.log.error({ err }, "admin list tickets error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── PUT /admin/support/tickets/:id/reply ──────────────────────────────────
+const TicketReplyBody = z.object({
+  reply: z.string().min(1, "Reply is required"),
+  status: z.enum(["open", "in_progress", "resolved"]),
+});
+
+router.put("/support/tickets/:id/reply", async (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  if (isNaN(ticketId)) return res.status(400).json({ error: "Invalid ticket ID" });
+
+  const body = TicketReplyBody.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ error: body.error.errors[0].message });
+  }
+
+  try {
+    const admin = req.user!;
+    const [ticket] = await db
+      .update(supportTicketsTable)
+      .set({
+        adminReply: body.data.reply,
+        status: body.data.status,
+        adminId: admin.userId,
+        adminName: admin.fullName,
+        repliedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTicketsTable.id, ticketId))
+      .returning();
+
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    return res.json({ ticket });
+  } catch (err) {
+    req.log.error({ err }, "admin reply ticket error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;

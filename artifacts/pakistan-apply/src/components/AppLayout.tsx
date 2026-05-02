@@ -15,6 +15,7 @@ import {
   LogOut,
   ShieldCheck,
   Settings,
+  LifeBuoy,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/universities", label: "University Search", icon: Search },
   { href: "/applications", label: "My Applications", icon: FileText },
   { href: "/documents", label: "Document Locker", icon: FolderLock },
+  { href: "/help", label: "Help & Support", icon: LifeBuoy },
 ];
 
 function Sidebar({ onClose }: { onClose?: () => void }) {

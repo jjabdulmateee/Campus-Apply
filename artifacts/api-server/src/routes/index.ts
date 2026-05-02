@@ -8,6 +8,7 @@ import storageRouter from "./storage";
 import documentsRouter from "./documents";
 import adminRouter from "./admin";
 import accountRouter from "./account";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(storageRouter);
 router.use("/documents", documentsRouter);
 router.use("/admin", adminRouter);
 router.use("/account", accountRouter);
+router.use("/support", supportRouter);
 
 export default router;

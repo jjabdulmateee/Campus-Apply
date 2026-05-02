@@ -634,6 +634,80 @@ export interface UserPreferencesUpdate {
   weeklyDigest?: boolean;
 }
 
+export type SupportTicketCategory =
+  (typeof SupportTicketCategory)[keyof typeof SupportTicketCategory];
+
+export const SupportTicketCategory = {
+  application_tips: "application_tips",
+  document_uploads: "document_uploads",
+  technical_issues: "technical_issues",
+  university_specifics: "university_specifics",
+  other: "other",
+} as const;
+
+export type SupportTicketStatus =
+  (typeof SupportTicketStatus)[keyof typeof SupportTicketStatus];
+
+export const SupportTicketStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  resolved: "resolved",
+} as const;
+
+export interface SupportTicket {
+  id: number;
+  userId: number;
+  studentName: string;
+  studentEmail: string;
+  category: SupportTicketCategory;
+  subject: string;
+  message: string;
+  status: SupportTicketStatus;
+  adminReply?: string | null;
+  adminName?: string | null;
+  repliedAt?: string | null;
+  createdAt?: string;
+}
+
+export type CreateTicketBodyCategory =
+  (typeof CreateTicketBodyCategory)[keyof typeof CreateTicketBodyCategory];
+
+export const CreateTicketBodyCategory = {
+  application_tips: "application_tips",
+  document_uploads: "document_uploads",
+  technical_issues: "technical_issues",
+  university_specifics: "university_specifics",
+  other: "other",
+} as const;
+
+export interface CreateTicketBody {
+  category: CreateTicketBodyCategory;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  subject: string;
+  /**
+   * @minLength 10
+   * @maxLength 2000
+   */
+  message: string;
+}
+
+export type AdminReplyBodyStatus =
+  (typeof AdminReplyBodyStatus)[keyof typeof AdminReplyBodyStatus];
+
+export const AdminReplyBodyStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  resolved: "resolved",
+} as const;
+
+export interface AdminReplyBody {
+  reply: string;
+  status: AdminReplyBodyStatus;
+}
+
 export type ListUniversitiesParams = {
   province?: string;
   type?: string;
@@ -690,4 +764,33 @@ export type DeleteAccountBody = {
 
 export type DeleteAccount200 = {
   message: string;
+};
+
+export type ListMyTickets200 = {
+  tickets: SupportTicket[];
+};
+
+export type CreateSupportTicket201 = {
+  ticket: SupportTicket;
+};
+
+export type ListAdminSupportTicketsParams = {
+  status?: ListAdminSupportTicketsStatus;
+};
+
+export type ListAdminSupportTicketsStatus =
+  (typeof ListAdminSupportTicketsStatus)[keyof typeof ListAdminSupportTicketsStatus];
+
+export const ListAdminSupportTicketsStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  resolved: "resolved",
+} as const;
+
+export type ListAdminSupportTickets200 = {
+  tickets: SupportTicket[];
+};
+
+export type ReplyToTicket200 = {
+  ticket: SupportTicket;
 };

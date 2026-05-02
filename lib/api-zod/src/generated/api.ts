@@ -1083,3 +1083,121 @@ export const DeleteAccountBody = zod.object({
 export const DeleteAccountResponse = zod.object({
   message: zod.string(),
 });
+
+/**
+ * @summary List the current student's own support tickets
+ */
+export const ListMyTicketsResponse = zod.object({
+  tickets: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      studentName: zod.string(),
+      studentEmail: zod.string(),
+      category: zod.enum([
+        "application_tips",
+        "document_uploads",
+        "technical_issues",
+        "university_specifics",
+        "other",
+      ]),
+      subject: zod.string(),
+      message: zod.string(),
+      status: zod.enum(["open", "in_progress", "resolved"]),
+      adminReply: zod.string().nullish(),
+      adminName: zod.string().nullish(),
+      repliedAt: zod.string().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary Submit a new support ticket
+ */
+export const createSupportTicketBodySubjectMax = 200;
+
+export const createSupportTicketBodyMessageMin = 10;
+export const createSupportTicketBodyMessageMax = 2000;
+
+export const CreateSupportTicketBody = zod.object({
+  category: zod.enum([
+    "application_tips",
+    "document_uploads",
+    "technical_issues",
+    "university_specifics",
+    "other",
+  ]),
+  subject: zod.string().min(1).max(createSupportTicketBodySubjectMax),
+  message: zod
+    .string()
+    .min(createSupportTicketBodyMessageMin)
+    .max(createSupportTicketBodyMessageMax),
+});
+
+/**
+ * @summary List all support tickets (admin only)
+ */
+export const ListAdminSupportTicketsQueryParams = zod.object({
+  status: zod.enum(["open", "in_progress", "resolved"]).optional(),
+});
+
+export const ListAdminSupportTicketsResponse = zod.object({
+  tickets: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      studentName: zod.string(),
+      studentEmail: zod.string(),
+      category: zod.enum([
+        "application_tips",
+        "document_uploads",
+        "technical_issues",
+        "university_specifics",
+        "other",
+      ]),
+      subject: zod.string(),
+      message: zod.string(),
+      status: zod.enum(["open", "in_progress", "resolved"]),
+      adminReply: zod.string().nullish(),
+      adminName: zod.string().nullish(),
+      repliedAt: zod.string().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary Admin reply to a support ticket and set status
+ */
+export const ReplyToTicketParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReplyToTicketBody = zod.object({
+  reply: zod.string(),
+  status: zod.enum(["open", "in_progress", "resolved"]),
+});
+
+export const ReplyToTicketResponse = zod.object({
+  ticket: zod.object({
+    id: zod.number(),
+    userId: zod.number(),
+    studentName: zod.string(),
+    studentEmail: zod.string(),
+    category: zod.enum([
+      "application_tips",
+      "document_uploads",
+      "technical_issues",
+      "university_specifics",
+      "other",
+    ]),
+    subject: zod.string(),
+    message: zod.string(),
+    status: zod.enum(["open", "in_progress", "resolved"]),
+    adminReply: zod.string().nullish(),
+    adminName: zod.string().nullish(),
+    repliedAt: zod.string().nullish(),
+    createdAt: zod.string().optional(),
+  }),
+});
