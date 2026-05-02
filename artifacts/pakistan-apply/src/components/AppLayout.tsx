@@ -13,14 +13,15 @@ import {
   X,
   ChevronRight,
   LogOut,
-  Building2,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
+import { SettingsModal } from "@/components/SettingsModal";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -39,6 +40,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const { data: dashboard } = useGetMyDashboard();
   const { user, logout, isAdmin } = useAuth();
   const [, setLocation] = useLocation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -110,11 +112,34 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      {/* Bottom — user info + logout */}
-      <div className="px-4 py-4 border-t border-sky-100">
+      {/* Bottom — user info + settings + logout */}
+      <div className="px-4 py-4 border-t border-sky-100 space-y-1">
+        {/* Settings button */}
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-sky-50 hover:text-sky-700 transition-all"
+        >
+          <Settings className="w-4 h-4 flex-shrink-0" />
+          <span>Account Settings</span>
+        </button>
+
+        {/* User row */}
         <div className="flex items-center gap-3 px-2 py-2">
-          <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-sky-600" />
+          {/* Avatar or initials */}
+          <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {user?.avatarUrl ? (
+              <img
+                src={`/api/storage/objects/${user.avatarUrl}`}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : user?.fullName ? (
+              <span className="text-xs font-bold text-sky-700">
+                {user.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+              </span>
+            ) : (
+              <User className="w-4 h-4 text-sky-600" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-slate-700 truncate">
@@ -134,6 +159,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </button>
         </div>
       </div>
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

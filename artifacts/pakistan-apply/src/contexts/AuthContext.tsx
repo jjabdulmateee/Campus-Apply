@@ -14,6 +14,7 @@ export interface AuthUser {
   fullName: string;
   studentId: string;
   role: "student" | "admin";
+  avatarUrl?: string | null;
 }
 
 interface AuthState {
@@ -25,6 +26,8 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  setUserAvatar: (avatarUrl: string) => void;
 }
 
 interface RegisterData {
@@ -66,24 +69,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthTokenGetter(t ? () => t : null);
   }, []);
 
+  const loadUserWithToken = useCallback(
+    async (stored: string) => {
+      const u = await apiFetch<AuthUser>("/api/auth/me", {
+        headers: { Authorization: `Bearer ${stored}` },
+      });
+      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
+        headers: { Authorization: `Bearer ${stored}` },
+      }).catch(() => ({ avatarUrl: null }));
+      setUser({ ...u, avatarUrl: accountData.avatarUrl });
+      applyToken(stored);
+    },
+    [applyToken],
+  );
+
   useEffect(() => {
     const stored = localStorage.getItem(TOKEN_KEY);
     if (stored) {
-      apiFetch<AuthUser>("/api/auth/me", {
-        headers: { Authorization: `Bearer ${stored}` },
-      })
-        .then((u) => {
-          setUser(u);
-          applyToken(stored);
-        })
-        .catch(() => {
-          localStorage.removeItem(TOKEN_KEY);
-        })
+      loadUserWithToken(stored)
+        .catch(() => localStorage.removeItem(TOKEN_KEY))
         .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
-  }, [applyToken]);
+  }, [loadUserWithToken]);
+
+  const refreshUser = useCallback(async () => {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (!stored) return;
+    try {
+      const u = await apiFetch<AuthUser>("/api/auth/me", {
+        headers: { Authorization: `Bearer ${stored}` },
+      });
+      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
+        headers: { Authorization: `Bearer ${stored}` },
+      }).catch(() => ({ avatarUrl: null }));
+      setUser({ ...u, avatarUrl: accountData.avatarUrl });
+    } catch {
+      // silently fail refresh
+    }
+  }, []);
+
+  const setUserAvatar = useCallback((avatarUrl: string) => {
+    setUser((prev) => (prev ? { ...prev, avatarUrl } : prev));
+  }, []);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -93,7 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       localStorage.setItem(TOKEN_KEY, t);
       applyToken(t);
-      setUser(u);
+      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
+        headers: { Authorization: `Bearer ${t}` },
+      }).catch(() => ({ avatarUrl: null }));
+      setUser({ ...u, avatarUrl: accountData.avatarUrl });
     },
     [applyToken],
   );
@@ -106,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       localStorage.setItem(TOKEN_KEY, t);
       applyToken(t);
-      setUser(u);
+      setUser({ ...u, avatarUrl: null });
     },
     [applyToken],
   );
@@ -128,6 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
+        setUserAvatar,
       }}
     >
       {children}

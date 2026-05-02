@@ -24,6 +24,8 @@ tags:
     description: Student document management
   - name: admin
     description: University admin portal operations
+  - name: account
+    description: Account settings and user management
 
 paths:
   /healthz:
@@ -813,6 +815,179 @@ paths:
                     $ref: "#/components/schemas/AdminRemark"
                 required:
                   - remark
+
+  # ── Account Settings ─────────────────────────────────────────────────────────
+  /account/me:
+    get:
+      operationId: getAccountMe
+      tags: [account]
+      summary: Get full account info including avatar and preferences
+      responses:
+        "200":
+          description: Account info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountInfo"
+
+  /account/change-password:
+    put:
+      operationId: changePassword
+      tags: [account]
+      summary: Change account password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordBody"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required: [message]
+        "400":
+          description: Incorrect current password or validation error
+
+  /account/change-email:
+    put:
+      operationId: changeEmail
+      tags: [account]
+      summary: Change account email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeEmailBody"
+      responses:
+        "200":
+          description: Email updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                  message:
+                    type: string
+                required: [email, message]
+        "400":
+          description: Incorrect password
+        "409":
+          description: Email already in use
+
+  /account/avatar/request-url:
+    post:
+      operationId: requestAvatarUploadUrl
+      tags: [account]
+      summary: Get a presigned upload URL for avatar image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarUploadRequest"
+      responses:
+        "200":
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarUploadUrlResponse"
+
+  /account/avatar:
+    put:
+      operationId: saveAvatar
+      tags: [account]
+      summary: Save avatar objectPath after GCS upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                objectPath:
+                  type: string
+              required: [objectPath]
+      responses:
+        "200":
+          description: Avatar saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                required: [avatarUrl]
+
+  /account/preferences:
+    get:
+      operationId: getAccountPreferences
+      tags: [account]
+      summary: Get notification preferences
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+    put:
+      operationId: updateAccountPreferences
+      tags: [account]
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPreferencesUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+
+  /account:
+    delete:
+      operationId: deleteAccount
+      tags: [account]
+      summary: Permanently delete account and all data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+              required: [password]
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required: [message]
+        "400":
+          description: Incorrect password
 
 components:
   schemas:
@@ -1670,3 +1845,95 @@ components:
           type: string
       required:
         - status
+
+    AccountInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [student, admin]
+        preferences:
+          $ref: "#/components/schemas/UserPreferences"
+      required:
+        - id
+        - email
+        - fullName
+        - role
+        - preferences
+
+    ChangePasswordBody:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+      required:
+        - currentPassword
+        - newPassword
+
+    ChangeEmailBody:
+      type: object
+      properties:
+        newEmail:
+          type: string
+        password:
+          type: string
+      required:
+        - newEmail
+        - password
+
+    AvatarUploadRequest:
+      type: object
+      properties:
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - size
+        - contentType
+
+    AvatarUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required:
+        - uploadURL
+        - objectPath
+
+    UserPreferences:
+      type: object
+      properties:
+        emailOnStatusChange:
+          type: boolean
+        deadlineReminders:
+          type: boolean
+        weeklyDigest:
+          type: boolean
+      required:
+        - emailOnStatusChange
+        - deadlineReminders
+        - weeklyDigest
+
+    UserPreferencesUpdate:
+      type: object
+      properties:
+        emailOnStatusChange:
+          type: boolean
+        deadlineReminders:
+          type: boolean
+        weeklyDigest:
+          type: boolean

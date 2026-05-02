@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["student", "admin"]);
 
@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   mobileNumber: text("mobile_number"),
   studentId: text("student_id").unique(),
   role: userRoleEnum("role").notNull().default("student"),
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -39,3 +40,14 @@ export const adminRemarksTable = pgTable("admin_remarks", {
 
 export type AdminRemark = typeof adminRemarksTable.$inferSelect;
 export type InsertAdminRemark = typeof adminRemarksTable.$inferInsert;
+
+export const userPreferencesTable = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  emailOnStatusChange: boolean("email_on_status_change").notNull().default(true),
+  deadlineReminders: boolean("deadline_reminders").notNull().default(true),
+  weeklyDigest: boolean("weekly_digest").notNull().default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserPreferences = typeof userPreferencesTable.$inferSelect;

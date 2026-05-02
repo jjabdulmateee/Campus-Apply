@@ -585,6 +585,55 @@ export interface AdminDecisionBody {
   adminNotes?: string;
 }
 
+export type AccountInfoRole =
+  (typeof AccountInfoRole)[keyof typeof AccountInfoRole];
+
+export const AccountInfoRole = {
+  student: "student",
+  admin: "admin",
+} as const;
+
+export interface UserPreferences {
+  emailOnStatusChange: boolean;
+  deadlineReminders: boolean;
+  weeklyDigest: boolean;
+}
+
+export interface AccountInfo {
+  id: number;
+  email: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  role: AccountInfoRole;
+  preferences: UserPreferences;
+}
+
+export interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangeEmailBody {
+  newEmail: string;
+  password: string;
+}
+
+export interface AvatarUploadRequest {
+  size: number;
+  contentType: string;
+}
+
+export interface AvatarUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface UserPreferencesUpdate {
+  emailOnStatusChange?: boolean;
+  deadlineReminders?: boolean;
+  weeklyDigest?: boolean;
+}
+
 export type ListUniversitiesParams = {
   province?: string;
   type?: string;
@@ -616,4 +665,29 @@ export type AddAdminRemarkBody = {
 
 export type AddAdminRemark201 = {
   remark: AdminRemark;
+};
+
+export type ChangePassword200 = {
+  message: string;
+};
+
+export type ChangeEmail200 = {
+  email: string;
+  message: string;
+};
+
+export type SaveAvatarBody = {
+  objectPath: string;
+};
+
+export type SaveAvatar200 = {
+  avatarUrl: string;
+};
+
+export type DeleteAccountBody = {
+  password: string;
+};
+
+export type DeleteAccount200 = {
+  message: string;
 };

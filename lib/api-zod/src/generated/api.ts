@@ -983,3 +983,103 @@ export const AddAdminRemarkParams = zod.object({
 export const AddAdminRemarkBody = zod.object({
   remark: zod.string(),
 });
+
+/**
+ * @summary Get full account info including avatar and preferences
+ */
+export const GetAccountMeResponse = zod.object({
+  id: zod.number(),
+  email: zod.string(),
+  fullName: zod.string(),
+  avatarUrl: zod.string().nullish(),
+  role: zod.enum(["student", "admin"]),
+  preferences: zod.object({
+    emailOnStatusChange: zod.boolean(),
+    deadlineReminders: zod.boolean(),
+    weeklyDigest: zod.boolean(),
+  }),
+});
+
+/**
+ * @summary Change account password
+ */
+export const ChangePasswordBody = zod.object({
+  currentPassword: zod.string(),
+  newPassword: zod.string(),
+});
+
+export const ChangePasswordResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Change account email
+ */
+export const ChangeEmailBody = zod.object({
+  newEmail: zod.string(),
+  password: zod.string(),
+});
+
+export const ChangeEmailResponse = zod.object({
+  email: zod.string(),
+  message: zod.string(),
+});
+
+/**
+ * @summary Get a presigned upload URL for avatar image
+ */
+export const RequestAvatarUploadUrlBody = zod.object({
+  size: zod.number(),
+  contentType: zod.string(),
+});
+
+export const RequestAvatarUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Save avatar objectPath after GCS upload
+ */
+export const SaveAvatarBody = zod.object({
+  objectPath: zod.string(),
+});
+
+export const SaveAvatarResponse = zod.object({
+  avatarUrl: zod.string(),
+});
+
+/**
+ * @summary Get notification preferences
+ */
+export const GetAccountPreferencesResponse = zod.object({
+  emailOnStatusChange: zod.boolean(),
+  deadlineReminders: zod.boolean(),
+  weeklyDigest: zod.boolean(),
+});
+
+/**
+ * @summary Update notification preferences
+ */
+export const UpdateAccountPreferencesBody = zod.object({
+  emailOnStatusChange: zod.boolean().optional(),
+  deadlineReminders: zod.boolean().optional(),
+  weeklyDigest: zod.boolean().optional(),
+});
+
+export const UpdateAccountPreferencesResponse = zod.object({
+  emailOnStatusChange: zod.boolean(),
+  deadlineReminders: zod.boolean(),
+  weeklyDigest: zod.boolean(),
+});
+
+/**
+ * @summary Permanently delete account and all data
+ */
+export const DeleteAccountBody = zod.object({
+  password: zod.string(),
+});
+
+export const DeleteAccountResponse = zod.object({
+  message: zod.string(),
+});
