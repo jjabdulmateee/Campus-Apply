@@ -11,11 +11,13 @@ import {
   Menu,
   X,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useGetMyDashboard } from "@workspace/api-client-react";
+import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,6 +33,13 @@ const navItems = [
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { data: dashboard } = useGetMyDashboard();
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   return (
     <div className="h-full flex flex-col bg-white/80 backdrop-blur-xl border-r border-sky-100">
@@ -72,7 +81,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-sky-600 text-white shadow-md shadow-sky-600/20"
-                  : "text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                  : "text-slate-600 hover:bg-sky-50 hover:text-sky-700",
               )}
               onClick={onClose}
             >
@@ -84,16 +93,25 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      {/* Bottom */}
+      {/* Bottom — user info + logout */}
       <div className="px-4 py-4 border-t border-sky-100">
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
             <User className="w-4 h-4 text-sky-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-slate-700 truncate">Demo Student</div>
-            <div className="text-xs text-slate-400">student@pakmail.pk</div>
+            <div className="text-sm font-semibold text-slate-700 truncate">
+              {user?.fullName ?? "Student"}
+            </div>
+            <div className="text-xs text-slate-400 truncate">{user?.email ?? ""}</div>
           </div>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
@@ -125,7 +143,7 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
       <aside
         className={cn(
           "fixed top-0 left-0 h-full w-64 z-50 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto lg:flex-shrink-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -169,22 +187,31 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
   );
 }
 
-function DefaultRightPanel({ dashboard }: { dashboard: ReturnType<typeof useGetMyDashboard>["data"] }) {
+function DefaultRightPanel({
+  dashboard,
+}: {
+  dashboard: DashboardSummary | undefined;
+}) {
   if (!dashboard) return null;
 
   return (
     <>
-      {/* Upcoming Deadlines */}
       {dashboard.upcomingDeadlines.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-4">
           <h3 className="text-sm font-semibold text-slate-700 mb-3">Upcoming Deadlines</h3>
           <div className="space-y-3">
             {dashboard.upcomingDeadlines.map((d, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold",
-                  d.daysLeft <= 7 ? "bg-red-100 text-red-600" : d.daysLeft <= 14 ? "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600"
-                )}>
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold",
+                    d.daysLeft <= 7
+                      ? "bg-red-100 text-red-600"
+                      : d.daysLeft <= 14
+                        ? "bg-amber-100 text-amber-600"
+                        : "bg-sky-100 text-sky-600",
+                  )}
+                >
                   {d.daysLeft}d
                 </div>
                 <div>
@@ -197,16 +224,17 @@ function DefaultRightPanel({ dashboard }: { dashboard: ReturnType<typeof useGetM
         </div>
       )}
 
-      {/* Application Progress Steps */}
       <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-4">
         <h3 className="text-sm font-semibold text-slate-700 mb-3">Application Steps</h3>
         <div className="space-y-2">
           {dashboard.profileSections.map((s) => (
             <div key={s.slug} className="flex items-center gap-3">
-              <div className={cn(
-                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                s.isComplete ? "border-sky-500 bg-sky-500" : "border-slate-200"
-              )}>
+              <div
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                  s.isComplete ? "border-sky-500 bg-sky-500" : "border-slate-200",
+                )}
+              >
                 {s.isComplete && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
               <div className="flex-1 min-w-0">
@@ -220,10 +248,11 @@ function DefaultRightPanel({ dashboard }: { dashboard: ReturnType<typeof useGetM
         </div>
       </div>
 
-      {/* Help */}
       <div className="bg-sky-600 rounded-2xl p-4 text-white">
         <div className="text-sm font-semibold mb-1">Need help?</div>
-        <div className="text-xs text-sky-100 mb-3">Our team is available to assist with your application.</div>
+        <div className="text-xs text-sky-100 mb-3">
+          Our team is available to assist with your application.
+        </div>
         <button className="w-full py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-xs font-semibold">
           Contact Support
         </button>

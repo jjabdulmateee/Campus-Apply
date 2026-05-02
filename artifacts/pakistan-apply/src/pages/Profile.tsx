@@ -68,7 +68,7 @@ export default function Profile() {
   });
 
   const onSubmit = (data: FormData) => {
-    update({ data: { firstName: data.firstName, lastName: data.lastName, email: data.email, ...data } });
+    update({ data });
   };
 
   return (

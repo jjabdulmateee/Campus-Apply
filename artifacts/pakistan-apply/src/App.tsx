@@ -1,9 +1,12 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import Profile from "@/pages/Profile";
 import Education from "@/pages/Education";
@@ -14,6 +17,9 @@ import Universities from "@/pages/Universities";
 import UniversityDetail from "@/pages/UniversityDetail";
 import Applications from "@/pages/Applications";
 import Apply from "@/pages/Apply";
+import ReviewApplication from "@/pages/ReviewApplication";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,20 +30,45 @@ const queryClient = new QueryClient({
   },
 });
 
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation("/login");
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sky-50">
+        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/education" component={Education} />
-      <Route path="/testing" component={Testing} />
-      <Route path="/activities" component={Activities} />
-      <Route path="/writing" component={Writing} />
-      <Route path="/universities" component={Universities} />
-      <Route path="/universities/:id" component={UniversityDetail} />
-      <Route path="/applications" component={Applications} />
-      <Route path="/apply/:universityId" component={Apply} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
+      <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
+      <Route path="/education">{() => <ProtectedRoute component={Education} />}</Route>
+      <Route path="/testing">{() => <ProtectedRoute component={Testing} />}</Route>
+      <Route path="/activities">{() => <ProtectedRoute component={Activities} />}</Route>
+      <Route path="/writing">{() => <ProtectedRoute component={Writing} />}</Route>
+      <Route path="/universities">{() => <ProtectedRoute component={Universities} />}</Route>
+      <Route path="/universities/:id">{() => <ProtectedRoute component={UniversityDetail} />}</Route>
+      <Route path="/applications">{() => <ProtectedRoute component={Applications} />}</Route>
+      <Route path="/applications/:id/review">{() => <ProtectedRoute component={ReviewApplication} />}</Route>
+      <Route path="/apply/:universityId">{() => <ProtectedRoute component={Apply} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -47,10 +78,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
+        <AuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
