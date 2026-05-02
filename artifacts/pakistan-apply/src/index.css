@@ -169,3 +169,71 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    margin: 1.5cm 2cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force white backgrounds on cards */
+  .bg-sky-50,
+  .bg-sky-50\/50 {
+    background-color: #f8fafc !important;
+  }
+
+  /* Remove shadows and glassy effects */
+  .shadow-sm,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+
+  /* Page break control */
+  .print-section {
+    page-break-inside: avoid;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    border-bottom: 2px solid #0ea5e9;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  /* Make the main content full-width */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide interactive elements */
+  button:not(.print-show),
+  [role="tablist"],
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  /* Ensure tab panels are visible */
+  [role="tabpanel"] {
+    display: block !important;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+}

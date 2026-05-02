@@ -124,9 +124,17 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Programs seeded with degree, department, duration, seats, entry test requirements
 - Demo student has `role = "admin"` so the **Admin Portal** button appears in the sidebar immediately after login with `student@pakmail.pk / demo123`
 
+## Production Hardening (Step 6)
+
+- **Error Boundary** — `ErrorBoundary.tsx` wraps the entire app (double-wrapped: outer + inner around Router); any uncaught render error shows a clean recovery UI instead of a blank page
+- **Skeleton loaders** — Dashboard and ReviewApplication use shadcn/ui `<Skeleton>` components for per-field shimmer loading instead of block pulse
+- **Print-friendly view** — `@media print` CSS in `index.css` hides sidebar/nav/buttons; ReviewApplication shows a clean A4 print header with date and university name; a printer icon button appears on submitted applications
+- **Secrets audit** — All sensitive keys use `process.env.*`; demo passwords are intentional seed data, not production secrets; JWT secret uses `SESSION_SECRET` with a clearly-labeled dev fallback
+- **README.md** — Created at project root with tech stack, setup instructions, env vars, demo credentials, feature overview, and project structure
+
 ## Key Commands
 
-- `pnpm run typecheck` — full typecheck across all packages
+- `pnpm run typecheck` — full typecheck across all packages (zero errors)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes
 

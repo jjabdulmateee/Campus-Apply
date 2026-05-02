@@ -162,7 +162,7 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
       {/* Left Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-64 z-50 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto lg:flex-shrink-0",
+          "fixed top-0 left-0 h-full w-64 z-50 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto lg:flex-shrink-0 print:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -172,7 +172,7 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar (mobile) */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-sky-100 px-4 py-3 flex items-center gap-3">
+        <div className="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-sky-100 px-4 py-3 flex items-center gap-3 print:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-sky-50 text-slate-600"

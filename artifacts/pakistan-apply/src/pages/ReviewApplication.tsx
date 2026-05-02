@@ -10,8 +10,9 @@ import { getSupplementQuestions, type SupplementQuestion } from "@/lib/supplemen
 import {
   ArrowLeft, CheckCircle, XCircle, Send, Loader2,
   User, GraduationCap, ClipboardList, BookOpen, PenLine, MessageSquare,
-  Trophy, MapPin,
+  Trophy, MapPin, Printer,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ReviewData {
   application: {
@@ -168,9 +169,26 @@ export default function ReviewApplication() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="animate-pulse space-y-4">
-          <div className="h-20 bg-white rounded-2xl" />
-          <div className="h-60 bg-white rounded-2xl" />
+        <div className="space-y-5 max-w-3xl mx-auto">
+          <Skeleton className="h-4 w-36" />
+          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-5">
+            <div className="flex items-start gap-4">
+              <Skeleton className="w-12 h-12 rounded-xl flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm overflow-hidden">
+            <div className="flex border-b border-sky-100">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="flex-1 h-12 rounded-none" />)}
+            </div>
+            <div className="p-6 space-y-4">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+            </div>
+          </div>
         </div>
       </AppLayout>
     );
@@ -233,14 +251,39 @@ export default function ReviewApplication() {
                 )}
               </div>
             </div>
-            <span className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0",
-              review.application.status === "draft" ? "bg-amber-100 text-amber-700" :
-              review.application.status === "submitted" ? "bg-blue-100 text-blue-700" :
-              "bg-green-100 text-green-700"
-            )}>
-              {review.application.status.charAt(0).toUpperCase() + review.application.status.slice(1)}
-            </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={cn(
+                "px-3 py-1 rounded-full text-xs font-semibold",
+                review.application.status === "draft" ? "bg-amber-100 text-amber-700" :
+                review.application.status === "submitted" ? "bg-blue-100 text-blue-700" :
+                "bg-green-100 text-green-700"
+              )}>
+                {review.application.status.charAt(0).toUpperCase() + review.application.status.slice(1)}
+              </span>
+              {review.application.status !== "draft" && (
+                <button
+                  onClick={() => window.print()}
+                  title="Print application"
+                  className="p-2 rounded-xl border border-slate-200 hover:bg-sky-50 text-slate-500 hover:text-sky-600 transition-colors print:hidden"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Print-only header */}
+        <div className="print-header hidden">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-slate-900">PakApply</div>
+              <div className="text-sm text-slate-500">Official Application — {new Date().toLocaleDateString("en-PK", { year: "numeric", month: "long", day: "numeric" })}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-semibold text-slate-800">{review.application.universityName}</div>
+              <div className="text-sm text-slate-500">{review.application.programName}</div>
+            </div>
           </div>
         </div>
 
