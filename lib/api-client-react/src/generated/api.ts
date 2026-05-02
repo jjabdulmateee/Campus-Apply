@@ -19,6 +19,12 @@ import type {
 import type {
   AcademicRecord,
   Activity,
+  AddAdminRemark201,
+  AddAdminRemarkBody,
+  AdminApplicationDetail,
+  AdminApplicationsResponse,
+  AdminDecisionBody,
+  AdminStats,
   Application,
   ApplicationsSummary,
   CreateAcademicRecordBody,
@@ -32,11 +38,14 @@ import type {
   Document,
   Essay,
   HealthStatus,
+  ListAdminApplicationsParams,
+  ListAdminRemarks200,
   ListUniversitiesParams,
   Program,
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
   StudentProfile,
+  SubmitAdminDecision200,
   TestScore,
   University,
   UniversityStats,
@@ -3024,4 +3033,530 @@ export const useDeleteDocument = <
   TContext
 > => {
   return useMutation(getDeleteDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Get admission queue statistics
+ */
+export const getGetAdminStatsUrl = () => {
+  return `/api/admin/stats`;
+};
+
+export const getAdminStats = async (
+  options?: RequestInit,
+): Promise<AdminStats> => {
+  return customFetch<AdminStats>(getGetAdminStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminStatsQueryKey = () => {
+  return [`/api/admin/stats`] as const;
+};
+
+export const getGetAdminStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminStats>>> = ({
+    signal,
+  }) => getAdminStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminStats>>
+>;
+export type GetAdminStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get admission queue statistics
+ */
+
+export function useGetAdminStats<
+  TData = Awaited<ReturnType<typeof getAdminStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all submitted applications for review
+ */
+export const getListAdminApplicationsUrl = (
+  params?: ListAdminApplicationsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/applications?${stringifiedParams}`
+    : `/api/admin/applications`;
+};
+
+export const listAdminApplications = async (
+  params?: ListAdminApplicationsParams,
+  options?: RequestInit,
+): Promise<AdminApplicationsResponse> => {
+  return customFetch<AdminApplicationsResponse>(
+    getListAdminApplicationsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListAdminApplicationsQueryKey = (
+  params?: ListAdminApplicationsParams,
+) => {
+  return [`/api/admin/applications`, ...(params ? [params] : [])] as const;
+};
+
+export const getListAdminApplicationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminApplications>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminApplicationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminApplications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAdminApplicationsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminApplications>>
+  > = ({ signal }) =>
+    listAdminApplications(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminApplications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminApplicationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminApplications>>
+>;
+export type ListAdminApplicationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all submitted applications for review
+ */
+
+export function useListAdminApplications<
+  TData = Awaited<ReturnType<typeof listAdminApplications>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminApplicationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminApplications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminApplicationsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get full detail of an application for review
+ */
+export const getGetAdminApplicationUrl = (id: number) => {
+  return `/api/admin/applications/${id}`;
+};
+
+export const getAdminApplication = async (
+  id: number,
+  options?: RequestInit,
+): Promise<AdminApplicationDetail> => {
+  return customFetch<AdminApplicationDetail>(getGetAdminApplicationUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminApplicationQueryKey = (id: number) => {
+  return [`/api/admin/applications/${id}`] as const;
+};
+
+export const getGetAdminApplicationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminApplication>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminApplication>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminApplicationQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminApplication>>
+  > = ({ signal }) => getAdminApplication(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminApplication>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminApplicationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminApplication>>
+>;
+export type GetAdminApplicationQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get full detail of an application for review
+ */
+
+export function useGetAdminApplication<
+  TData = Awaited<ReturnType<typeof getAdminApplication>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminApplication>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminApplicationQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit a decision on an application
+ */
+export const getSubmitAdminDecisionUrl = (id: number) => {
+  return `/api/admin/applications/${id}/decision`;
+};
+
+export const submitAdminDecision = async (
+  id: number,
+  adminDecisionBody: AdminDecisionBody,
+  options?: RequestInit,
+): Promise<SubmitAdminDecision200> => {
+  return customFetch<SubmitAdminDecision200>(getSubmitAdminDecisionUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminDecisionBody),
+  });
+};
+
+export const getSubmitAdminDecisionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitAdminDecision>>,
+    TError,
+    { id: number; data: BodyType<AdminDecisionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitAdminDecision>>,
+  TError,
+  { id: number; data: BodyType<AdminDecisionBody> },
+  TContext
+> => {
+  const mutationKey = ["submitAdminDecision"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitAdminDecision>>,
+    { id: number; data: BodyType<AdminDecisionBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return submitAdminDecision(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitAdminDecisionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitAdminDecision>>
+>;
+export type SubmitAdminDecisionMutationBody = BodyType<AdminDecisionBody>;
+export type SubmitAdminDecisionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a decision on an application
+ */
+export const useSubmitAdminDecision = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitAdminDecision>>,
+    TError,
+    { id: number; data: BodyType<AdminDecisionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitAdminDecision>>,
+  TError,
+  { id: number; data: BodyType<AdminDecisionBody> },
+  TContext
+> => {
+  return useMutation(getSubmitAdminDecisionMutationOptions(options));
+};
+
+/**
+ * @summary List internal remarks for an application
+ */
+export const getListAdminRemarksUrl = (id: number) => {
+  return `/api/admin/applications/${id}/remarks`;
+};
+
+export const listAdminRemarks = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ListAdminRemarks200> => {
+  return customFetch<ListAdminRemarks200>(getListAdminRemarksUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminRemarksQueryKey = (id: number) => {
+  return [`/api/admin/applications/${id}/remarks`] as const;
+};
+
+export const getListAdminRemarksQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminRemarks>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminRemarks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminRemarksQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminRemarks>>
+  > = ({ signal }) => listAdminRemarks(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminRemarks>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminRemarksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminRemarks>>
+>;
+export type ListAdminRemarksQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List internal remarks for an application
+ */
+
+export function useListAdminRemarks<
+  TData = Awaited<ReturnType<typeof listAdminRemarks>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminRemarks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminRemarksQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add an internal remark to an application
+ */
+export const getAddAdminRemarkUrl = (id: number) => {
+  return `/api/admin/applications/${id}/remarks`;
+};
+
+export const addAdminRemark = async (
+  id: number,
+  addAdminRemarkBody: AddAdminRemarkBody,
+  options?: RequestInit,
+): Promise<AddAdminRemark201> => {
+  return customFetch<AddAdminRemark201>(getAddAdminRemarkUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(addAdminRemarkBody),
+  });
+};
+
+export const getAddAdminRemarkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addAdminRemark>>,
+    TError,
+    { id: number; data: BodyType<AddAdminRemarkBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addAdminRemark>>,
+  TError,
+  { id: number; data: BodyType<AddAdminRemarkBody> },
+  TContext
+> => {
+  const mutationKey = ["addAdminRemark"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addAdminRemark>>,
+    { id: number; data: BodyType<AddAdminRemarkBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return addAdminRemark(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddAdminRemarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addAdminRemark>>
+>;
+export type AddAdminRemarkMutationBody = BodyType<AddAdminRemarkBody>;
+export type AddAdminRemarkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add an internal remark to an application
+ */
+export const useAddAdminRemark = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addAdminRemark>>,
+    TError,
+    { id: number; data: BodyType<AddAdminRemarkBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addAdminRemark>>,
+  TError,
+  { id: number; data: BodyType<AddAdminRemarkBody> },
+  TContext
+> => {
+  return useMutation(getAddAdminRemarkMutationOptions(options));
 };

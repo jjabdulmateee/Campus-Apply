@@ -6,6 +6,7 @@ export interface AuthUser {
   studentId: string;
   email: string;
   fullName: string;
+  role: "student" | "admin";
 }
 
 declare global {
@@ -52,6 +53,30 @@ export function optionalJWT(
     }
   }
   next();
+}
+
+export function requireAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const token = auth.slice(7);
+  try {
+    const user = jwt.verify(token, JWT_SECRET) as AuthUser;
+    if (user.role !== "admin") {
+      res.status(403).json({ error: "Admin access required" });
+      return;
+    }
+    req.user = user;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid or expired token" });
+  }
 }
 
 /** Returns the real student ID if authenticated, falls back to demo account. */

@@ -13,6 +13,7 @@ export interface AuthUser {
   email: string;
   fullName: string;
   studentId: string;
+  role: "student" | "admin";
 }
 
 interface AuthState {
@@ -20,6 +21,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -67,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(TOKEN_KEY);
     if (stored) {
-      // Validate token by hitting /api/auth/me
       apiFetch<AuthUser>("/api/auth/me", {
         headers: { Authorization: `Bearer ${stored}` },
       })
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         isLoading,
         isAuthenticated: !!user,
+        isAdmin: user?.role === "admin",
         login,
         register,
         logout,

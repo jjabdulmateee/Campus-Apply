@@ -6,6 +6,7 @@ import applicationsRouter from "./applications";
 import authRouter from "./auth";
 import storageRouter from "./storage";
 import documentsRouter from "./documents";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/universities", universitiesRouter);
 router.use("/applications", applicationsRouter);
 router.use(storageRouter);
 router.use("/documents", documentsRouter);
+router.use("/admin", adminRouter);
 
 export default router;

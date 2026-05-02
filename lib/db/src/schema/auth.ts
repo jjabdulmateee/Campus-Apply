@@ -1,4 +1,6 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+
+export const userRoleEnum = pgEnum("user_role", ["student", "admin"]);
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -7,6 +9,7 @@ export const usersTable = pgTable("users", {
   fullName: text("full_name").notNull(),
   mobileNumber: text("mobile_number"),
   studentId: text("student_id").unique(),
+  role: userRoleEnum("role").notNull().default("student"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -24,3 +27,15 @@ export const applicationAnswersTable = pgTable("application_answers", {
 });
 
 export type ApplicationAnswer = typeof applicationAnswersTable.$inferSelect;
+
+export const adminRemarksTable = pgTable("admin_remarks", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").notNull(),
+  adminId: integer("admin_id").notNull(),
+  adminName: text("admin_name").notNull(),
+  remark: text("remark").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AdminRemark = typeof adminRemarksTable.$inferSelect;
+export type InsertAdminRemark = typeof adminRemarksTable.$inferInsert;

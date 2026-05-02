@@ -836,3 +836,150 @@ export const DeleteDocumentParams = zod.object({
 export const DeleteDocumentResponse = zod.object({
   success: zod.boolean(),
 });
+
+/**
+ * @summary Get admission queue statistics
+ */
+export const GetAdminStatsResponse = zod.object({
+  total: zod.number(),
+  pending: zod.number(),
+  underReview: zod.number(),
+  accepted: zod.number(),
+  rejected: zod.number(),
+  decided: zod.number().optional(),
+});
+
+/**
+ * @summary List all submitted applications for review
+ */
+export const ListAdminApplicationsQueryParams = zod.object({
+  search: zod.coerce.string().optional(),
+  universityId: zod.coerce.number().optional(),
+  status: zod.coerce.string().optional(),
+  sort: zod.coerce.string().optional(),
+});
+
+export const ListAdminApplicationsResponse = zod.object({
+  applications: zod.array(
+    zod.object({
+      id: zod.number(),
+      studentId: zod.string(),
+      universityId: zod.number(),
+      programId: zod.number(),
+      status: zod.string(),
+      submittedAt: zod.string().nullish(),
+      reviewedAt: zod.string().nullish(),
+      updatedAt: zod.string().nullish(),
+      adminNotes: zod.string().nullish(),
+      decisionReason: zod.string().nullish(),
+      firstName: zod.string().nullish(),
+      lastName: zod.string().nullish(),
+      email: zod.string().nullish(),
+      province: zod.string().nullish(),
+      cnicNumber: zod.string().nullish(),
+      universityName: zod.string(),
+      universityShortName: zod.string(),
+      programName: zod.string(),
+      studentName: zod.string(),
+      aggregateScore: zod.number(),
+    }),
+  ),
+  stats: zod.object({
+    total: zod.number(),
+    pending: zod.number(),
+    decided: zod.number(),
+  }),
+});
+
+/**
+ * @summary Get full detail of an application for review
+ */
+export const GetAdminApplicationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetAdminApplicationResponse = zod.object({
+  application: zod.record(zod.string(), zod.unknown()),
+  profile: zod.record(zod.string(), zod.unknown()).nullish(),
+  academics: zod.array(zod.record(zod.string(), zod.unknown())),
+  tests: zod.array(zod.record(zod.string(), zod.unknown())),
+  essays: zod.array(zod.record(zod.string(), zod.unknown())),
+  documents: zod.array(zod.record(zod.string(), zod.unknown())),
+  remarks: zod.array(
+    zod.object({
+      id: zod.number(),
+      applicationId: zod.number(),
+      adminId: zod.number(),
+      adminName: zod.string(),
+      remark: zod.string(),
+      createdAt: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Submit a decision on an application
+ */
+export const SubmitAdminDecisionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitAdminDecisionBody = zod.object({
+  status: zod.enum(["under_review", "accepted", "rejected", "waitlisted"]),
+  decisionReason: zod.string().optional(),
+  adminNotes: zod.string().optional(),
+});
+
+export const SubmitAdminDecisionResponse = zod.object({
+  application: zod.object({
+    id: zod.number(),
+    universityId: zod.number(),
+    universityName: zod.string(),
+    programId: zod.number(),
+    programName: zod.string(),
+    status: zod.enum([
+      "draft",
+      "submitted",
+      "under_review",
+      "accepted",
+      "rejected",
+      "waitlisted",
+      "withdrawn",
+    ]),
+    appliedAt: zod.string().optional(),
+    submittedAt: zod.string().optional(),
+    updatedAt: zod.string().optional(),
+    notes: zod.string().optional(),
+  }),
+});
+
+/**
+ * @summary List internal remarks for an application
+ */
+export const ListAdminRemarksParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListAdminRemarksResponse = zod.object({
+  remarks: zod.array(
+    zod.object({
+      id: zod.number(),
+      applicationId: zod.number(),
+      adminId: zod.number(),
+      adminName: zod.string(),
+      remark: zod.string(),
+      createdAt: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Add an internal remark to an application
+ */
+export const AddAdminRemarkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddAdminRemarkBody = zod.object({
+  remark: zod.string(),
+});

@@ -495,6 +495,96 @@ export interface CreateDocumentBody {
   objectPath: string;
 }
 
+export interface AdminStats {
+  total: number;
+  pending: number;
+  underReview: number;
+  accepted: number;
+  rejected: number;
+  decided?: number;
+}
+
+export interface AdminApplicationRow {
+  id: number;
+  studentId: string;
+  universityId: number;
+  programId: number;
+  status: string;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  updatedAt?: string | null;
+  adminNotes?: string | null;
+  decisionReason?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  province?: string | null;
+  cnicNumber?: string | null;
+  universityName: string;
+  universityShortName: string;
+  programName: string;
+  studentName: string;
+  aggregateScore: number;
+}
+
+export type AdminApplicationsResponseStats = {
+  total: number;
+  pending: number;
+  decided: number;
+};
+
+export interface AdminApplicationsResponse {
+  applications: AdminApplicationRow[];
+  stats: AdminApplicationsResponseStats;
+}
+
+export interface AdminRemark {
+  id: number;
+  applicationId: number;
+  adminId: number;
+  adminName: string;
+  remark: string;
+  createdAt?: string | null;
+}
+
+export type AdminApplicationDetailApplication = { [key: string]: unknown };
+
+export type AdminApplicationDetailProfile = { [key: string]: unknown } | null;
+
+export type AdminApplicationDetailAcademicsItem = { [key: string]: unknown };
+
+export type AdminApplicationDetailTestsItem = { [key: string]: unknown };
+
+export type AdminApplicationDetailEssaysItem = { [key: string]: unknown };
+
+export type AdminApplicationDetailDocumentsItem = { [key: string]: unknown };
+
+export interface AdminApplicationDetail {
+  application: AdminApplicationDetailApplication;
+  profile?: AdminApplicationDetailProfile;
+  academics: AdminApplicationDetailAcademicsItem[];
+  tests: AdminApplicationDetailTestsItem[];
+  essays: AdminApplicationDetailEssaysItem[];
+  documents: AdminApplicationDetailDocumentsItem[];
+  remarks: AdminRemark[];
+}
+
+export type AdminDecisionBodyStatus =
+  (typeof AdminDecisionBodyStatus)[keyof typeof AdminDecisionBodyStatus];
+
+export const AdminDecisionBodyStatus = {
+  under_review: "under_review",
+  accepted: "accepted",
+  rejected: "rejected",
+  waitlisted: "waitlisted",
+} as const;
+
+export interface AdminDecisionBody {
+  status: AdminDecisionBodyStatus;
+  decisionReason?: string;
+  adminNotes?: string;
+}
+
 export type ListUniversitiesParams = {
   province?: string;
   type?: string;
@@ -503,4 +593,27 @@ export type ListUniversitiesParams = {
 
 export type DeleteDocument200 = {
   success: boolean;
+};
+
+export type ListAdminApplicationsParams = {
+  search?: string;
+  universityId?: number;
+  status?: string;
+  sort?: string;
+};
+
+export type SubmitAdminDecision200 = {
+  application: Application;
+};
+
+export type ListAdminRemarks200 = {
+  remarks: AdminRemark[];
+};
+
+export type AddAdminRemarkBody = {
+  remark: string;
+};
+
+export type AddAdminRemark201 = {
+  remark: AdminRemark;
 };

@@ -21,25 +21,109 @@ const LoginBody = z.object({
   password: z.string(),
 });
 
+function makeToken(user: {
+  id: number;
+  studentId: string | null;
+  email: string;
+  fullName: string;
+  role: "student" | "admin";
+}) {
+  return jwt.sign(
+    {
+      userId: user.id,
+      studentId: user.studentId,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+    },
+    JWT_SECRET,
+    { expiresIn: "30d" },
+  );
+}
+
+/** Seed the demo student and admin accounts on first call. */
+async function seedDemoAccounts() {
+  const DEMO_STUDENT_EMAIL = "student@pakmail.pk";
+  const DEMO_ADMIN_EMAIL = "admin@pakmail.pk";
+
+  const existingStudent = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, DEMO_STUDENT_EMAIL),
+  });
+  if (!existingStudent) {
+    const hash = await bcrypt.hash("demo123", 12);
+    const [u] = await db
+      .insert(usersTable)
+      .values({
+        email: DEMO_STUDENT_EMAIL,
+        passwordHash: hash,
+        fullName: "Demo Student",
+        studentId: "demo-student-001",
+        role: "student",
+      })
+      .returning();
+    const sid = `user-${u.id}`;
+    await db.update(usersTable).set({ studentId: sid }).where(eq(usersTable.id, u.id));
+    await db.insert(studentProfilesTable).values({
+      studentId: sid,
+      firstName: "Demo",
+      lastName: "Student",
+      email: DEMO_STUDENT_EMAIL,
+    });
+  }
+
+  const existingAdmin = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, DEMO_ADMIN_EMAIL),
+  });
+  if (!existingAdmin) {
+    const hash = await bcrypt.hash("admin123", 12);
+    await db.insert(usersTable).values({
+      email: DEMO_ADMIN_EMAIL,
+      passwordHash: hash,
+      fullName: "University Admin",
+      studentId: null,
+      role: "admin",
+    });
+  } else if (existingAdmin.role !== "admin") {
+    await db
+      .update(usersTable)
+      .set({ role: "admin" })
+      .where(eq(usersTable.email, DEMO_ADMIN_EMAIL));
+  }
+
+  // Ensure the demo student account has admin role for demo toggle
+  const demoStudent = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, DEMO_STUDENT_EMAIL),
+  });
+  if (demoStudent && demoStudent.role !== "admin") {
+    await db
+      .update(usersTable)
+      .set({ role: "admin" })
+      .where(eq(usersTable.email, DEMO_STUDENT_EMAIL));
+  }
+}
+
+let seeded = false;
+router.use(async (_req, _res, next) => {
+  if (!seeded) {
+    seeded = true;
+    await seedDemoAccounts().catch(() => {});
+  }
+  next();
+});
+
 router.post("/register", async (req, res) => {
   try {
-    const { fullName, email, mobileNumber, password } = RegisterBody.parse(
-      req.body,
-    );
+    const { fullName, email, mobileNumber, password } = RegisterBody.parse(req.body);
     const normalizedEmail = email.toLowerCase().trim();
 
     const existing = await db.query.usersTable.findFirst({
       where: eq(usersTable.email, normalizedEmail),
     });
     if (existing) {
-      return res
-        .status(409)
-        .json({ error: "An account with this email already exists" });
+      return res.status(409).json({ error: "An account with this email already exists" });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-
-    // Use a temp unique studentId — updated below once we have the DB-generated id
     const tempStudentId = `reg-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     const [user] = await db
       .insert(usersTable)
@@ -49,14 +133,12 @@ router.post("/register", async (req, res) => {
         fullName,
         mobileNumber: mobileNumber ?? null,
         studentId: tempStudentId,
+        role: "student",
       })
       .returning();
 
     const studentId = `user-${user.id}`;
-    await db
-      .update(usersTable)
-      .set({ studentId })
-      .where(eq(usersTable.id, user.id));
+    await db.update(usersTable).set({ studentId }).where(eq(usersTable.id, user.id));
 
     const nameParts = fullName.trim().split(/\s+/);
     const firstName = nameParts[0];
@@ -70,15 +152,11 @@ router.post("/register", async (req, res) => {
       phoneNumber: mobileNumber ?? null,
     });
 
-    const token = jwt.sign(
-      { userId: user.id, studentId, email: normalizedEmail, fullName },
-      JWT_SECRET,
-      { expiresIn: "30d" },
-    );
+    const token = makeToken({ ...user, studentId, role: "student" });
 
     return res.status(201).json({
       token,
-      user: { id: user.id, email: normalizedEmail, fullName, studentId },
+      user: { id: user.id, email: normalizedEmail, fullName, studentId, role: "student" },
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -105,16 +183,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        studentId: user.studentId,
-        email: user.email,
-        fullName: user.fullName,
-      },
-      JWT_SECRET,
-      { expiresIn: "30d" },
-    );
+    const token = makeToken(user);
 
     return res.json({
       token,
@@ -123,6 +192,7 @@ router.post("/login", async (req, res) => {
         email: user.email,
         fullName: user.fullName,
         studentId: user.studentId,
+        role: user.role,
       },
     });
   } catch (err) {

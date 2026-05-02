@@ -2,7 +2,7 @@
 
 ## Overview
 
-PakApply is a full-stack Common App equivalent for Pakistani university students. Students fill one profile and apply to multiple Pakistani universities from a single portal.
+PakApply is a full-stack Common App equivalent for Pakistani university students. Students fill one profile and apply to multiple Pakistani universities from a single portal. University admissions staff can review, decide on, and track applications through the Admin Portal.
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
@@ -28,10 +28,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ## Architecture
 
 ### Frontend Pages
-- `/` — Landing page (links to /login and /register)
-- `/login` — JWT login page (demo credentials shown inline)
+
+**Student Portal**
+- `/` — Landing page
+- `/login` — JWT login (demo credentials shown inline)
 - `/register` — New account registration
-- `/dashboard` — Application progress, stats, recent activity
+- `/dashboard` — Progress, stats, recent activity
 - `/profile` — Personal profile (name, CNIC, gender, province, religion)
 - `/education` — Academic history (matric/FSc boards, marks)
 - `/testing` — Entrance exam scores (ECAT, MDCAT, NTS, SAT, GAT)
@@ -39,62 +41,71 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `/writing` — Personal statements / essays
 - `/universities` — Search and filter 12 Pakistani universities
 - `/universities/:id` — University detail with programs list + Apply button
-- `/applications` — Track all submitted applications (with vertical status timeline)
+- `/applications` — Track all submitted applications (5-stage status timeline)
 - `/applications/:id/review` — 3-tab review + supplement Q&A + submit screen
 - `/documents` — Document Locker: upload/manage CNIC, marksheets, transcripts, passport photo
 
+**Admin Portal** (role-gated — requires `role === "admin"` in JWT)
+- `/admin/dashboard` — Admissions queue: searchable/filterable applicant table, queue stats
+- `/admin/applications/:id` — Full application review: side-by-side student data + documents, decision panel, internal notes
+
 ### File Storage
-- **Object Storage**: Google Cloud Storage (GCS) via Replit sidecar auth, bucket provisioned automatically
-- **Upload flow**: 2-step presigned URL — client requests a signed PUT URL from `/api/storage/uploads/request-url`, then uploads directly to GCS (not through the backend)
-- **Serving**: `GET /api/storage/objects/*` for private uploads, `GET /api/storage/public-objects/*` for public assets
+- **Object Storage**: Google Cloud Storage (GCS) via Replit sidecar auth
+- **Upload flow**: 2-step presigned URL — client requests signed PUT URL from `/api/storage/uploads/request-url`, then uploads directly to GCS
 - **Validation**: PDF/JPG/PNG only, 2MB max — enforced on both server and client
-- **Env vars needed**: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR` (auto-provisioned)
+- **Env vars**: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR` (auto-provisioned)
 
 ### Backend Routes (all under `/api`)
+
+**Auth**
 - `POST /api/auth/register` — Create account, returns JWT + seeded student profile
-- `POST /api/auth/login` — Returns JWT token
+- `POST /api/auth/login` — Returns JWT token (includes `role` field)
 - `GET /api/auth/me` — Get current user from JWT
-- `GET/PUT /api/students/me/profile` — Personal info
-- `GET/POST /api/students/me/academics` — Education history
-- `PUT/DELETE /api/students/me/academics/:id`
-- `GET/POST /api/students/me/test-scores` — Exam scores
-- `PUT/DELETE /api/students/me/test-scores/:id`
-- `GET/POST /api/students/me/activities` — Activities list
-- `PUT/DELETE /api/students/me/activities/:id`
-- `GET/POST /api/students/me/essays` — Personal statements
-- `PUT/DELETE /api/students/me/essays/:id`
-- `GET /api/students/me/dashboard` — Dashboard aggregated data
-- `GET /api/universities` — List/filter universities
-- `GET /api/universities/featured` — Featured universities
-- `GET /api/universities/stats` — Counts by province/type
-- `GET /api/universities/:id` — University detail
-- `GET /api/universities/:id/programs` — University programs
-- `GET/POST /api/applications` — List/create applications
-- `GET/PUT/DELETE /api/applications/:id` — Application CRUD
-- `POST /api/applications/:id/submit` — Submit application
-- `GET /api/applications/:id/review` — Aggregated review data (student+academics+tests+essays+answers+validation)
-- `GET/PUT /api/applications/:id/answers` — Supplement Q&A answers
-- `GET /api/applications/summary` — Application counts by status
-- `POST /api/storage/uploads/request-url` — Generate presigned GCS upload URL (validates file type + size)
-- `GET /api/storage/objects/*` — Serve uploaded private objects
-- `GET /api/documents` — List student documents
-- `POST /api/documents` — Save document metadata after upload
-- `DELETE /api/documents/:id` — Delete a document record
+
+**Student**
+- `GET/PUT /api/students/me/profile`
+- `GET/POST /api/students/me/academics`, `PUT/DELETE /api/students/me/academics/:id`
+- `GET/POST /api/students/me/test-scores`, `PUT/DELETE /api/students/me/test-scores/:id`
+- `GET/POST /api/students/me/activities`, `PUT/DELETE /api/students/me/activities/:id`
+- `GET/POST /api/students/me/essays`, `PUT/DELETE /api/students/me/essays/:id`
+- `GET /api/students/me/dashboard`
+
+**Universities & Applications**
+- `GET /api/universities`, `/featured`, `/stats`, `/:id`, `/:id/programs`
+- `GET/POST /api/applications`, `GET/PUT/DELETE /api/applications/:id`
+- `POST /api/applications/:id/submit`
+- `GET /api/applications/:id/review`
+- `GET/PUT /api/applications/:id/answers`
+- `GET /api/applications/summary`
+
+**Storage & Documents**
+- `POST /api/storage/uploads/request-url`
+- `GET /api/storage/objects/*`, `GET /api/storage/public-objects/*`
+- `GET/POST /api/documents`, `DELETE /api/documents/:id`
+
+**Admin** (all require `role === "admin"` in JWT — `requireAdmin` middleware)
+- `GET /api/admin/stats` — Queue-level stats (total, pending, underReview, accepted, rejected)
+- `GET /api/admin/applications` — List all non-draft applications; filterable by universityId, status; searchable by name/email/CNIC; sortable by date/name/score
+- `GET /api/admin/applications/:id` — Full detail: profile, academics, tests, essays, documents, remarks
+- `PUT /api/admin/applications/:id/decision` — Approve / Reject / Waitlist / Request Info + adminNotes + decisionReason
+- `GET /api/admin/applications/:id/remarks` — List internal admin remarks
+- `POST /api/admin/applications/:id/remarks` — Add internal remark (auto-advances status to under_review)
 
 ### Auth Middleware (`artifacts/api-server/src/middleware/auth.ts`)
 - `verifyJWT` — Requires valid Bearer token
-- `optionalJWT` — Attaches user if token present, otherwise fallback to demo-student-001
+- `optionalJWT` — Attaches user if token present
+- `requireAdmin` — Requires valid Bearer token AND `role === "admin"` in payload (403 otherwise)
 - `getStudentId(req)` — Returns real studentId or `"demo-student-001"`
 
 ### Database Schema (`lib/db/src/schema/`)
 - `students` — Profile, academics, test scores, activities, essays
 - `universities` — 12 Pakistani universities seeded
-- `applications` — Student→Program applications with status tracking
-- `auth` — `users` table (email, passwordHash, fullName, studentId) + `application_answers` table
+- `applications` — Student→Program applications with status + `adminNotes`, `decisionReason`, `reviewedAt` columns
+- `auth` — `users` table (email, passwordHash, fullName, studentId, **role: student|admin**) + `application_answers` + **`admin_remarks`** tables
+- `documents` — Student uploaded document metadata
 
 ### Supplement Questions (`artifacts/pakistan-apply/src/lib/supplements.ts`)
 - Per-university question sets: LUMS, NUST, IBA, FAST-NU, UET, COMSATS
-- Fallback default questions for all other universities
 - `getSupplementQuestions(shortName)` returns `SupplementQuestion[]`
 
 ### Pakistani-specific Fields
@@ -102,28 +113,29 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - BISE boards (federal, Lahore, Karachi, Peshawar, etc.)
 - Entry tests: ECAT, MDCAT, NTS, LUMS LAT, SAT, GAT
 
-## Demo Data
-- Demo user: `student@pakmail.pk` / `demo123` → seeded on server startup via `seed-demo.ts`
-- Demo student: `studentId = "demo-student-001"` (linked to demo user account)
+## Demo Data & Accounts
+
+| Account | Email | Password | Role |
+|---|---|---|---|
+| Demo student (has admin role for testing) | `student@pakmail.pk` | `demo123` | admin |
+| Dedicated admin | `admin@pakmail.pk` | `admin123` | admin |
+
 - 12 universities seeded: LUMS, NUST, FAST-NU, IBA, UET, AKU, COMSATS, PU, KU, GIKI, BZU, QAU
-- Programs seeded with degree type, department, duration, seats, entry test requirements
+- Programs seeded with degree, department, duration, seats, entry test requirements
+- Demo student has `role = "admin"` so the **Admin Portal** button appears in the sidebar immediately after login with `student@pakmail.pk / demo123`
 
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push-force` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/scripts run seed` — re-seed universities and demo student
+- `pnpm --filter @workspace/db run push` — push DB schema changes
 
 ## Design System
-- Background: `sky-50`
-- Primary: `sky-600`
-- 3-column layout: fixed left sidebar (nav + progress) + main content + right panel (steps + help)
-- Glassmorphism cards: `bg-white rounded-2xl border border-sky-100 shadow-sm`
-- Active nav item: `bg-sky-600 text-white`
+
+**Student portal**: `bg-sky-50`, primary `sky-600`, 3-column layout, glassmorphism cards
+**Admin portal**: `bg-slate-900` top bar, `bg-slate-50` body, professional dark-header table layout
 
 ## Link Pattern
-- Always use `<Link href="..." className="...">` directly from wouter — never wrap in `<a>` (wouter's Link renders `<a>` itself)
+Always use `<Link href="..." className="...">` from wouter — never wrap in `<a>` (wouter's Link renders `<a>` itself)
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

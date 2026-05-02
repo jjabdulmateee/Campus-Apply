@@ -19,6 +19,8 @@ import Applications from "@/pages/Applications";
 import Apply from "@/pages/Apply";
 import ReviewApplication from "@/pages/ReviewApplication";
 import DocumentLocker from "@/pages/DocumentLocker";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -53,6 +55,29 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated) setLocation("/login");
+      else if (!isAdmin) setLocation("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, isAdmin, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !isAdmin) return null;
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -71,6 +96,8 @@ function Router() {
       <Route path="/applications/:id/review">{() => <ProtectedRoute component={ReviewApplication} />}</Route>
       <Route path="/apply/:universityId">{() => <ProtectedRoute component={Apply} />}</Route>
       <Route path="/documents">{() => <ProtectedRoute component={DocumentLocker} />}</Route>
+      <Route path="/admin/dashboard">{() => <AdminRoute component={AdminDashboard} />}</Route>
+      <Route path="/admin/applications/:id">{() => <AdminRoute component={AdminApplicationDetail} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

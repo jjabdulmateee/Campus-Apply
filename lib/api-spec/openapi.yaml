@@ -22,6 +22,8 @@ tags:
     description: File storage operations
   - name: documents
     description: Student document management
+  - name: admin
+    description: University admin portal operations
 
 paths:
   /healthz:
@@ -659,6 +661,158 @@ paths:
                     type: boolean
                 required:
                   - success
+
+  # ── Admin ─────────────────────────────────────────────────────────────────
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admission queue statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/applications:
+    get:
+      operationId: listAdminApplications
+      tags: [admin]
+      summary: List all submitted applications for review
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: universityId
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Applications list with stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminApplicationsResponse"
+
+  /admin/applications/{id}:
+    get:
+      operationId: getAdminApplication
+      tags: [admin]
+      summary: Get full detail of an application for review
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full application detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminApplicationDetail"
+
+  /admin/applications/{id}/decision:
+    put:
+      operationId: submitAdminDecision
+      tags: [admin]
+      summary: Submit a decision on an application
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDecisionBody"
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: "#/components/schemas/Application"
+                required:
+                  - application
+
+  /admin/applications/{id}/remarks:
+    get:
+      operationId: listAdminRemarks
+      tags: [admin]
+      summary: List internal remarks for an application
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Remarks list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remarks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminRemark"
+                required:
+                  - remarks
+    post:
+      operationId: addAdminRemark
+      tags: [admin]
+      summary: Add an internal remark to an application
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                remark:
+                  type: string
+              required:
+                - remark
+      responses:
+        "201":
+          description: Remark added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remark:
+                    $ref: "#/components/schemas/AdminRemark"
+                required:
+                  - remark
 
 components:
   schemas:
@@ -1326,3 +1480,193 @@ components:
         - fileSize
         - mimeType
         - objectPath
+
+    # ── Admin ─────────────────────────────────────────────────────────────────
+    AdminStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        underReview:
+          type: integer
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        decided:
+          type: integer
+      required:
+        - total
+        - pending
+        - underReview
+        - accepted
+        - rejected
+
+    AdminApplicationRow:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: string
+        universityId:
+          type: integer
+        programId:
+          type: integer
+        status:
+          type: string
+        submittedAt:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          nullable: true
+        adminNotes:
+          type: string
+          nullable: true
+        decisionReason:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        cnicNumber:
+          type: string
+          nullable: true
+        universityName:
+          type: string
+        universityShortName:
+          type: string
+        programName:
+          type: string
+        studentName:
+          type: string
+        aggregateScore:
+          type: integer
+      required:
+        - id
+        - studentId
+        - universityId
+        - programId
+        - status
+        - universityName
+        - universityShortName
+        - programName
+        - studentName
+        - aggregateScore
+
+    AdminApplicationsResponse:
+      type: object
+      properties:
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminApplicationRow"
+        stats:
+          type: object
+          properties:
+            total:
+              type: integer
+            pending:
+              type: integer
+            decided:
+              type: integer
+          required:
+            - total
+            - pending
+            - decided
+      required:
+        - applications
+        - stats
+
+    AdminRemark:
+      type: object
+      properties:
+        id:
+          type: integer
+        applicationId:
+          type: integer
+        adminId:
+          type: integer
+        adminName:
+          type: string
+        remark:
+          type: string
+        createdAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - applicationId
+        - adminId
+        - adminName
+        - remark
+
+    AdminApplicationDetail:
+      type: object
+      properties:
+        application:
+          type: object
+          additionalProperties: true
+        profile:
+          type: object
+          additionalProperties: true
+          nullable: true
+        academics:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tests:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        essays:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        documents:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        remarks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRemark"
+      required:
+        - application
+        - academics
+        - tests
+        - essays
+        - documents
+        - remarks
+
+    AdminDecisionBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [under_review, accepted, rejected, waitlisted]
+        decisionReason:
+          type: string
+        adminNotes:
+          type: string
+      required:
+        - status
