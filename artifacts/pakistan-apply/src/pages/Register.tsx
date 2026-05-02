@@ -44,7 +44,7 @@ export default function Register() {
         mobileNumber: form.mobileNumber || undefined,
         password: form.password,
       });
-      setLocation("/dashboard");
+      setLocation("/role-selection");
     } catch (err) {
       setError((err as Error).message || "Registration failed");
     } finally {

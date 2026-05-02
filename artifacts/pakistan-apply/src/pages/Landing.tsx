@@ -1,53 +1,70 @@
 import { Link } from "wouter";
+import { GraduationCap, ArrowRight } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-sky-50/50 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-sky-100/50 to-transparent pointer-events-none -z-10" />
-      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-sky-200/30 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-200/20 blur-3xl pointer-events-none -z-10" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white relative overflow-hidden px-6">
+      {/* Background blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-15%] right-[-10%] w-[700px] h-[700px] rounded-full bg-sky-100/70 blur-3xl" />
+        <div className="absolute bottom-[-15%] left-[-10%] w-[600px] h-[600px] rounded-full bg-blue-100/50 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-sky-50/60 blur-3xl" />
+      </div>
 
-      <main className="w-full max-w-6xl px-6 flex flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-sky-100 shadow-sm">
-          <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-          <span className="text-sm font-medium text-sky-700">Admissions for Fall 2025 are open</span>
+      <main className="w-full max-w-md flex flex-col items-center text-center">
+        {/* Logo mark */}
+        <div className="mb-8 w-16 h-16 rounded-2xl bg-sky-600 flex items-center justify-center shadow-lg shadow-sky-600/30">
+          <GraduationCap className="w-9 h-9 text-white" />
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 mb-6 max-w-4xl leading-[1.1]">
-          Apply to Pakistan&apos;s top universities,{" "}
-          <span className="text-sky-600">all in one place.</span>
-        </h1>
+        {/* Wordmark */}
+        <div className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+          Pak<span className="text-sky-600">Apply</span>
+        </div>
 
-        <p className="text-xl text-slate-600 mb-10 max-w-2xl leading-relaxed">
-          PakApply is the centralized college admissions portal for Pakistani students. Fill out your
-          profile once, send it anywhere.
+        <p className="text-xs font-semibold text-sky-600 uppercase tracking-widest mb-8">
+          Pakistan's Common Application
         </p>
 
-        <div className="flex items-center gap-4 flex-wrap justify-center">
+        {/* Headline */}
+        <h1 className="text-4xl font-extrabold text-slate-900 leading-[1.15] mb-4">
+          One application.<br />
+          <span className="text-sky-600">Every top university.</span>
+        </h1>
+
+        <p className="text-base text-slate-500 mb-10 leading-relaxed max-w-sm">
+          Complete your profile once and apply to LUMS, NUST, FAST-NU, IBA, UET, and more — all from a single place.
+        </p>
+
+        {/* CTAs */}
+        <div className="w-full flex flex-col gap-3">
           <Link
             href="/register"
-            className="h-12 px-8 inline-flex items-center justify-center rounded-full bg-sky-600 text-white font-semibold text-lg hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
+            className="w-full h-13 px-6 py-3.5 inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 text-white font-bold text-base hover:bg-sky-700 active:scale-[0.98] transition-all shadow-lg shadow-sky-600/25"
           >
-            Start Application
+            Create an Account
+            <ArrowRight className="w-4 h-4" />
           </Link>
+
           <Link
             href="/login"
-            className="h-12 px-8 inline-flex items-center justify-center rounded-full border border-sky-200 text-sky-700 hover:bg-sky-50 font-semibold text-lg bg-white transition-colors"
+            className="w-full h-13 px-6 py-3.5 inline-flex items-center justify-center rounded-2xl border-2 border-slate-200 bg-white text-slate-800 font-bold text-base hover:border-sky-300 hover:bg-sky-50 active:scale-[0.98] transition-all"
           >
             Sign In
           </Link>
         </div>
 
-        <div className="mt-20 pt-10 border-t border-sky-100/50 w-full">
-          <p className="text-sm font-medium text-slate-400 mb-6 uppercase tracking-wider">
-            Trusted by top institutions
+        {/* Trust strip */}
+        <div className="mt-12 pt-8 border-t border-slate-100 w-full">
+          <p className="text-xs text-slate-400 mb-4 uppercase tracking-widest font-medium">
+            Accepted by
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            <div className="text-2xl font-bold font-serif">LUMS</div>
-            <div className="text-2xl font-bold tracking-tighter">NUST</div>
-            <div className="text-2xl font-bold font-mono">FAST-NU</div>
-            <div className="text-2xl font-bold">IBA</div>
-            <div className="text-2xl font-bold">UET</div>
+          <div className="flex flex-wrap justify-center items-center gap-6 opacity-50">
+            {["LUMS", "NUST", "FAST-NU", "IBA", "UET"].map((uni) => (
+              <span key={uni} className="text-sm font-bold text-slate-600">
+                {uni}
+              </span>
+            ))}
           </div>
         </div>
       </main>
