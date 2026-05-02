@@ -3,24 +3,41 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
+import Dashboard from "@/pages/Dashboard";
+import Profile from "@/pages/Profile";
+import Education from "@/pages/Education";
+import Testing from "@/pages/Testing";
+import Activities from "@/pages/Activities";
+import Writing from "@/pages/Writing";
+import Universities from "@/pages/Universities";
+import UniversityDetail from "@/pages/UniversityDetail";
+import Applications from "@/pages/Applications";
+import Apply from "@/pages/Apply";
 
-const queryClient = new QueryClient();
-
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Replit Agent is building...</h1>
-        <p className="mt-2 text-sm text-gray-600">Your app will appear here once it's ready.</p>
-      </div>
-    </div>
-  );
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={Landing} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/education" component={Education} />
+      <Route path="/testing" component={Testing} />
+      <Route path="/activities" component={Activities} />
+      <Route path="/writing" component={Writing} />
+      <Route path="/universities" component={Universities} />
+      <Route path="/universities/:id" component={UniversityDetail} />
+      <Route path="/applications" component={Applications} />
+      <Route path="/apply/:universityId" component={Apply} />
       <Route component={NotFound} />
     </Switch>
   );

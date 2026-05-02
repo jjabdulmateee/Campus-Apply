@@ -3,20 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PakApply - Pakistani College Application Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: students
+    description: Student profile operations
+  - name: universities
+    description: University listing and details
+  - name: programs
+    description: University programs
+  - name: applications
+    description: Student applications
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,555 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Student Profile ──────────────────────────────────────────────────────────
+  /students/me/profile:
+    get:
+      operationId: getMyProfile
+      tags: [students]
+      summary: Get student personal profile
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+        "404":
+          description: Profile not found
+    put:
+      operationId: updateMyProfile
+      tags: [students]
+      summary: Create or update student personal profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertStudentProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+
+  /students/me/academics:
+    get:
+      operationId: getMyAcademics
+      tags: [students]
+      summary: Get student academic history
+      responses:
+        "200":
+          description: Academic records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicRecord"
+    post:
+      operationId: addAcademicRecord
+      tags: [students]
+      summary: Add an academic record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAcademicRecordBody"
+      responses:
+        "201":
+          description: Created academic record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicRecord"
+
+  /students/me/academics/{recordId}:
+    put:
+      operationId: updateAcademicRecord
+      tags: [students]
+      summary: Update an academic record
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAcademicRecordBody"
+      responses:
+        "200":
+          description: Updated record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicRecord"
+    delete:
+      operationId: deleteAcademicRecord
+      tags: [students]
+      summary: Delete an academic record
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students/me/test-scores:
+    get:
+      operationId: getMyTestScores
+      tags: [students]
+      summary: Get student test scores
+      responses:
+        "200":
+          description: Test scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TestScore"
+    post:
+      operationId: addTestScore
+      tags: [students]
+      summary: Add a test score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTestScoreBody"
+      responses:
+        "201":
+          description: Created test score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestScore"
+
+  /students/me/test-scores/{scoreId}:
+    put:
+      operationId: updateTestScore
+      tags: [students]
+      summary: Update a test score
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTestScoreBody"
+      responses:
+        "200":
+          description: Updated score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestScore"
+    delete:
+      operationId: deleteTestScore
+      tags: [students]
+      summary: Delete a test score
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students/me/activities:
+    get:
+      operationId: getMyActivities
+      tags: [students]
+      summary: Get student extracurricular activities
+      responses:
+        "200":
+          description: Activities list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: addActivity
+      tags: [students]
+      summary: Add an activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityBody"
+      responses:
+        "201":
+          description: Created activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  /students/me/activities/{activityId}:
+    put:
+      operationId: updateActivity
+      tags: [students]
+      summary: Update an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityBody"
+      responses:
+        "200":
+          description: Updated activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+    delete:
+      operationId: deleteActivity
+      tags: [students]
+      summary: Delete an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students/me/essays:
+    get:
+      operationId: getMyEssays
+      tags: [students]
+      summary: Get student essays
+      responses:
+        "200":
+          description: Essays list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Essay"
+    post:
+      operationId: createEssay
+      tags: [students]
+      summary: Create an essay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEssayBody"
+      responses:
+        "201":
+          description: Created essay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Essay"
+
+  /students/me/essays/{essayId}:
+    put:
+      operationId: updateEssay
+      tags: [students]
+      summary: Update an essay
+      parameters:
+        - name: essayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEssayBody"
+      responses:
+        "200":
+          description: Updated essay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Essay"
+    delete:
+      operationId: deleteEssay
+      tags: [students]
+      summary: Delete an essay
+      parameters:
+        - name: essayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students/me/dashboard:
+    get:
+      operationId: getMyDashboard
+      tags: [students]
+      summary: Get student dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  # ── Universities ─────────────────────────────────────────────────────────────
+  /universities:
+    get:
+      operationId: listUniversities
+      tags: [universities]
+      summary: List all universities
+      parameters:
+        - name: province
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of universities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/University"
+
+  /universities/featured:
+    get:
+      operationId: getFeaturedUniversities
+      tags: [universities]
+      summary: Get featured/top universities
+      responses:
+        "200":
+          description: Featured universities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/University"
+
+  /universities/stats:
+    get:
+      operationId: getUniversityStats
+      tags: [universities]
+      summary: Get aggregate stats about universities
+      responses:
+        "200":
+          description: University statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UniversityStats"
+
+  /universities/{universityId}:
+    get:
+      operationId: getUniversity
+      tags: [universities]
+      summary: Get a single university
+      parameters:
+        - name: universityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: University details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/University"
+        "404":
+          description: Not found
+
+  # ── Programs ─────────────────────────────────────────────────────────────────
+  /universities/{universityId}/programs:
+    get:
+      operationId: listPrograms
+      tags: [programs]
+      summary: List programs offered by a university
+      parameters:
+        - name: universityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Programs list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Program"
+
+  # ── Applications ─────────────────────────────────────────────────────────────
+  /applications:
+    get:
+      operationId: listMyApplications
+      tags: [applications]
+      summary: List all applications for the current student
+      responses:
+        "200":
+          description: Applications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Start a new application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationBody"
+      responses:
+        "201":
+          description: Created application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/summary:
+    get:
+      operationId: getApplicationsSummary
+      tags: [applications]
+      summary: Get summary of applications by status
+      responses:
+        "200":
+          description: Applications summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationsSummary"
+
+  /applications/{applicationId}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get a single application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Not found
+    put:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationBody"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+    delete:
+      operationId: withdrawApplication
+      tags: [applications]
+      summary: Withdraw an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Withdrawn
+
+  /applications/{applicationId}/submit:
+    post:
+      operationId: submitApplication
+      tags: [applications]
+      summary: Submit an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submitted application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +591,549 @@ components:
       required:
         - status
 
+    # ── Student Profile ───────────────────────────────────────────────────────
+    StudentProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fatherName:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other, prefer_not_to_say]
+        cnicNumber:
+          type: string
+        nationality:
+          type: string
+        religion:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+        profileCompletionPercent:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - studentId
+        - firstName
+        - lastName
+        - email
+        - profileCompletionPercent
+
+    UpsertStudentProfileBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fatherName:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other, prefer_not_to_say]
+        cnicNumber:
+          type: string
+        nationality:
+          type: string
+        religion:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+      required:
+        - firstName
+        - lastName
+        - email
+
+    AcademicRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        institution:
+          type: string
+        level:
+          type: string
+          enum: [matric, intermediate, a_levels, o_levels, bachelors, other]
+        board:
+          type: string
+        passingYear:
+          type: integer
+        totalMarks:
+          type: integer
+        obtainedMarks:
+          type: integer
+        percentage:
+          type: number
+        gradeOrGpa:
+          type: string
+        subjects:
+          type: string
+      required:
+        - id
+        - institution
+        - level
+        - passingYear
+
+    CreateAcademicRecordBody:
+      type: object
+      properties:
+        institution:
+          type: string
+        level:
+          type: string
+          enum: [matric, intermediate, a_levels, o_levels, bachelors, other]
+        board:
+          type: string
+        passingYear:
+          type: integer
+        totalMarks:
+          type: integer
+        obtainedMarks:
+          type: integer
+        percentage:
+          type: number
+        gradeOrGpa:
+          type: string
+        subjects:
+          type: string
+      required:
+        - institution
+        - level
+        - passingYear
+
+    TestScore:
+      type: object
+      properties:
+        id:
+          type: integer
+        testName:
+          type: string
+          enum: [SAT, ACT, IELTS, TOEFL, NTS, ECAT, MDCAT, HAT, other]
+        score:
+          type: string
+        maxScore:
+          type: string
+        testDate:
+          type: string
+        notes:
+          type: string
+      required:
+        - id
+        - testName
+        - score
+        - testDate
+
+    CreateTestScoreBody:
+      type: object
+      properties:
+        testName:
+          type: string
+          enum: [SAT, ACT, IELTS, TOEFL, NTS, ECAT, MDCAT, HAT, other]
+        score:
+          type: string
+        maxScore:
+          type: string
+        testDate:
+          type: string
+        notes:
+          type: string
+      required:
+        - testName
+        - score
+        - testDate
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+          enum: [sports, arts, community_service, academics, religious, leadership, work, other]
+        role:
+          type: string
+        organization:
+          type: string
+        startYear:
+          type: integer
+        endYear:
+          type: integer
+        hoursPerWeek:
+          type: integer
+        description:
+          type: string
+        isCurrentlyActive:
+          type: boolean
+      required:
+        - id
+        - name
+        - category
+        - role
+
+    CreateActivityBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          enum: [sports, arts, community_service, academics, religious, leadership, work, other]
+        role:
+          type: string
+        organization:
+          type: string
+        startYear:
+          type: integer
+        endYear:
+          type: integer
+        hoursPerWeek:
+          type: integer
+        description:
+          type: string
+        isCurrentlyActive:
+          type: boolean
+      required:
+        - name
+        - category
+        - role
+
+    Essay:
+      type: object
+      properties:
+        id:
+          type: integer
+        prompt:
+          type: string
+        content:
+          type: string
+        wordCount:
+          type: integer
+        type:
+          type: string
+          enum: [personal_statement, supplemental, short_answer]
+        updatedAt:
+          type: string
+      required:
+        - id
+        - prompt
+        - type
+
+    CreateEssayBody:
+      type: object
+      properties:
+        prompt:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [personal_statement, supplemental, short_answer]
+      required:
+        - prompt
+        - type
+
+    DashboardSummary:
+      type: object
+      properties:
+        profileCompletionPercent:
+          type: integer
+        applicationCount:
+          type: integer
+        submittedCount:
+          type: integer
+        pendingCount:
+          type: integer
+        acceptedCount:
+          type: integer
+        upcomingDeadlines:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeadlineItem"
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityFeedItem"
+        profileSections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileSection"
+      required:
+        - profileCompletionPercent
+        - applicationCount
+        - submittedCount
+        - pendingCount
+        - acceptedCount
+        - upcomingDeadlines
+        - recentActivity
+        - profileSections
+
+    DeadlineItem:
+      type: object
+      properties:
+        universityName:
+          type: string
+        programName:
+          type: string
+        deadline:
+          type: string
+        daysLeft:
+          type: integer
+      required:
+        - universityName
+        - programName
+        - deadline
+        - daysLeft
+
+    ActivityFeedItem:
+      type: object
+      properties:
+        action:
+          type: string
+        detail:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - action
+        - detail
+        - timestamp
+
+    ProfileSection:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+          enum: [profile, family, education, testing, activities, writing, courses]
+        isComplete:
+          type: boolean
+        completionPercent:
+          type: integer
+      required:
+        - name
+        - slug
+        - isComplete
+        - completionPercent
+
+    # ── Universities ──────────────────────────────────────────────────────────
+    University:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        type:
+          type: string
+          enum: [public, private, semi_government]
+        ranking:
+          type: integer
+        established:
+          type: integer
+        website:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+        programCount:
+          type: integer
+        applicationDeadline:
+          type: string
+        isFeatured:
+          type: boolean
+        admissionOpen:
+          type: boolean
+      required:
+        - id
+        - name
+        - province
+        - city
+        - type
+
+    UniversityStats:
+      type: object
+      properties:
+        totalUniversities:
+          type: integer
+        byProvince:
+          type: array
+          items:
+            type: object
+            properties:
+              province:
+                type: string
+              count:
+                type: integer
+            required: [province, count]
+        byType:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+            required: [type, count]
+        admissionOpenCount:
+          type: integer
+      required:
+        - totalUniversities
+        - byProvince
+        - byType
+        - admissionOpenCount
+
+    # ── Programs ──────────────────────────────────────────────────────────────
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+        universityId:
+          type: integer
+        name:
+          type: string
+        department:
+          type: string
+        degree:
+          type: string
+          enum: [BS, BE, BBA, MBBS, BDS, LLB, MA, MSc, MBA, MS, MPhil, PhD, other]
+        duration:
+          type: integer
+        seats:
+          type: integer
+        entryTest:
+          type: string
+        feePerSemester:
+          type: number
+        description:
+          type: string
+        applicationDeadline:
+          type: string
+      required:
+        - id
+        - universityId
+        - name
+        - degree
+
+    # ── Applications ─────────────────────────────────────────────────────────
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        universityId:
+          type: integer
+        universityName:
+          type: string
+        programId:
+          type: integer
+        programName:
+          type: string
+        status:
+          type: string
+          enum: [draft, submitted, under_review, accepted, rejected, waitlisted, withdrawn]
+        appliedAt:
+          type: string
+        submittedAt:
+          type: string
+        updatedAt:
+          type: string
+        notes:
+          type: string
+      required:
+        - id
+        - universityId
+        - universityName
+        - programId
+        - programName
+        - status
+
+    CreateApplicationBody:
+      type: object
+      properties:
+        universityId:
+          type: integer
+        programId:
+          type: integer
+        notes:
+          type: string
+      required:
+        - universityId
+        - programId
+
+    UpdateApplicationBody:
+      type: object
+      properties:
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [draft, submitted, under_review, accepted, rejected, waitlisted, withdrawn]
+
+    ApplicationsSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        draft:
+          type: integer
+        submitted:
+          type: integer
+        under_review:
+          type: integer
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        waitlisted:
+          type: integer
+      required:
+        - total
+        - draft
+        - submitted
+        - under_review
+        - accepted
+        - rejected
+        - waitlisted
