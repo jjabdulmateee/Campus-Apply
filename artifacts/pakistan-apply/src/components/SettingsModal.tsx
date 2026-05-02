@@ -1,14 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { customFetch } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 import {
   Lock, Mail, Camera, Bell, Trash2, ChevronRight,
@@ -71,7 +70,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {tab === "avatar" && <AvatarTab onClose={onClose} />}
-            {tab === "password" && <PasswordTab />}
+            {tab === "password" && <PasswordTab onClose={onClose} />}
             {tab === "email" && <EmailTab onClose={onClose} />}
             {tab === "notifications" && <NotificationsTab />}
             {tab === "delete" && <DeleteTab onClose={onClose} />}
@@ -157,6 +156,10 @@ function AvatarTab({ onClose }: { onClose: () => void }) {
         >
           {avatarSrc ? (
             <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+          ) : user?.fullName ? (
+            <span className="text-3xl font-bold text-sky-400">
+              {user.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+            </span>
           ) : (
             <User className="w-12 h-12 text-sky-300" />
           )}
@@ -198,14 +201,15 @@ const pwSchema = z.object({
   message: "Passwords do not match",
 });
 
-function PasswordTab() {
+function PasswordTab({ onClose }: { onClose: () => void }) {
+  const { logout } = useAuth();
   const { toast } = useToast();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const token = localStorage.getItem("pakapp_token");
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(pwSchema),
   });
 
@@ -219,8 +223,9 @@ function PasswordTab() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
-      toast({ title: "Password changed successfully" });
-      reset();
+      toast({ title: "Password changed", description: "Please sign in again with your new password." });
+      logout();
+      onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "Failed", variant: "destructive" });
     } finally {
@@ -230,7 +235,7 @@ function PasswordTab() {
 
   return (
     <div>
-      <PanelHeader title="Change Password" subtitle="Choose a strong password with at least 8 characters" />
+      <PanelHeader title="Change Password" subtitle="Choose a strong password — you will be signed out afterwards" />
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
         <div>
           <Label className="text-xs font-medium text-slate-600 mb-1.5 block">Current Password</Label>
@@ -292,7 +297,7 @@ function EmailTab({ onClose }: { onClose: () => void }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
-      toast({ title: "Email updated", description: "Please log in again with your new email." });
+      toast({ title: "Email updated", description: "Please sign in again with your new email." });
       logout();
       onClose();
     } catch (err) {
@@ -304,7 +309,7 @@ function EmailTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div>
-      <PanelHeader title="Change Email" subtitle="Your new email will be used to log in" />
+      <PanelHeader title="Change Email" subtitle="Your new email will be used to sign in" />
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
         <div className="bg-sky-50 rounded-xl p-3 text-xs text-slate-600">
           Current email: <span className="font-semibold text-slate-800">{user?.email}</span>
@@ -338,19 +343,17 @@ function NotificationsTab() {
   const [saving, setSaving] = useState(false);
   const token = localStorage.getItem("pakapp_token");
 
-  const load = async () => {
-    try {
-      const res = await fetch("/api/account/preferences", { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setPrefs(await res.json());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading && !prefs) { load(); }
+  useEffect(() => {
+    fetch("/api/account/preferences", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data: Prefs) => setPrefs(data))
+      .catch(() => {/* silently ignore */})
+      .finally(() => setLoading(false));
+  }, [token]);
 
   const toggle = async (key: keyof Prefs) => {
     if (!prefs) return;
+    const prev = prefs;
     const updated = { ...prefs, [key]: !prefs[key] };
     setPrefs(updated);
     setSaving(true);
@@ -363,7 +366,7 @@ function NotificationsTab() {
       if (!res.ok) throw new Error();
       toast({ title: "Preferences saved" });
     } catch {
-      setPrefs(prefs);
+      setPrefs(prev);
       toast({ title: "Failed to save preferences", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -458,7 +461,7 @@ function DeleteTab({ onClose }: { onClose: () => void }) {
           <div className="text-sm text-red-700">
             <p className="font-semibold mb-1">This will permanently delete:</p>
             <ul className="list-disc list-inside space-y-0.5 text-xs text-red-600">
-              <li>Your account and login credentials</li>
+              <li>Your account and sign-in credentials</li>
               <li>All applications and supplement answers</li>
               <li>All academic records, test scores, activities, and essays</li>
               <li>All uploaded documents</li>
