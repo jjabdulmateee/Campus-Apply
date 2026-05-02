@@ -759,3 +759,80 @@ export const SubmitApplicationResponse = zod.object({
   updatedAt: zod.string().optional(),
   notes: zod.string().optional(),
 });
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string(),
+  size: zod.number(),
+  contentType: zod.string(),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+  metadata: zod.object({
+    name: zod.string(),
+    size: zod.number(),
+    contentType: zod.string(),
+  }),
+});
+
+/**
+ * @summary List student documents
+ */
+export const ListDocumentsResponseItem = zod.object({
+  id: zod.number(),
+  studentId: zod.string(),
+  category: zod.enum([
+    "cnic_front",
+    "cnic_back",
+    "b_form",
+    "matric_marksheet",
+    "fsc_transcript",
+    "a_level_transcript",
+    "o_level_transcript",
+    "passport_photo",
+    "other",
+  ]),
+  fileName: zod.string(),
+  fileSize: zod.number(),
+  mimeType: zod.string(),
+  objectPath: zod.string(),
+  isVerified: zod.boolean(),
+  uploadedAt: zod.string().optional(),
+});
+export const ListDocumentsResponse = zod.array(ListDocumentsResponseItem);
+
+/**
+ * @summary Save uploaded document metadata
+ */
+export const CreateDocumentBody = zod.object({
+  category: zod.enum([
+    "cnic_front",
+    "cnic_back",
+    "b_form",
+    "matric_marksheet",
+    "fsc_transcript",
+    "a_level_transcript",
+    "o_level_transcript",
+    "passport_photo",
+    "other",
+  ]),
+  fileName: zod.string(),
+  fileSize: zod.number(),
+  mimeType: zod.string(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Delete a document
+ */
+export const DeleteDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteDocumentResponse = zod.object({
+  success: zod.boolean(),
+});

@@ -5,6 +5,7 @@ import {
   useGetApplicationsSummary,
   useSubmitApplication,
   useWithdrawApplication,
+  useListDocuments,
   getListMyApplicationsQueryKey,
   getGetApplicationsSummaryQueryKey,
   getGetMyDashboardQueryKey,
@@ -14,16 +15,126 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { APPLICATION_STATUS_COLORS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
-import { GraduationCap, Loader2, Send, Trash2, FileText, Plus, ClipboardCheck } from "lucide-react";
+import {
+  GraduationCap,
+  Loader2,
+  Send,
+  Trash2,
+  FileText,
+  Plus,
+  ClipboardCheck,
+  Circle,
+  FolderLock,
+} from "lucide-react";
 import { useState } from "react";
+
+type AppStatus =
+  | "draft"
+  | "submitted"
+  | "under_review"
+  | "accepted"
+  | "rejected"
+  | "waitlisted"
+  | "withdrawn";
+
+interface TimelineStage {
+  key: string;
+  label: string;
+  done: boolean;
+  active: boolean;
+}
+
+function getTimelineStages(status: AppStatus, hasDocs: boolean): TimelineStage[] {
+  const submitted = ["submitted", "under_review", "accepted", "rejected", "waitlisted"].includes(status);
+  const underReview = ["under_review", "accepted", "rejected"].includes(status);
+  const decided = ["accepted", "rejected", "waitlisted"].includes(status);
+
+  const stages = [
+    { key: "draft", label: "Draft Created", done: true },
+    { key: "submitted", label: "Submitted", done: submitted },
+    { key: "docs", label: "Docs Uploaded", done: hasDocs && submitted },
+    { key: "review", label: "Under Review", done: underReview },
+    { key: "decision", label: "Decision", done: decided },
+  ];
+
+  const lastDoneIdx = stages.reduce((acc, s, i) => (s.done ? i : acc), -1);
+  return stages.map((s, i) => ({
+    ...s,
+    active: !s.done && i === lastDoneIdx + 1,
+  }));
+}
+
+function StatusTimeline({ status, hasDocs }: { status: AppStatus; hasDocs: boolean }) {
+  if (status === "withdrawn") {
+    return (
+      <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-xs text-slate-400">
+        <Circle className="w-4 h-4" />
+        Application withdrawn
+      </div>
+    );
+  }
+
+  const stages = getTimelineStages(status, hasDocs);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-50">
+      <div className="flex items-start">
+        {stages.map((stage, idx) => (
+          <div key={stage.key} className="flex items-start flex-1">
+            <div className="flex flex-col items-center w-full">
+              <div className="flex items-center w-full">
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                    stage.done
+                      ? "border-sky-500 bg-sky-500"
+                      : stage.active
+                        ? "border-sky-300 bg-sky-50"
+                        : "border-slate-200 bg-white",
+                  )}
+                >
+                  {stage.done && <div className="w-2 h-2 rounded-full bg-white" />}
+                  {stage.active && <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />}
+                </div>
+                {idx < stages.length - 1 && (
+                  <div
+                    className={cn(
+                      "flex-1 h-0.5 mx-1",
+                      stage.done ? "bg-sky-400" : "bg-slate-100",
+                    )}
+                  />
+                )}
+              </div>
+              <span
+                className={cn(
+                  "text-xs mt-1.5 text-center leading-tight w-14",
+                  stage.done
+                    ? "text-sky-600 font-medium"
+                    : stage.active
+                      ? "text-slate-600 font-medium"
+                      : "text-slate-300",
+                )}
+              >
+                {stage.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Applications() {
   const { data: applications, isLoading } = useListMyApplications();
   const { data: summary } = useGetApplicationsSummary();
+  const { data: documents = [] } = useListDocuments();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [submittingId, setSubmittingId] = useState<number | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
+
+  const hasDocs = documents.length > 0;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListMyApplicationsQueryKey() });
@@ -89,11 +200,27 @@ export default function Applications() {
           </div>
         )}
 
+        {/* Documents nudge */}
+        {!hasDocs && applications && applications.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
+            <FolderLock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <p className="text-xs text-amber-700 flex-1">
+              Upload your documents to complete the <strong>Documents Uploaded</strong> stage for all applications.
+            </p>
+            <Link
+              href="/documents"
+              className="text-xs font-semibold text-amber-600 hover:text-amber-700 whitespace-nowrap"
+            >
+              Upload Now
+            </Link>
+          </div>
+        )}
+
         {/* Application list */}
         {isLoading ? (
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-white rounded-2xl" />
+              <div key={i} className="h-48 bg-white rounded-2xl" />
             ))}
           </div>
         ) : applications && applications.length > 0 ? (
@@ -207,6 +334,9 @@ export default function Applications() {
                         </Link>
                       )}
                     </div>
+
+                    {/* Status Timeline */}
+                    <StatusTimeline status={app.status as AppStatus} hasDocs={hasDocs} />
                   </div>
                 </div>
               </div>

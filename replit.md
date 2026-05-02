@@ -39,8 +39,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `/writing` — Personal statements / essays
 - `/universities` — Search and filter 12 Pakistani universities
 - `/universities/:id` — University detail with programs list + Apply button
-- `/applications` — Track all submitted applications
+- `/applications` — Track all submitted applications (with vertical status timeline)
 - `/applications/:id/review` — 3-tab review + supplement Q&A + submit screen
+- `/documents` — Document Locker: upload/manage CNIC, marksheets, transcripts, passport photo
+
+### File Storage
+- **Object Storage**: Google Cloud Storage (GCS) via Replit sidecar auth, bucket provisioned automatically
+- **Upload flow**: 2-step presigned URL — client requests a signed PUT URL from `/api/storage/uploads/request-url`, then uploads directly to GCS (not through the backend)
+- **Serving**: `GET /api/storage/objects/*` for private uploads, `GET /api/storage/public-objects/*` for public assets
+- **Validation**: PDF/JPG/PNG only, 2MB max — enforced on both server and client
+- **Env vars needed**: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR` (auto-provisioned)
 
 ### Backend Routes (all under `/api`)
 - `POST /api/auth/register` — Create account, returns JWT + seeded student profile
@@ -67,6 +75,11 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `GET /api/applications/:id/review` — Aggregated review data (student+academics+tests+essays+answers+validation)
 - `GET/PUT /api/applications/:id/answers` — Supplement Q&A answers
 - `GET /api/applications/summary` — Application counts by status
+- `POST /api/storage/uploads/request-url` — Generate presigned GCS upload URL (validates file type + size)
+- `GET /api/storage/objects/*` — Serve uploaded private objects
+- `GET /api/documents` — List student documents
+- `POST /api/documents` — Save document metadata after upload
+- `DELETE /api/documents/:id` — Delete a document record
 
 ### Auth Middleware (`artifacts/api-server/src/middleware/auth.ts`)
 - `verifyJWT` — Requires valid Bearer token

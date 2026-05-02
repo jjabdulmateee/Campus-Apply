@@ -89,7 +89,7 @@ router.get("/:universityId", async (req, res) => {
     where: eq(universitiesTable.id, universityId),
   });
 
-  if (!uni) return res.status(404).json({ error: "Not found" });
+  if (!uni) { res.status(404).json({ error: "Not found" }); return; }
 
   const [{ count: programCount }] = await db
     .select({ count: count() })

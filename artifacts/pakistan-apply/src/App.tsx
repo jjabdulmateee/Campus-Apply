@@ -18,6 +18,7 @@ import UniversityDetail from "@/pages/UniversityDetail";
 import Applications from "@/pages/Applications";
 import Apply from "@/pages/Apply";
 import ReviewApplication from "@/pages/ReviewApplication";
+import DocumentLocker from "@/pages/DocumentLocker";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/applications">{() => <ProtectedRoute component={Applications} />}</Route>
       <Route path="/applications/:id/review">{() => <ProtectedRoute component={ReviewApplication} />}</Route>
       <Route path="/apply/:universityId">{() => <ProtectedRoute component={Apply} />}</Route>
+      <Route path="/documents">{() => <ProtectedRoute component={DocumentLocker} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

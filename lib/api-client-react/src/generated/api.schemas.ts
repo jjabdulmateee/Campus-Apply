@@ -427,8 +427,80 @@ export interface ApplicationsSummary {
   waitlisted: number;
 }
 
+export interface RequestUploadUrlBody {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export type RequestUploadUrlResponseMetadata = {
+  name: string;
+  size: number;
+  contentType: string;
+};
+
+export interface RequestUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata: RequestUploadUrlResponseMetadata;
+}
+
+export type DocumentCategory =
+  (typeof DocumentCategory)[keyof typeof DocumentCategory];
+
+export const DocumentCategory = {
+  cnic_front: "cnic_front",
+  cnic_back: "cnic_back",
+  b_form: "b_form",
+  matric_marksheet: "matric_marksheet",
+  fsc_transcript: "fsc_transcript",
+  a_level_transcript: "a_level_transcript",
+  o_level_transcript: "o_level_transcript",
+  passport_photo: "passport_photo",
+  other: "other",
+} as const;
+
+export interface Document {
+  id: number;
+  studentId: string;
+  category: DocumentCategory;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  objectPath: string;
+  isVerified: boolean;
+  uploadedAt?: string;
+}
+
+export type CreateDocumentBodyCategory =
+  (typeof CreateDocumentBodyCategory)[keyof typeof CreateDocumentBodyCategory];
+
+export const CreateDocumentBodyCategory = {
+  cnic_front: "cnic_front",
+  cnic_back: "cnic_back",
+  b_form: "b_form",
+  matric_marksheet: "matric_marksheet",
+  fsc_transcript: "fsc_transcript",
+  a_level_transcript: "a_level_transcript",
+  o_level_transcript: "o_level_transcript",
+  passport_photo: "passport_photo",
+  other: "other",
+} as const;
+
+export interface CreateDocumentBody {
+  category: CreateDocumentBodyCategory;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  objectPath: string;
+}
+
 export type ListUniversitiesParams = {
   province?: string;
   type?: string;
   search?: string;
+};
+
+export type DeleteDocument200 = {
+  success: boolean;
 };

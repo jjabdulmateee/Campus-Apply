@@ -8,6 +8,7 @@ import {
   PenLine,
   Search,
   FileText,
+  FolderLock,
   Menu,
   X,
   ChevronRight,
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/writing", label: "Essays", icon: PenLine },
   { href: "/universities", label: "University Search", icon: Search },
   { href: "/applications", label: "My Applications", icon: FileText },
+  { href: "/documents", label: "Document Locker", icon: FolderLock },
 ];
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
