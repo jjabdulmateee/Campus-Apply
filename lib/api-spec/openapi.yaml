@@ -1106,6 +1106,8 @@ components:
           type: string
         firstName:
           type: string
+        middleName:
+          type: string
         lastName:
           type: string
         fatherName:
@@ -1127,9 +1129,25 @@ components:
           type: string
         address:
           type: string
+        zipCode:
+          type: string
         phoneNumber:
           type: string
+        preferredContact:
+          type: string
+          enum: [email, sms, phone]
         email:
+          type: string
+        studentType:
+          type: string
+          enum: [first_year, transfer]
+        guardianName:
+          type: string
+        guardianRelation:
+          type: string
+        guardianEmail:
+          type: string
+        previousCollege:
           type: string
         profileCompletionPercent:
           type: integer
@@ -1150,6 +1168,8 @@ components:
       properties:
         firstName:
           type: string
+        middleName:
+          type: string
         lastName:
           type: string
         fatherName:
@@ -1171,9 +1191,25 @@ components:
           type: string
         address:
           type: string
+        zipCode:
+          type: string
         phoneNumber:
           type: string
+        preferredContact:
+          type: string
+          enum: [email, sms, phone]
         email:
+          type: string
+        studentType:
+          type: string
+          enum: [first_year, transfer]
+        guardianName:
+          type: string
+        guardianRelation:
+          type: string
+        guardianEmail:
+          type: string
+        previousCollege:
           type: string
       required:
         - firstName

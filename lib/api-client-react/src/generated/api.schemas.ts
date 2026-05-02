@@ -19,10 +19,28 @@ export const StudentProfileGender = {
   prefer_not_to_say: "prefer_not_to_say",
 } as const;
 
+export type StudentProfilePreferredContact =
+  (typeof StudentProfilePreferredContact)[keyof typeof StudentProfilePreferredContact];
+
+export const StudentProfilePreferredContact = {
+  email: "email",
+  sms: "sms",
+  phone: "phone",
+} as const;
+
+export type StudentProfileStudentType =
+  (typeof StudentProfileStudentType)[keyof typeof StudentProfileStudentType];
+
+export const StudentProfileStudentType = {
+  first_year: "first_year",
+  transfer: "transfer",
+} as const;
+
 export interface StudentProfile {
   id: number;
   studentId: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   fatherName?: string;
   dateOfBirth?: string;
@@ -33,8 +51,15 @@ export interface StudentProfile {
   province?: string;
   city?: string;
   address?: string;
+  zipCode?: string;
   phoneNumber?: string;
+  preferredContact?: StudentProfilePreferredContact;
   email: string;
+  studentType?: StudentProfileStudentType;
+  guardianName?: string;
+  guardianRelation?: string;
+  guardianEmail?: string;
+  previousCollege?: string;
   profileCompletionPercent: number;
   createdAt?: string;
   updatedAt?: string;
@@ -50,8 +75,26 @@ export const UpsertStudentProfileBodyGender = {
   prefer_not_to_say: "prefer_not_to_say",
 } as const;
 
+export type UpsertStudentProfileBodyPreferredContact =
+  (typeof UpsertStudentProfileBodyPreferredContact)[keyof typeof UpsertStudentProfileBodyPreferredContact];
+
+export const UpsertStudentProfileBodyPreferredContact = {
+  email: "email",
+  sms: "sms",
+  phone: "phone",
+} as const;
+
+export type UpsertStudentProfileBodyStudentType =
+  (typeof UpsertStudentProfileBodyStudentType)[keyof typeof UpsertStudentProfileBodyStudentType];
+
+export const UpsertStudentProfileBodyStudentType = {
+  first_year: "first_year",
+  transfer: "transfer",
+} as const;
+
 export interface UpsertStudentProfileBody {
   firstName: string;
+  middleName?: string;
   lastName: string;
   fatherName?: string;
   dateOfBirth?: string;
@@ -62,8 +105,15 @@ export interface UpsertStudentProfileBody {
   province?: string;
   city?: string;
   address?: string;
+  zipCode?: string;
   phoneNumber?: string;
+  preferredContact?: UpsertStudentProfileBodyPreferredContact;
   email: string;
+  studentType?: UpsertStudentProfileBodyStudentType;
+  guardianName?: string;
+  guardianRelation?: string;
+  guardianEmail?: string;
+  previousCollege?: string;
 }
 
 export type AcademicRecordLevel =
