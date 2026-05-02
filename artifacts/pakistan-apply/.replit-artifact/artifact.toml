@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "PakApply - Pakistani College Application Portal"
+version = "1.0.0"
+id = "artifacts/pakistan-apply"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21520
+
+[services.development]
+run = "pnpm --filter @workspace/pakistan-apply run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pakistan-apply", "run", "build" ]
+publicDir = "artifacts/pakistan-apply/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21520"
+BASE_PATH = "/"
