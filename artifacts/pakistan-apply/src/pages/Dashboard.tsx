@@ -89,7 +89,7 @@ export default function Dashboard() {
                       >
                         {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
                       </div>
-                      <div className="text-xs text-[#4B5563]">{step.name}</div>
+                      <div className="text-xs text-[#4B5563]">{sectionLabel(step.slug, step.name)}</div>
                     </Link>
                   ))}
                 </div>
@@ -309,4 +309,17 @@ function sectionHref(slug: string) {
   if (slug.includes("essay")) return "/writing";
   if (slug.includes("recommender")) return "/recommenders";
   return "/dashboard";
+}
+
+function sectionLabel(slug: string, fallback: string) {
+  if (slug.includes("profile")) return "Profile";
+  if (slug.includes("family")) return "Family";
+  if (slug.includes("education")) return "Education";
+  if (slug.includes("grade")) return "Courses & Grades";
+  if (slug.includes("course")) return "Courses & Grades";
+  if (slug.includes("test")) return "Testing";
+  if (slug.includes("activity")) return "Activities";
+  if (slug.includes("essay")) return "Writing";
+  if (slug.includes("recommender")) return fallback;
+  return fallback;
 }
