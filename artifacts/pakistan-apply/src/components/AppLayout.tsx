@@ -109,7 +109,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-0 py-0">
+      <nav className="flex-1 overflow-y-auto px-0 py-0 flex flex-col">
         <div className="px-3 py-2">
           <Link
             href="/dashboard"
@@ -140,7 +140,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <SidebarFlatLink href="/documents" icon={FolderOpen} label="Documents" location={location} onClose={onClose} />
         </div>
 
-        <HelpSupportSidebar location={location} onClose={onClose} />
+        <div className="mt-auto">
+          <HelpSupportSidebar location={location} onClose={onClose} />
+        </div>
       </nav>
 
       {/* Bottom — user card */}
@@ -212,7 +214,7 @@ const SLUG_MAP: Record<string, string[]> = {
 
 const COURSE_CHILDREN = [
   { label: "Courses", href: "/education/courses?tab=courses" },
-  { label: "Grades", href: "/education/courses?tab=grades" },
+  { label: "Grades", href: "/education/courses?tab=courses" },
 ];
 
 function MyApplicationGroup({

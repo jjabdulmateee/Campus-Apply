@@ -1,5 +1,6 @@
 import AppLayout from "@/components/AppLayout";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -203,6 +204,7 @@ function TranscriptUploadSlot({
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Education() {
+  const search = useSearch();
   const { data: records, isLoading } = useGetMyAcademics();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -210,6 +212,7 @@ export default function Education() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [honors, setHonors] = useState<HonorEntry[]>([]);
   const [courses, setCourses] = useState<CourseEntry[]>([]);
+  const activeTab = new URLSearchParams(search).get("tab") === "courses" ? "courses" : "history";
 
   const isTransfer = localStorage.getItem("pakapp_user_type") === "transfer";
 
@@ -353,7 +356,17 @@ export default function Education() {
   return (
     <AppLayout title="Education" subtitle="Add your academic history — Matric, Intermediate, A-Levels, and beyond">
       <div className="space-y-5">
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl">
+          <a href="/education?tab=history" className={activeTab === "history" ? "flex-1 rounded-xl bg-white px-4 py-2 text-sm font-medium text-sky-700 shadow-sm" : "flex-1 rounded-xl px-4 py-2 text-sm font-medium text-slate-500"}>
+            School History
+          </a>
+          <a href="/education/courses?tab=courses" className={activeTab === "courses" ? "flex-1 rounded-xl bg-white px-4 py-2 text-sm font-medium text-sky-700 shadow-sm" : "flex-1 rounded-xl px-4 py-2 text-sm font-medium text-slate-500"}>
+            Self-Report Table
+          </a>
+        </div>
 
+        {activeTab === "history" && (
+        <>
         {/* Completion bar */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-2">
@@ -491,6 +504,33 @@ export default function Education() {
           </div>
         ) : (
           <EmptyState onAdd={openAdd} />
+        )}
+        </>
+        )}
+
+        {activeTab === "courses" && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <BookOpen className="w-4 h-4 text-indigo-500" />
+              <div>
+                <div className="text-sm font-semibold text-slate-800">Self-Report Table</div>
+                <div className="text-xs text-slate-400">Courses & Grades</div>
+              </div>
+            </div>
+            <div className="border border-indigo-100 rounded-xl p-4 space-y-3 bg-indigo-50/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-indigo-500" />
+                  <span className="text-xs font-bold text-slate-700">Courses & Grades</span>
+                  <span className="text-xs text-slate-400">self-reported</span>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={addCourse} className="h-7 text-xs gap-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                  <Plus className="w-3 h-3" /> Add Course
+                </Button>
+              </div>
+              {courses.length === 0 ? <p className="text-xs text-slate-400 text-center py-2">No courses added — report individual subject grades for this qualification.</p> : null}
+            </div>
+          </div>
         )}
       </div>
 

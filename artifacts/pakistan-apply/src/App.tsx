@@ -96,6 +96,7 @@ function Router() {
       <Route path="/role-selection" component={RoleSelection} />
       <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
+      <Route path="/education/courses">{() => <ProtectedRoute component={Education} />}</Route>
       <Route path="/education">{() => <ProtectedRoute component={Education} />}</Route>
       <Route path="/testing">{() => <ProtectedRoute component={Testing} />}</Route>
       <Route path="/activities">{() => <ProtectedRoute component={Activities} />}</Route>
