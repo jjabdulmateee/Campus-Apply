@@ -1,9 +1,9 @@
 import AppLayout from "@/components/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
-  useGetApplicationsSummary,
   useGetMyDashboard,
   useGetMyRecommenders,
   useListMyApplications,
@@ -15,7 +15,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading } = useGetMyDashboard();
-  const { data: summary, isLoading: summaryLoading } = useGetApplicationsSummary();
   const { data: applications } = useListMyApplications();
   const { data: recommenders } = useGetMyRecommenders();
   const { user } = useAuth();
@@ -26,10 +25,10 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="flex min-h-screen bg-[#F9FAFB]">
+      <div className="grid min-h-screen grid-cols-[260px_1fr_300px] bg-[#F9FAFB]">
         <LeftSidebar user={user} />
 
-        <main className="min-w-0 flex-1 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
+        <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
           <div className="mb-4 flex items-center justify-between lg:hidden">
             <button className="rounded-md border border-slate-200 bg-white p-2">
               <Menu className="h-5 w-5 text-slate-700" />
@@ -120,33 +119,6 @@ export default function Dashboard() {
               </div>
             </CollapsibleCard>
 
-            <div className="rounded-md border border-slate-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-base font-medium text-slate-700">Recent applications</div>
-                <Link href="/applications" className="text-sm text-slate-500">View all</Link>
-              </div>
-              <div className="space-y-2">
-                {applications?.slice(0, 3).map((app) => (
-                  <div key={app.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-[#F9FAFB] p-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-slate-700">{app.universityName}</div>
-                      <div className="truncate text-xs text-slate-500">{app.programName}</div>
-                    </div>
-                    <div className="text-xs text-slate-500">{app.status}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {summaryLoading ? null : (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <Metric label="Total" value={summary?.total ?? 0} />
-                <Metric label="Submitted" value={summary?.submitted ?? 0} />
-                <Metric label="Accepted" value={summary?.accepted ?? 0} />
-                <Metric label="Review" value={summary?.under_review ?? 0} />
-              </div>
-            )}
-
             {newlySubmitted.length > 0 && (
               <div className="rounded-md border border-slate-200 bg-white p-4">
                 <div className="mb-3 text-sm font-medium text-slate-700">Recommenders</div>
@@ -162,7 +134,7 @@ export default function Dashboard() {
           </div>
         </main>
 
-        <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white px-4 py-4 xl:block">
+        <aside className="hidden overflow-y-auto border-l border-slate-200 bg-white px-4 py-4 xl:block">
           <div className="rounded-md border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-2 text-base font-medium text-slate-700">
               <Bell className="h-4 w-4" />
@@ -182,12 +154,29 @@ export default function Dashboard() {
               Contact Support
             </button>
           </div>
+          <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
+            <div className="mb-3 text-sm font-medium text-slate-700">Application Steps</div>
+            <div className="space-y-2">
+              {dashboard?.profileSections.map((s) => (
+                <div key={s.slug} className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
+                      s.isComplete ? "border-[#166534] bg-[#166534]" : "border-slate-200",
+                    )}
+                  >
+                    {s.isComplete && <div className="h-2 w-2 rounded-full bg-white" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-slate-700">{s.name}</div>
+                    {!s.isComplete && <Progress value={s.completionPercent} className="mt-1 h-1 bg-slate-100" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </aside>
       </div>
-
-      <button onClick={() => setHelpOpen(true)} className="fixed bottom-4 right-4 z-40 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm xl:hidden">
-        Help
-      </button>
 
       {helpOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 xl:hidden" onClick={() => setHelpOpen(false)}>
@@ -310,15 +299,6 @@ function FaqItem({ question }: { question: string }) {
     <div className="rounded-md border border-slate-200 p-3">
       <div className="text-sm font-medium text-slate-700">{question}</div>
       <div className="mt-1 text-xs text-slate-500">Read full answer</div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-slate-200 bg-white p-3">
-      <div className="text-2xl font-semibold text-slate-700">{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
     </div>
   );
 }
