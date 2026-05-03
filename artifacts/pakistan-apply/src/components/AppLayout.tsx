@@ -17,6 +17,7 @@ import {
   FolderOpen,
   LifeBuoy,
   ClipboardList,
+  Clipboard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -124,31 +125,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
 
         <div className="border-t border-slate-200">
-          {sidebarTree.map((item) => {
-            const profileSections = dashboard?.profileSections ?? [];
-            const SLUG_MAP: Record<string, string[]> = {
-              profile: ["profile"],
-              family: ["family"],
-              education: ["education"],
-              testing: ["test"],
-              activities: ["activity"],
-              writing: ["essay"],
-              courses: ["course", "grade"],
-            };
-            const targets = SLUG_MAP[item.key] ?? [];
-            const isComplete = profileSections.some(
-              (s) => targets.some((t) => s.slug.includes(t)) && s.isComplete,
-            );
-            return (
-              <SidebarAccordionItem
-                key={item.key}
-                item={{ ...item, status: isComplete ? "complete" : "incomplete" }}
-                location={location}
-                onClose={onClose}
-                level={0}
-              />
-            );
-          })}
+          <MyApplicationGroup
+            dashboard={dashboard}
+            location={location}
+            onClose={onClose}
+          />
         </div>
 
         <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">
@@ -218,6 +199,99 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+    </div>
+  );
+}
+
+const SLUG_MAP: Record<string, string[]> = {
+  profile: ["profile"],
+  family: ["family"],
+  education: ["education"],
+  testing: ["test"],
+  activities: ["activity"],
+  writing: ["essay"],
+  courses: ["course", "grade"],
+};
+
+function MyApplicationGroup({
+  dashboard,
+  location,
+  onClose,
+}: {
+  dashboard: DashboardSummary | undefined;
+  location: string;
+  onClose?: () => void;
+}) {
+  const [location_] = useLocation();
+  const search = useSearch();
+  const fullLocation = `${location_}${search ? `?${search}` : ""}`;
+
+  // Collect all hrefs across the tree (top-level + first-level children)
+  const allChildHrefs = sidebarTree.flatMap((item) => [
+    item.href,
+    ...(item.children?.map((c) => c.href) ?? []),
+  ]);
+  const isAnyChildActive = allChildHrefs.some((href) =>
+    href.includes("?") ? fullLocation === href : location_ === href || location_.startsWith(href + "/"),
+  );
+
+  const [groupOpen, setGroupOpen] = useState(true);
+
+  // Keep open if a child becomes active
+  useEffect(() => {
+    if (isAnyChildActive) setGroupOpen(true);
+  }, [fullLocation]);
+
+  const profileSections: DashboardSummary["profileSections"] = dashboard?.profileSections ?? [];
+
+  return (
+    <div className="border-b border-slate-200">
+      {/* Parent header */}
+      <button
+        type="button"
+        onClick={() => setGroupOpen((v) => !v)}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold transition-colors select-none",
+          isAnyChildActive
+            ? "text-sky-700 bg-sky-50"
+            : "text-slate-700 hover:bg-slate-50",
+        )}
+      >
+        <Clipboard className="h-4 w-4 shrink-0 text-sky-600" />
+        <span className="flex-1 text-left">My Application</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 text-slate-400 transition-transform duration-300",
+            groupOpen ? "rotate-0" : "-rotate-90",
+          )}
+        />
+      </button>
+
+      {/* Animated children container */}
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-in-out",
+          groupOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
+          {sidebarTree.map((item) => {
+            const targets = SLUG_MAP[item.key] ?? [];
+            const isComplete = profileSections.some(
+              (s) => targets.some((t) => s.slug.includes(t)) && s.isComplete,
+            );
+            return (
+              <SidebarAccordionItem
+                key={item.key}
+                item={{ ...item, status: isComplete ? "complete" : "incomplete" }}
+                location={location}
+                onClose={onClose}
+                level={1}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
