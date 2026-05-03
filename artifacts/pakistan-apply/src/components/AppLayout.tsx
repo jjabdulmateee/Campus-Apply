@@ -137,9 +137,31 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
 
         <div className="border-t border-slate-200">
-          {sidebarTree.map((item) => (
-            <SidebarAccordionItem key={item.key} item={item} location={location} onClose={onClose} level={0} />
-          ))}
+          {sidebarTree.map((item) => {
+            const profileSections = dashboard?.profileSections ?? [];
+            const SLUG_MAP: Record<string, string[]> = {
+              profile: ["profile"],
+              family: ["family"],
+              education: ["education"],
+              testing: ["test"],
+              activities: ["activity"],
+              writing: ["essay"],
+              courses: ["course", "grade"],
+            };
+            const targets = SLUG_MAP[item.key] ?? [];
+            const isComplete = profileSections.some(
+              (s) => targets.some((t) => s.slug.includes(t)) && s.isComplete,
+            );
+            return (
+              <SidebarAccordionItem
+                key={item.key}
+                item={{ ...item, status: isComplete ? "complete" : "incomplete" }}
+                location={location}
+                onClose={onClose}
+                level={0}
+              />
+            );
+          })}
         </div>
 
         <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">

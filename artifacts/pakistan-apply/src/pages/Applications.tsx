@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import {
   useListMyApplications,
   useGetApplicationsSummary,
-  useSubmitApplication,
   useWithdrawApplication,
   useListDocuments,
   getListMyApplicationsQueryKey,
@@ -18,7 +17,6 @@ import { APPLICATION_STATUS_COLORS, APPLICATION_STATUS_LABELS } from "@/lib/cons
 import {
   GraduationCap,
   Loader2,
-  Send,
   Trash2,
   FileText,
   Plus,
@@ -131,7 +129,6 @@ export default function Applications() {
   const { data: documents = [] } = useListDocuments();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [submittingId, setSubmittingId] = useState<number | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
 
   const hasDocs = documents.length > 0;
@@ -141,17 +138,6 @@ export default function Applications() {
     qc.invalidateQueries({ queryKey: getGetApplicationsSummaryQueryKey() });
     qc.invalidateQueries({ queryKey: getGetMyDashboardQueryKey() });
   };
-
-  const { mutate: submit, isPending: submitting } = useSubmitApplication({
-    mutation: {
-      onSuccess: () => {
-        invalidate();
-        setSubmittingId(null);
-        toast({ title: "Application submitted" });
-      },
-      onError: () => toast({ title: "Submit failed", variant: "destructive" }),
-    },
-  });
 
   const { mutate: withdraw, isPending: withdrawing } = useWithdrawApplication({
     mutation: {
@@ -273,32 +259,13 @@ export default function Applications() {
                     {/* Actions */}
                     <div className="mt-4 flex items-center gap-2 flex-wrap">
                       {app.status === "draft" && (
-                        <>
-                          <Link
-                            href={`/applications/${app.id}/review`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold transition-colors"
-                          >
-                            <ClipboardCheck className="w-3.5 h-3.5" />
-                            Review &amp; Submit
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSubmittingId(app.id);
-                              submit({ applicationId: app.id });
-                            }}
-                            disabled={submitting && submittingId === app.id}
-                            className="text-xs gap-1.5 border-sky-200 text-sky-600 hover:bg-sky-50"
-                          >
-                            {submitting && submittingId === app.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Send className="w-3 h-3" />
-                            )}
-                            Quick Submit
-                          </Button>
-                        </>
+                        <Link
+                          href={`/applications/${app.id}/review`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold transition-colors"
+                        >
+                          <ClipboardCheck className="w-3.5 h-3.5" />
+                          Review &amp; Submit
+                        </Link>
                       )}
                       {app.status !== "withdrawn" && app.status !== "rejected" && (
                         <Button

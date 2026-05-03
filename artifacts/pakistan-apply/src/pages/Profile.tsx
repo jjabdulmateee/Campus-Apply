@@ -122,7 +122,7 @@ export default function Profile() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, trigger, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: profile
       ? {

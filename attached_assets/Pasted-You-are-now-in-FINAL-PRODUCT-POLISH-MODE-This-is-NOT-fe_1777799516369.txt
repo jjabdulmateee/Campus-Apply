@@ -1,0 +1,147 @@
+You are now in FINAL PRODUCT POLISH MODE.
+
+This is NOT feature development anymore.
+
+This is:
+→ UI consistency enforcement
+→ interaction correctness
+→ design system normalization
+→ production readiness
+
+----------------------------------
+CORE OBJECTIVE
+----------------------------------
+Make the entire app feel like a single, unified, production-grade admissions platform.
+
+Every page must feel like it belongs to the same system.
+
+No mismatched UI.
+No inconsistent buttons.
+No fake or decorative elements.
+
+----------------------------------
+ABSOLUTE RULES
+----------------------------------
+1. Do NOT introduce new UI styles.
+2. Do NOT redesign layouts randomly.
+3. Do NOT create inconsistent button styles.
+4. Do NOT leave any clickable element non-functional.
+5. Do NOT claim completion unless ALL UI is consistent and functional.
+6. Do NOT use placeholder UI or fake interactions.
+
+----------------------------------
+DESIGN SYSTEM ENFORCEMENT (MANDATORY)
+----------------------------------
+
+You MUST standardize:
+
+BUTTONS:
+- Primary button: solid filled, main action only (Next, Save, Submit)
+- Secondary button: outlined (Back, Cancel, Edit)
+- Destructive: red only for delete/remove
+- NO mixed styles across pages
+
+FORMS:
+- Label above input
+- Consistent spacing
+- Same input height everywhere
+- Error message below field (red small text)
+
+CARDS:
+- Same border radius everywhere
+- Same shadow system
+- Same padding scale
+
+STEP SYSTEM:
+- Active = highlighted + filled dot
+- Completed = green check
+- Locked = grey disabled
+
+----------------------------------
+NAVIGATION CONSISTENCY (CRITICAL)
+----------------------------------
+
+Sidebar must be:
+- Same on ALL pages
+- Same spacing
+- Same active highlight behavior
+- No duplicate or conflicting nav versions
+
+----------------------------------
+BUTTON BEHAVIOR RULE
+----------------------------------
+
+Every button must be classified:
+
+IF BUTTON EXISTS:
+- It must either:
+  1. Navigate
+  2. Save data
+  3. Trigger API call
+  4. Change state
+
+IF NONE OF THESE:
+→ DELETE IT
+
+No decorative buttons allowed.
+
+----------------------------------
+FLOW CONSISTENCY REQUIREMENTS
+----------------------------------
+
+PROFILE FLOW:
+- Must always preserve state
+- Must validate before Next
+- Must never lose data on refresh
+
+APPLICATION FLOW:
+- Must strictly follow:
+  Added → Questions → Recommenders → Review → Submit
+
+- Cannot skip steps
+- Cannot manually jump unless unlocked
+
+----------------------------------
+VISUAL CONSISTENCY RULES
+----------------------------------
+
+- Same font hierarchy everywhere
+- Same spacing system everywhere
+- Same button style everywhere
+- Same card style everywhere
+- Same error/success messaging style everywhere
+
+NO PAGE SHOULD LOOK LIKE IT WAS WRITTEN BY A DIFFERENT DEVELOPER.
+
+----------------------------------
+FINAL ACCEPTANCE CRITERIA
+----------------------------------
+
+You are NOT done unless:
+
+[ ] All buttons perform real actions
+[ ] No inconsistent UI styles exist
+[ ] Sidebar is identical across all pages
+[ ] Stepper system behaves correctly everywhere
+[ ] Forms validate properly
+[ ] Data persists correctly
+[ ] No dead UI elements exist
+
+If ANY checkbox fails → NOT DONE
+
+----------------------------------
+CURRENT TASK
+----------------------------------
+
+Task:
+Perform FULL UI CONSISTENCY PASS across the entire app:
+- Fix all button styles
+- Normalize all forms
+- Fix sidebar inconsistencies
+- Fix stepper behavior
+- Remove all dead or fake UI elements
+- Ensure full interaction correctness
+
+----------------------------------
+START NOW
+----------------------------------

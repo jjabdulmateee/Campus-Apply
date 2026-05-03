@@ -194,19 +194,25 @@ function HelpPanel() {
         <FaqItem question="How many universities can I apply to?" />
         <FaqItem question="When is my submission deadline?" />
       </div>
-      <button className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+      <Link
+        href="/help"
+        className="block w-full text-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+      >
         Contact Support
-      </button>
+      </Link>
     </div>
   );
 }
 
 function FaqItem({ question }: { question: string }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+    <Link
+      href="/help"
+      className="block rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 hover:border-sky-200 hover:bg-sky-50 transition-colors"
+    >
       <div className="text-xs font-medium text-slate-700">{question}</div>
       <div className="mt-0.5 text-[11px] text-sky-600">Read answer →</div>
-    </div>
+    </Link>
   );
 }
 
