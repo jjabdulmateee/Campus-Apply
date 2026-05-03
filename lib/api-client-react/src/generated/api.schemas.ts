@@ -63,6 +63,11 @@ export interface StudentProfile {
   cnicDocumentUrl?: string;
   transcriptUrl?: string;
   photoUrl?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  /** JSON array of language proficiency entries */
+  languagesJson?: string;
+  feeWaiverEligible?: boolean;
   profileCompletionPercent: number;
   createdAt?: string;
   updatedAt?: string;
@@ -120,6 +125,11 @@ export interface UpsertStudentProfileBody {
   cnicDocumentUrl?: string;
   transcriptUrl?: string;
   photoUrl?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  /** JSON array of language proficiency entries */
+  languagesJson?: string;
+  feeWaiverEligible?: boolean;
 }
 
 export type AcademicRecordLevel =

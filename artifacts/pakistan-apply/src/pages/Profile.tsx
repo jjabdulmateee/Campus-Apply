@@ -13,7 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/useUpload";
 import { PROVINCES, RELIGIONS } from "@/lib/constants";
-import { Loader2, Save, User, MapPin, Phone, Users, CheckCircle2, ShieldCheck, Upload, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Loader2, Save, User, MapPin, Phone, Users, CheckCircle2, ShieldCheck,
+  Upload, FileText, ChevronLeft, ChevronRight, Globe, Languages, BadgeDollarSign,
+  Plus, Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -36,6 +40,10 @@ const schema = z.object({
   guardianName: z.string().optional(),
   guardianRelation: z.string().optional(),
   guardianEmail: z.string().email("Valid email required").optional().or(z.literal("")),
+  birthCity: z.string().optional(),
+  birthCountry: z.string().optional(),
+  languagesJson: z.string().optional(),
+  feeWaiverEligible: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -49,33 +57,29 @@ const COMPLETION_SECTIONS = [
 ] as const;
 
 const MOBILE_STEPS = [
-  { key: "legal_name",  label: "Name",       shortLabel: "Name",   icon: User },
-  { key: "address",     label: "Address",     shortLabel: "Addr",   icon: MapPin },
-  { key: "contact",     label: "Contact",     shortLabel: "Contact",icon: Phone },
-  { key: "demographics",label: "Background",  shortLabel: "BG",     icon: User },
-  { key: "guardian",    label: "Guardian",    shortLabel: "Guardian",icon: Users },
-  { key: "documents",   label: "Documents",   shortLabel: "Docs",   icon: ShieldCheck },
+  { key: "legal_name",   label: "Name",        shortLabel: "Name",     icon: User },
+  { key: "address",      label: "Address",     shortLabel: "Addr",     icon: MapPin },
+  { key: "contact",      label: "Contact",     shortLabel: "Contact",  icon: Phone },
+  { key: "demographics", label: "Demographics",shortLabel: "Demo",     icon: User },
+  { key: "language",     label: "Language",    shortLabel: "Lang",     icon: Languages },
+  { key: "geography",    label: "Geography",   shortLabel: "Geo",      icon: Globe },
+  { key: "fee_waiver",   label: "Fee Waiver",  shortLabel: "Fee",      icon: BadgeDollarSign },
+  { key: "guardian",     label: "Guardian",    shortLabel: "Guardian", icon: Users },
+  { key: "documents",    label: "Documents",   shortLabel: "Docs",     icon: ShieldCheck },
 ] as const;
 
 type MobileStepKey = (typeof MOBILE_STEPS)[number]["key"];
 
 const STEP_REQUIRED: Record<MobileStepKey, { field: keyof FormData; label: string }[]> = {
-  legal_name: [
-    { field: "firstName", label: "First Name" },
-    { field: "lastName", label: "Last Name" },
-  ],
-  address: [
-    { field: "province", label: "Province" },
-    { field: "city", label: "City" },
-    { field: "address", label: "Street Address" },
-  ],
-  contact: [
-    { field: "phoneNumber", label: "Phone Number" },
-    { field: "preferredContact", label: "Preferred Contact Method" },
-  ],
+  legal_name:   [{ field: "firstName", label: "First Name" }, { field: "lastName", label: "Last Name" }],
+  address:      [{ field: "province", label: "Province" }, { field: "city", label: "City" }, { field: "address", label: "Street Address" }],
+  contact:      [{ field: "phoneNumber", label: "Phone Number" }, { field: "preferredContact", label: "Preferred Contact Method" }],
   demographics: [],
-  guardian: [],
-  documents: [],
+  language:     [],
+  geography:    [],
+  fee_waiver:   [],
+  guardian:     [],
+  documents:    [],
 };
 
 type SectionStatus = "not_started" | "in_progress" | "complete";
@@ -87,21 +91,34 @@ function classify(items: boolean[]): SectionStatus {
   return "not_started";
 }
 
+function parseLangs(json: string | undefined): Array<{ id: string; language: string; proficiency: string }> {
+  try { return JSON.parse(json ?? "[]"); } catch { return []; }
+}
+
 function computeSectionComplete(data: Partial<FormData>) {
+  const langs = parseLangs(data.languagesJson);
   return {
-    legal_name: !!(data.firstName && data.lastName),
-    address: !!(data.province && data.city && data.address),
-    contact: !!(data.phoneNumber && data.preferredContact),
-    guardian: !!(data.guardianName && data.guardianRelation),
+    legal_name:  !!(data.firstName && data.lastName),
+    address:     !!(data.province && data.city && data.address),
+    contact:     !!(data.phoneNumber && data.preferredContact),
+    language:    langs.length > 0,
+    geography:   !!data.birthCountry?.trim(),
+    fee_waiver:  data.feeWaiverEligible !== undefined,
+    guardian:    !!(data.guardianName && data.guardianRelation),
   };
 }
 
 function computeSectionStatus(data: Partial<FormData>): Record<string, SectionStatus> {
+  const langs = parseLangs(data.languagesJson);
   return {
-    legal_name: classify([!!data.firstName?.trim(), !!data.lastName?.trim()]),
-    address: classify([!!data.province, !!data.city?.trim(), !!data.address?.trim()]),
-    contact: classify([!!data.phoneNumber?.trim(), !!data.preferredContact]),
-    guardian: classify([!!data.guardianName?.trim(), !!data.guardianRelation]),
+    legal_name:   classify([!!data.firstName?.trim(), !!data.lastName?.trim()]),
+    address:      classify([!!data.province, !!data.city?.trim(), !!data.address?.trim()]),
+    contact:      classify([!!data.phoneNumber?.trim(), !!data.preferredContact]),
+    demographics: classify([!!data.dateOfBirth, !!data.gender]),
+    language:     langs.length > 0 ? "complete" : "not_started",
+    geography:    classify([!!data.birthCountry?.trim()]),
+    fee_waiver:   data.feeWaiverEligible !== undefined ? "complete" : "not_started",
+    guardian:     classify([!!data.guardianName?.trim(), !!data.guardianRelation]),
   };
 }
 
@@ -109,6 +126,80 @@ function stepFromSearch(search: string): MobileStepKey {
   const param = new URLSearchParams(search).get("step") as MobileStepKey | null;
   return MOBILE_STEPS.find((s) => s.key === param) ? (param as MobileStepKey) : "legal_name";
 }
+
+// ── Language Picker ────────────────────────────────────────────────────────────
+
+type LangEntry = { id: string; language: string; proficiency: string };
+
+const COMMON_LANGS = ["Urdu", "English", "Punjabi", "Sindhi", "Pashto", "Balochi", "Saraiki", "Other"];
+const PROFICIENCY_OPTIONS = [
+  { value: "native",     label: "Native / First Language" },
+  { value: "fluent",     label: "Fluent" },
+  { value: "proficient", label: "Proficient" },
+  { value: "some",       label: "Some" },
+];
+
+function LanguagePicker({ value, onChange }: { value: string | undefined; onChange: (json: string) => void }) {
+  const [langs, setLangs] = useState<LangEntry[]>(() => parseLangs(value));
+
+  const update = (updated: LangEntry[]) => {
+    setLangs(updated);
+    onChange(JSON.stringify(updated));
+  };
+
+  const add = () =>
+    update([...langs, { id: crypto.randomUUID(), language: "", proficiency: "proficient" }]);
+
+  const remove = (id: string) => update(langs.filter((l) => l.id !== id));
+
+  const setField = (id: string, field: keyof LangEntry, val: string) =>
+    update(langs.map((l) => (l.id === id ? { ...l, [field]: val } : l)));
+
+  return (
+    <div className="space-y-3">
+      {langs.length === 0 && (
+        <p className="text-xs text-slate-400 italic">No languages added yet. Click "Add Language" below.</p>
+      )}
+      {langs.map((l, idx) => (
+        <div key={l.id} className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-400 w-5 flex-shrink-0">{idx + 1}.</span>
+          <Select value={l.language} onValueChange={(v) => setField(l.id, "language", v)}>
+            <SelectTrigger className="flex-1 border-slate-200 focus:border-sky-400 text-sm">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {COMMON_LANGS.map((lang) => (
+                <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={l.proficiency} onValueChange={(v) => setField(l.id, "proficiency", v)}>
+            <SelectTrigger className="flex-1 border-slate-200 focus:border-sky-400 text-sm">
+              <SelectValue placeholder="Proficiency" />
+            </SelectTrigger>
+            <SelectContent>
+              {PROFICIENCY_OPTIONS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <button
+            type="button"
+            onClick={() => remove(l.id)}
+            className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={add} className="gap-1.5 mt-1">
+        <Plus className="w-3.5 h-3.5" /> Add Language
+      </Button>
+    </div>
+  );
+}
+
+// ── Profile page ───────────────────────────────────────────────────────────────
 
 export default function Profile() {
   const { data: profile, isLoading } = useGetMyProfile();
@@ -133,40 +224,52 @@ export default function Profile() {
     },
   });
 
+  type ProfileAny = typeof profile & {
+    birthCity?: string;
+    birthCountry?: string;
+    languagesJson?: string;
+    feeWaiverEligible?: boolean;
+  };
+  const p = profile as ProfileAny | undefined;
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    values: profile
+    values: p
       ? {
-          firstName: profile.firstName ?? "",
-          middleName: profile.middleName ?? "",
-          lastName: profile.lastName ?? "",
-          fatherName: profile.fatherName ?? "",
-          email: profile.email ?? "",
-          phoneNumber: profile.phoneNumber ?? "",
-          preferredContact: (profile.preferredContact as FormData["preferredContact"]) ?? undefined,
-          dateOfBirth: profile.dateOfBirth ?? "",
-          gender: profile.gender as FormData["gender"],
-          cnicNumber: profile.cnicNumber ?? "",
-          nationality: profile.nationality ?? "",
-          religion: profile.religion ?? "",
-          province: profile.province ?? "",
-          city: profile.city ?? "",
-          address: profile.address ?? "",
-          zipCode: profile.zipCode ?? "",
-          guardianName: profile.guardianName ?? "",
-          guardianRelation: profile.guardianRelation ?? "",
-          guardianEmail: profile.guardianEmail ?? "",
+          firstName:        p.firstName ?? "",
+          middleName:       p.middleName ?? "",
+          lastName:         p.lastName ?? "",
+          fatherName:       p.fatherName ?? "",
+          email:            p.email ?? "",
+          phoneNumber:      p.phoneNumber ?? "",
+          preferredContact: (p.preferredContact as FormData["preferredContact"]) ?? undefined,
+          dateOfBirth:      p.dateOfBirth ?? "",
+          gender:           p.gender as FormData["gender"],
+          cnicNumber:       p.cnicNumber ?? "",
+          nationality:      p.nationality ?? "",
+          religion:         p.religion ?? "",
+          province:         p.province ?? "",
+          city:             p.city ?? "",
+          address:          p.address ?? "",
+          zipCode:          p.zipCode ?? "",
+          guardianName:     p.guardianName ?? "",
+          guardianRelation: p.guardianRelation ?? "",
+          guardianEmail:    p.guardianEmail ?? "",
+          birthCity:        p.birthCity ?? "",
+          birthCountry:     p.birthCountry ?? "",
+          languagesJson:    p.languagesJson ?? "",
+          feeWaiverEligible: p.feeWaiverEligible ?? undefined,
         }
       : undefined,
   });
 
   const formValues = watch();
   const sectionComplete = computeSectionComplete(formValues);
-  const docsComplete = !!(profile?.cnicDocumentUrl && profile?.transcriptUrl);
+  const docsComplete = !!(p?.cnicDocumentUrl && p?.transcriptUrl);
   const completedSections =
     Object.values(sectionComplete).filter(Boolean).length + (docsComplete ? 1 : 0);
-  const totalPct = Math.round((completedSections / 5) * 100);
-  const apiPct = profile?.profileCompletionPercent ?? 0;
+  const totalPct = Math.round((completedSections / 8) * 100);
+  const apiPct = p?.profileCompletionPercent ?? 0;
   const displayPct = Math.max(totalPct, apiPct);
 
   const onSubmit = (data: FormData) => {
@@ -176,27 +279,30 @@ export default function Profile() {
   const handleDocUploaded = (field: "cnicDocumentUrl" | "transcriptUrl") => (objectPath: string) => {
     update({
       data: {
-        firstName: profile?.firstName ?? "",
-        lastName: profile?.lastName ?? "",
-        email: profile?.email ?? "",
+        firstName: p?.firstName ?? "",
+        lastName:  p?.lastName ?? "",
+        email:     p?.email ?? "",
         [field]: objectPath,
       },
     });
   };
 
   const stepIndex = MOBILE_STEPS.findIndex((s) => s.key === mobileStep);
-  const isLastStep = stepIndex === MOBILE_STEPS.length - 1;
+  const isLastStep  = stepIndex === MOBILE_STEPS.length - 1;
   const isFirstStep = stepIndex === 0;
 
   const sectionStatusMap = computeSectionStatus(formValues);
 
   const stepStatus: Record<MobileStepKey, SectionStatus> = {
-    legal_name: sectionStatusMap.legal_name,
-    address: sectionStatusMap.address,
-    contact: sectionStatusMap.contact,
-    demographics: "not_started",
-    guardian: sectionStatusMap.guardian,
-    documents: docsComplete ? "complete" : "not_started",
+    legal_name:   sectionStatusMap.legal_name,
+    address:      sectionStatusMap.address,
+    contact:      sectionStatusMap.contact,
+    demographics: sectionStatusMap.demographics,
+    language:     sectionStatusMap.language,
+    geography:    sectionStatusMap.geography,
+    fee_waiver:   sectionStatusMap.fee_waiver,
+    guardian:     sectionStatusMap.guardian,
+    documents:    docsComplete ? "complete" : "not_started",
   };
 
   const handleNext = () => {
@@ -264,9 +370,7 @@ export default function Profile() {
                 ) : (
                   <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
-                <span className="truncate">
-                  {st === "complete" ? label : st === "in_progress" ? label : label}
-                </span>
+                <span className="truncate">{label}</span>
               </div>
             );
           })}
@@ -289,7 +393,6 @@ export default function Profile() {
         <>
           {/* ── Step Navigator ── */}
           <div className="mb-5">
-            {/* Step pills */}
             <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
               {MOBILE_STEPS.map((step, idx) => {
                 const st = stepStatus[step.key];
@@ -417,7 +520,7 @@ export default function Profile() {
 
             {/* ── Demographics ── */}
             <div className={cn(mobileStep !== "demographics" && "hidden")}>
-              <Section title="Demographics" complete={false}>
+              <Section title="Demographics" complete={sectionStatusMap.demographics === "complete"}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field label="Date of Birth">
                     <Input type="date" {...register("dateOfBirth")} className="border-slate-200 focus:border-sky-400" />
@@ -448,6 +551,84 @@ export default function Profile() {
                       </SelectContent>
                     </Select>
                   </Field>
+                </div>
+              </Section>
+            </div>
+
+            {/* ── Language ── */}
+            <div className={cn(mobileStep !== "language" && "hidden")}>
+              <Section title="Languages" icon={Languages} iconColor="text-indigo-600" iconBg="bg-indigo-50" complete={sectionComplete.language}>
+                <p className="text-xs text-slate-400 mb-4">
+                  List the languages you speak and your proficiency level in each. This helps universities understand your linguistic background.
+                </p>
+                <LanguagePicker
+                  value={watch("languagesJson")}
+                  onChange={(json) => setValue("languagesJson", json)}
+                />
+              </Section>
+            </div>
+
+            {/* ── Geography and Nationality ── */}
+            <div className={cn(mobileStep !== "geography" && "hidden")}>
+              <Section title="Geography and Nationality" icon={Globe} iconColor="text-teal-600" iconBg="bg-teal-50" complete={sectionComplete.geography}>
+                <p className="text-xs text-slate-400 mb-4">
+                  Provide details about your place of birth and citizenship. This may be required by universities for international applications.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Country of Birth">
+                    <Input {...register("birthCountry")} placeholder="Pakistan" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                  <Field label="City of Birth">
+                    <Input {...register("birthCity")} placeholder="Lahore" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                  <Field label="Citizenship / Nationality">
+                    <Input {...register("nationality")} placeholder="Pakistani" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                </div>
+              </Section>
+            </div>
+
+            {/* ── Common App Fee Waiver ── */}
+            <div className={cn(mobileStep !== "fee_waiver" && "hidden")}>
+              <Section title="Common App Fee Waiver" icon={BadgeDollarSign} iconColor="text-rose-600" iconBg="bg-rose-50" complete={sectionComplete.fee_waiver}>
+                <p className="text-xs text-slate-400 mb-5">
+                  A fee waiver allows students who cannot afford application fees to apply without financial burden. Your response will be kept confidential.
+                </p>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Are you eligible for a Common App fee waiver?
+                  </Label>
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setValue("feeWaiverEligible", true)}
+                      className={cn(
+                        "flex-1 py-3 rounded-xl border-2 text-sm font-semibold transition-all",
+                        watch("feeWaiverEligible") === true
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-slate-200 text-slate-500 hover:border-sky-300",
+                      )}
+                    >
+                      Yes, I am eligible
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue("feeWaiverEligible", false)}
+                      className={cn(
+                        "flex-1 py-3 rounded-xl border-2 text-sm font-semibold transition-all",
+                        watch("feeWaiverEligible") === false
+                          ? "border-slate-500 bg-slate-50 text-slate-700"
+                          : "border-slate-200 text-slate-500 hover:border-slate-300",
+                      )}
+                    >
+                      No, I am not eligible
+                    </button>
+                  </div>
+                  {watch("feeWaiverEligible") === true && (
+                    <div className="mt-3 p-3 bg-sky-50 border border-sky-100 rounded-xl text-xs text-sky-700">
+                      Your fee waiver eligibility will be noted on your applications. Universities may contact you for supporting documentation.
+                    </div>
+                  )}
                 </div>
               </Section>
             </div>
@@ -541,13 +722,13 @@ export default function Profile() {
                 <DocumentUploadSlot
                   label="CNIC / B-Form"
                   description="Front side of your CNIC or B-Form (identity document)"
-                  existingUrl={profile?.cnicDocumentUrl ?? null}
+                  existingUrl={p?.cnicDocumentUrl ?? null}
                   onUploaded={handleDocUploaded("cnicDocumentUrl")}
                 />
                 <DocumentUploadSlot
                   label="Academic Transcript"
                   description="Matric/FSc transcript or most recent academic result"
-                  existingUrl={profile?.transcriptUrl ?? null}
+                  existingUrl={p?.transcriptUrl ?? null}
                   onUploaded={handleDocUploaded("transcriptUrl")}
                 />
               </div>
@@ -577,6 +758,8 @@ export default function Profile() {
   );
 }
 
+// ── DocumentUploadSlot ─────────────────────────────────────────────────────────
+
 function DocumentUploadSlot({
   label,
   description,
@@ -598,112 +781,120 @@ function DocumentUploadSlot({
     : null;
 
   return (
-    <div
-      className={cn(
-        "relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center gap-3 text-center transition-all cursor-pointer group",
-        existingUrl
-          ? "border-green-300 bg-green-50/30 hover:border-green-400"
-          : "border-slate-200 hover:border-sky-300 hover:bg-sky-50/30",
-        isUploading && "pointer-events-none",
-      )}
-      onClick={() => !isUploading && inputRef.current?.click()}
-    >
+    <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-sky-300 transition-colors">
       <input
         ref={inputRef}
         type="file"
         accept=".pdf,.jpg,.jpeg,.png"
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) uploadFile(f);
-          e.target.value = "";
+          const file = e.target.files?.[0];
+          if (file) uploadFile(file);
         }}
       />
-
-      {isUploading ? (
-        <>
-          <Loader2 className="w-9 h-9 text-sky-500 animate-spin" />
-          <div className="text-xs text-slate-500">Uploading... {progress}%</div>
-          <div className="w-full max-w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-sky-500 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </>
-      ) : existingUrl ? (
-        <>
-          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6 text-green-600" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-green-700">Uploaded</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-40">{filename}</div>
-          </div>
-          <div className="text-[10px] text-sky-600 group-hover:underline">Click to replace</div>
-        </>
-      ) : (
-        <>
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-            {label.includes("Transcript") ? (
-              <FileText className="w-6 h-6 text-slate-400 group-hover:text-sky-500 transition-colors" />
-            ) : (
-              <Upload className="w-6 h-6 text-slate-400 group-hover:text-sky-500 transition-colors" />
-            )}
-          </div>
-          <div>
-            <div className="text-xs font-bold text-slate-700">{label}</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{description}</div>
-          </div>
-          <div className="text-[10px] text-slate-400">PDF, JPG, PNG · max 2MB</div>
-        </>
-      )}
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center flex-shrink-0">
+          <FileText className="w-5 h-5 text-slate-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-700">{label}</div>
+          <div className="text-xs text-slate-400 mt-0.5">{description}</div>
+          {filename && (
+            <div className="text-xs text-sky-600 mt-1.5 truncate font-medium">{filename}</div>
+          )}
+          {isUploading && (
+            <div className="mt-2">
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-sky-500 rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="text-xs text-slate-400 mt-1">Uploading… {progress}%</div>
+            </div>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => inputRef.current?.click()}
+          disabled={isUploading}
+          className="flex-shrink-0 gap-1.5"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          {existingUrl ? "Replace" : "Upload"}
+        </Button>
+      </div>
     </div>
   );
 }
 
+// ── Section ────────────────────────────────────────────────────────────────────
+
 function Section({
-  title, icon: Icon, iconColor, iconBg, complete, children,
+  title,
+  icon: Icon,
+  iconColor,
+  iconBg,
+  complete,
+  children,
 }: {
   title: string;
   icon?: React.ElementType;
   iconColor?: string;
   iconBg?: string;
-  complete: boolean;
+  complete?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
-        {Icon && (
-          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", iconBg ?? "bg-slate-50")}>
-            <Icon className={cn("w-4 h-4", iconColor ?? "text-slate-500")} />
-          </div>
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          {Icon && (
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", iconBg ?? "bg-slate-50")}>
+              <Icon className={cn("w-5 h-5", iconColor ?? "text-slate-500")} />
+            </div>
+          )}
+          <h2 className="text-base font-bold text-slate-800">{title}</h2>
+        </div>
+        {complete !== undefined && (
+          <span
+            className={cn(
+              "text-xs font-semibold px-2.5 py-1 rounded-full",
+              complete ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-400",
+            )}
+          >
+            {complete ? "Complete" : "Incomplete"}
+          </span>
         )}
-        <h2 className="text-sm font-bold text-slate-800 flex-1">{title}</h2>
-        {complete && <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />}
       </div>
-      <div className="p-6">{children}</div>
+      {children}
     </div>
   );
 }
 
+// ── Field ──────────────────────────────────────────────────────────────────────
+
 function Field({
-  label, children, error, required,
+  label,
+  error,
+  required,
+  children,
 }: {
   label: string;
-  children: React.ReactNode;
   error?: string;
   required?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <div>
-      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
         {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </Label>
       {children}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

@@ -1332,6 +1332,15 @@ components:
           type: string
         photoUrl:
           type: string
+        birthCity:
+          type: string
+        birthCountry:
+          type: string
+        languagesJson:
+          type: string
+          description: JSON array of language proficiency entries
+        feeWaiverEligible:
+          type: boolean
         profileCompletionPercent:
           type: integer
         createdAt:
@@ -1400,6 +1409,15 @@ components:
           type: string
         photoUrl:
           type: string
+        birthCity:
+          type: string
+        birthCountry:
+          type: string
+        languagesJson:
+          type: string
+          description: JSON array of language proficiency entries
+        feeWaiverEligible:
+          type: boolean
       required:
         - firstName
         - lastName

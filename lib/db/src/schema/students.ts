@@ -31,6 +31,10 @@ export const studentProfilesTable = pgTable("student_profiles", {
   cnicDocumentUrl: text("cnic_document_url"),
   transcriptUrl: text("transcript_url"),
   photoUrl: text("photo_url"),
+  birthCity: text("birth_city"),
+  birthCountry: text("birth_country"),
+  languagesJson: text("languages_json"),
+  feeWaiverEligible: boolean("fee_waiver_eligible"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

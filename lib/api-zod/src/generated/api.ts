@@ -44,6 +44,13 @@ export const GetMyProfileResponse = zod.object({
   cnicDocumentUrl: zod.string().optional(),
   transcriptUrl: zod.string().optional(),
   photoUrl: zod.string().optional(),
+  birthCity: zod.string().optional(),
+  birthCountry: zod.string().optional(),
+  languagesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of language proficiency entries"),
+  feeWaiverEligible: zod.boolean().optional(),
   profileCompletionPercent: zod.number(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
@@ -77,6 +84,13 @@ export const UpdateMyProfileBody = zod.object({
   cnicDocumentUrl: zod.string().optional(),
   transcriptUrl: zod.string().optional(),
   photoUrl: zod.string().optional(),
+  birthCity: zod.string().optional(),
+  birthCountry: zod.string().optional(),
+  languagesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of language proficiency entries"),
+  feeWaiverEligible: zod.boolean().optional(),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -106,6 +120,13 @@ export const UpdateMyProfileResponse = zod.object({
   cnicDocumentUrl: zod.string().optional(),
   transcriptUrl: zod.string().optional(),
   photoUrl: zod.string().optional(),
+  birthCity: zod.string().optional(),
+  birthCountry: zod.string().optional(),
+  languagesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of language proficiency entries"),
+  feeWaiverEligible: zod.boolean().optional(),
   profileCompletionPercent: zod.number(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),

@@ -1,0 +1,84 @@
+You are performing a STRICT, SURGICAL rename operation.
+
+----------------------------------
+OBJECTIVE
+----------------------------------
+Change the app display name from:
+
+"PakApply" → "Campus Apply"
+
+----------------------------------
+CRITICAL RULES (NON-NEGOTIABLE)
+----------------------------------
+
+1. DO NOT modify:
+   - variable names
+   - function names
+   - database schema
+   - API routes
+   - file names (unless explicitly branding-related)
+   - internal identifiers
+
+2. DO NOT refactor or “improve” anything.
+
+3. DO NOT touch logic, styling, or structure.
+
+4. ONLY change USER-FACING TEXT where the app name appears.
+
+----------------------------------
+WHERE TO CHANGE (ONLY THESE)
+----------------------------------
+
+You are ONLY allowed to update:
+
+- Navbar / Sidebar logo text
+- Page titles (e.g., <title>)
+- Landing page text (if exists)
+- Auth pages (Login / Signup headings)
+- Footer branding
+- Email templates (if they show app name)
+- Any visible label saying "PakApply"
+
+----------------------------------
+WHAT NOT TO TOUCH
+----------------------------------
+
+- Do NOT rename variables like:
+  pakApplyUser, pakApplyConfig, etc.
+
+- Do NOT change database table names
+
+- Do NOT change backend identifiers
+
+- Do NOT rename project folder
+
+----------------------------------
+OUTPUT FORMAT
+----------------------------------
+
+1. WHAT WAS CHANGED (list of UI locations)
+2. FILE TREE (only modified files)
+3. EXACT TEXT REPLACEMENTS (before → after)
+
+----------------------------------
+VERIFICATION CHECKLIST
+----------------------------------
+
+You MUST confirm:
+
+[ ] All visible "PakApply" text replaced with "Campus Apply"
+[ ] No code logic was modified
+[ ] No variables or backend identifiers changed
+[ ] App still runs without errors
+
+If ANY fails → rollback and fix
+
+----------------------------------
+TASK
+----------------------------------
+
+Perform ONLY the rename operation as defined.
+
+----------------------------------
+START NOW
+----------------------------------

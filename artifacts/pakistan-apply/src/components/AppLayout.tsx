@@ -36,6 +36,10 @@ const sidebarTree = [
       { label: "Personal Information", href: "/profile?step=legal_name" },
       { label: "Address", href: "/profile?step=address" },
       { label: "Contact Details", href: "/profile?step=contact" },
+      { label: "Demographics", href: "/profile?step=demographics" },
+      { label: "Language", href: "/profile?step=language" },
+      { label: "Geography and Nationality", href: "/profile?step=geography" },
+      { label: "Common App Fee Waiver", href: "/profile?step=fee_waiver" },
     ],
   },
   {
