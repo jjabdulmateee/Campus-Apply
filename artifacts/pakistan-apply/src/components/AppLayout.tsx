@@ -18,6 +18,7 @@ import {
   LifeBuoy,
   Bookmark,
   Users,
+  FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -184,7 +185,15 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children, rightPanel, title, subtitle }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [betaDismissed, setBetaDismissed] = useState(() =>
+    localStorage.getItem("pakapp_beta_dismissed") === "1"
+  );
   const { data: dashboard } = useGetMyDashboard();
+
+  const dismissBeta = () => {
+    localStorage.setItem("pakapp_beta_dismissed", "1");
+    setBetaDismissed(true);
+  };
 
   return (
     <div className="min-h-screen bg-sky-50 flex">
@@ -208,6 +217,27 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Beta banner */}
+        {!betaDismissed && (
+          <div className="bg-gradient-to-r from-violet-600 to-sky-600 text-white px-4 py-2 flex items-center justify-between gap-3 print:hidden">
+            <div className="flex items-center gap-2 text-xs">
+              <FlaskConical className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
+              <span className="font-semibold">Beta</span>
+              <span className="opacity-80 hidden sm:inline">
+                PakApply is in public beta — some features are still in development. Your feedback helps us improve.
+              </span>
+              <span className="opacity-80 sm:hidden">PakApply is in public beta.</span>
+            </div>
+            <button
+              onClick={dismissBeta}
+              className="p-1 rounded hover:bg-white/20 transition-colors flex-shrink-0"
+              aria-label="Dismiss beta banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Top bar (mobile) */}
         <div className="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-sky-100 px-4 py-3 flex items-center gap-3 print:hidden">
           <button

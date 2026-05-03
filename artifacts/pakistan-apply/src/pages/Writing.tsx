@@ -1,5 +1,5 @@
 import AppLayout from "@/components/AppLayout";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,10 +17,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, PenLine, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
+import { Plus, Trash2, PenLine, ArrowLeft, Loader2, CheckCircle, Cloud, CloudOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const WORD_LIMIT = 650;
+const AUTOSAVE_DELAY_MS = 1500;
 
 const ESSAY_TYPES = [
   { value: "personal_statement", label: "Personal Statement" },
@@ -44,6 +45,8 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+type AutoSaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -53,6 +56,9 @@ export default function Writing() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAutoSaveRef = useRef(false);
 
   const { mutate: createEssay, isPending: creating } = useCreateEssay({
     mutation: {
@@ -69,9 +75,20 @@ export default function Writing() {
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetMyEssaysQueryKey() });
-        setEditingId(null);
-        reset();
-        toast({ title: "Essay saved" });
+        if (isAutoSaveRef.current) {
+          setAutoSaveStatus("saved");
+          isAutoSaveRef.current = false;
+        } else {
+          setEditingId(null);
+          reset();
+          toast({ title: "Essay saved" });
+        }
+      },
+      onError: () => {
+        if (isAutoSaveRef.current) {
+          setAutoSaveStatus("error");
+          isAutoSaveRef.current = false;
+        }
       },
     },
   });
@@ -85,7 +102,7 @@ export default function Writing() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, reset, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -96,8 +113,35 @@ export default function Writing() {
   const isNearLimit = wordCount >= Math.floor(WORD_LIMIT * 0.9) && !isOver;
   const isOnTrack = wordCount > 0 && !isNearLimit && !isOver;
 
+  const triggerAutoSave = useCallback(() => {
+    if (typeof editingId !== "number") return;
+    const values = getValues();
+    if (!values.prompt || isOver) return;
+
+    setAutoSaveStatus("saving");
+    isAutoSaveRef.current = true;
+    updateEssay({ essayId: editingId, data: values });
+  }, [editingId, getValues, isOver, updateEssay]);
+
+  useEffect(() => {
+    if (typeof editingId !== "number") return;
+    if (content === "") return;
+
+    setAutoSaveStatus("pending");
+
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      triggerAutoSave();
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [content, editingId, triggerAutoSave]);
+
   const openNew = () => {
     reset({ type: "personal_statement" as const, prompt: "", content: "" });
+    setAutoSaveStatus("idle");
     setEditingId("new");
   };
 
@@ -105,6 +149,7 @@ export default function Writing() {
     setValue("prompt", essay.prompt);
     setValue("content", essay.content ?? "");
     setValue("type", essay.type as FormData["type"]);
+    setAutoSaveStatus("idle");
     setEditingId(essay.id);
   };
 
@@ -112,6 +157,7 @@ export default function Writing() {
     if (editingId === "new") {
       createEssay({ data });
     } else if (typeof editingId === "number") {
+      isAutoSaveRef.current = false;
       updateEssay({ essayId: editingId, data });
     }
   };
@@ -125,7 +171,7 @@ export default function Writing() {
 
   if (editingId !== null) {
     const isNew = editingId === "new";
-    const isSaving = creating || updating;
+    const isSaving = creating || (updating && !isAutoSaveRef.current);
 
     return (
       <AppLayout title={isNew ? "New Essay" : "Edit Essay"} subtitle="Write clearly and authentically — admissions officers value genuine voices">
@@ -186,6 +232,10 @@ export default function Writing() {
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-xs font-semibold text-slate-600">Your Response</Label>
                 <div className="flex items-center gap-3">
+                  {/* Auto-save indicator — only for existing essays */}
+                  {!isNew && (
+                    <AutoSaveIndicator status={autoSaveStatus} />
+                  )}
                   {isOver && (
                     <span className="text-xs font-medium text-red-500">{wordCount - WORD_LIMIT} words over limit</span>
                   )}
@@ -250,7 +300,7 @@ export default function Writing() {
                 className="bg-sky-600 hover:bg-sky-700 px-8"
               >
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {isNew ? "Create Essay" : "Save Changes"}
+                {isNew ? "Create Essay" : "Save & Close"}
               </Button>
             </div>
           </form>
@@ -343,4 +393,46 @@ export default function Writing() {
       </div>
     </AppLayout>
   );
+}
+
+function AutoSaveIndicator({ status }: { status: AutoSaveStatus }) {
+  if (status === "idle") return null;
+
+  if (status === "pending") {
+    return (
+      <span className="flex items-center gap-1 text-xs text-slate-400">
+        <Cloud className="w-3.5 h-3.5" />
+        Unsaved changes
+      </span>
+    );
+  }
+
+  if (status === "saving") {
+    return (
+      <span className="flex items-center gap-1 text-xs text-sky-500">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        Saving…
+      </span>
+    );
+  }
+
+  if (status === "saved") {
+    return (
+      <span className="flex items-center gap-1 text-xs text-green-600">
+        <CheckCircle className="w-3.5 h-3.5" />
+        All changes saved
+      </span>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <span className="flex items-center gap-1 text-xs text-red-500">
+        <CloudOff className="w-3.5 h-3.5" />
+        Auto-save failed
+      </span>
+    );
+  }
+
+  return null;
 }
