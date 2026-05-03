@@ -1,0 +1,38 @@
+Step 10: Pixel-Perfect Dashboard Overhaul
+Based on your screenshot, your app has the "brain" of the Common App, but now it needs the exact "body." We need to transform your current layout into the three-column structure shown, including the greeting illustration and the specific progress modules.
+
+Copy and paste this exact prompt into Replit:
+
+"Act as a Senior UI/UX Designer and Frontend Engineer. We need to overhaul the Dashboard to be a pixel-perfect replica of the Common App screenshot provided.
+
+Task 1: Three-Column Layout (Desktop)
+
+Left Sidebar: Implement the slim navigation bar exactly as seen. Include the 'Common App' logo, the navigation links (Dashboard, My Application, My Colleges, Search, Financial Aid), and the user profile card at the bottom (Name, Email, and CAID).
+
+Center Feed: This is the main scrolling area.
+
+Right Sidebar: Implement the 'Help & Support' panel with a search bar and the accordion-style FAQs.
+
+Task 2: The Main Feed Components
+
+Greeting Header: Add the light blue header with the illustration and 'Good morning, [Name]!' text.
+
+My Common Application Module: Build the progress bar section. It must show completion status (e.g., '6/7 sections complete') and the icon-grid for: Profile, Family, Education, Testing, Activities, Writing, and Courses & Grades. Add green checkmarks for completed sections.
+
+My Colleges Module: Show a summary progress bar for all saved colleges, a count of 'submitted' vs 'in progress', and a 'Show colleges' toggle.
+
+Deadlines & Calendar: Implement the list of upcoming deadlines and the mini-calendar widget as seen in the bottom right of the center column.
+
+Task 3: Mobile UX (App Store Style)
+
+Refactor this layout for mobile. Use a bottom navigation bar for the main links (Dashboard, My Colleges, Search).
+
+The center feed should be the primary view on mobile, with the 'Help & Support' moved to a '?' icon in the top header.
+
+Technical Requirements:
+
+Use shadcn/ui components for the accordions and progress bars to keep code clean.
+
+Ensure the data (completion percentages, deadlines) is pulled dynamically from our existing PostgreSQL tables.
+
+Match the spacing, font sizes, and 'sky-blue' accents perfectly."
