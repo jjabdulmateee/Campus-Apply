@@ -72,9 +72,7 @@ export default function RoleSelection() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">
-            Pak<span className="text-sky-600">Apply</span>
-          </div>
+          <div className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">Campus Apply</div>
           <div className="mt-6 mb-2">
             <h1 className="text-2xl font-extrabold text-slate-900">
               Which best describes you?

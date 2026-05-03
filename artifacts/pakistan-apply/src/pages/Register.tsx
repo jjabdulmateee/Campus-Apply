@@ -72,9 +72,7 @@ export default function Register() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
           <Link href="/" className="inline-block">
-            <div className="text-2xl font-extrabold tracking-tight">
-              Pak<span className="text-sky-600">Apply</span>
-            </div>
+            <div className="text-2xl font-extrabold tracking-tight">Campus Apply</div>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-slate-900">Create your account</h1>
           <p className="mt-1 text-sm text-slate-500">Apply to Pakistan's top universities for free</p>

@@ -18,9 +18,7 @@ export default function Landing() {
         </div>
 
         {/* Wordmark */}
-        <div className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-          Pak<span className="text-sky-600">Apply</span>
-        </div>
+        <div className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Campus Apply</div>
 
         <p className="text-xs font-semibold text-sky-600 uppercase tracking-widest mb-8">
           Pakistan's Common Application
