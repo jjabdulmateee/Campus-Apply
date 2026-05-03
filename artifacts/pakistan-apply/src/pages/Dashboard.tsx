@@ -4,7 +4,7 @@ import { useGetMyDashboard, useGetApplicationsSummary, useListMyApplications, us
 import { APPLICATION_STATUS_COLORS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight, Users, CheckCircle2, Trophy, AlertCircle, Clock3 } from "lucide-react";
+import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight, Users, CheckCircle2, Trophy, AlertCircle, Clock3, Sparkles, CalendarDays, MessageSquare, ChevronRight, Plus } from "lucide-react";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading } = useGetMyDashboard();
@@ -17,291 +17,297 @@ export default function Dashboard() {
     ["accepted", "rejected", "waitlisted"].includes(a.status),
   );
   const acceptedApps = decidedApps.filter((a) => a.status === "accepted");
+  const activeApps = (applications ?? []).filter((a) => a.status !== "accepted");
 
   return (
     <AppLayout title="Dashboard" subtitle="Track your application progress">
       <div className="space-y-6">
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {summaryLoading
-            ? [1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-2xl border border-sky-100 shadow-sm p-4">
-                  <Skeleton className="w-9 h-9 rounded-xl mb-3" />
-                  <Skeleton className="h-7 w-10 mb-1.5" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              ))
-            : (
-              <>
-                <StatCard icon={FileText} label="Total Applications" value={summary?.total ?? 0} color="sky" />
-                <StatCard icon={CheckCircle} label="Submitted" value={summary?.submitted ?? 0} color="blue" />
-                <StatCard icon={TrendingUp} label="Accepted" value={summary?.accepted ?? 0} color="green" />
-                <StatCard icon={Clock} label="Under Review" value={summary?.under_review ?? 0} color="amber" />
-              </>
-            )
-          }
+        <div className="rounded-3xl bg-gradient-to-r from-sky-700 via-sky-600 to-violet-600 p-6 text-white shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5" />
+                Common App-style dashboard
+              </div>
+              <h1 className="mt-3 text-2xl font-bold md:text-3xl">Welcome back{dashboard?.recentActivity?.length ? ", keep going" : ""}.</h1>
+              <p className="mt-2 max-w-2xl text-sm text-sky-50/90">
+                Finish your profile, review your applications, and stay on top of decisions.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-[36rem]">
+              {summaryLoading ? [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-2xl bg-white/15" />) : (
+                <>
+                  <MiniStat label="Total" value={summary?.total ?? 0} />
+                  <MiniStat label="Submitted" value={summary?.submitted ?? 0} />
+                  <MiniStat label="Accepted" value={summary?.accepted ?? 0} />
+                  <MiniStat label="Review" value={summary?.under_review ?? 0} />
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Profile completion + steps */}
-        {isLoading ? (
-          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-            <div className="flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center flex-1">
-                  <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
-                  {i < 5 && <Skeleton className="flex-1 h-0.5 mx-1" />}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(280px,0.8fr)]">
+          <div className="space-y-6">
+            {isLoading ? (
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
+                <Skeleton className="h-5 w-44" />
+                <Skeleton className="h-3 w-28" />
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-4 pt-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-36" />
-            </div>
-          </div>
-        ) : dashboard ? (
-          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-slate-800">Application Progress</h2>
-              <span className="text-sm font-bold text-sky-600">{dashboard.profileCompletionPercent}% complete</span>
-            </div>
-
-            {/* Horizontal step progress */}
-            <div className="hidden md:flex items-center gap-0 mb-6">
-              {dashboard.profileSections.map((step, i) => (
-                <div key={step.slug} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all",
-                      step.isComplete
-                        ? "border-sky-500 bg-sky-500 text-white"
-                        : step.completionPercent > 0
-                          ? "border-sky-300 bg-sky-50 text-sky-500"
-                          : "border-slate-200 bg-white text-slate-400"
-                    )}>
-                      {step.isComplete ? <CheckCircle className="w-4 h-4" /> : i + 1}
-                    </div>
-                    <span className="text-xs text-slate-500 mt-1 whitespace-nowrap">{step.name}</span>
-                  </div>
-                  {i < dashboard.profileSections.length - 1 && (
-                    <div className={cn("flex-1 h-0.5 mx-1 -mt-4", step.isComplete ? "bg-sky-400" : "bg-slate-100")} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Mobile step list */}
-            <div className="md:hidden space-y-2">
-              {dashboard.profileSections.map((step) => (
-                <div key={step.slug} className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                    step.isComplete ? "border-sky-500 bg-sky-500" : "border-slate-200 bg-white"
-                  )}>
-                    {step.isComplete && <div className="w-2 h-2 bg-white rounded-full" />}
-                  </div>
-                  <span className={cn("text-sm", step.isComplete ? "text-slate-700 font-medium" : "text-slate-400")}>
-                    {step.name}
-                  </span>
-                  {step.completionPercent > 0 && !step.isComplete && (
-                    <span className="ml-auto text-xs text-sky-500">{step.completionPercent}%</span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-sky-50 flex flex-wrap gap-3">
-              <Link href="/profile" className="inline-flex items-center gap-2 text-sm font-medium text-sky-600 hover:text-sky-700 transition-colors">
-                Continue Profile <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link href="/universities" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-sky-600 transition-colors">
-                Browse Universities <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Decision alerts */}
-        {acceptedApps.length > 0 && (
-          <div className="bg-gradient-to-br from-green-50 to-sky-50 rounded-2xl border border-green-200 shadow-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Trophy className="w-5 h-5 text-green-600" />
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-800">
-                  {acceptedApps.length === 1
-                    ? "🎉 You've been accepted!"
-                    : `🎉 ${acceptedApps.length} acceptance offers!`}
-                </h2>
-                <p className="text-xs text-slate-400">View your official acceptance letters</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {acceptedApps.map((app) => (
-                <div key={app.id} className="flex items-center gap-3 bg-white/70 rounded-xl px-4 py-3">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-slate-800 truncate block">{app.universityName}</span>
-                    <span className="text-xs text-slate-400 truncate block">{app.programName}</span>
+            ) : dashboard ? (
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">My Application</h2>
+                    <p className="text-sm text-slate-500">Your profile is {dashboard.profileCompletionPercent}% complete</p>
                   </div>
-                  <Link
-                    href={`/acceptance-letter/${app.id}`}
-                    className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors"
-                  >
-                    View Letter
+                  <Link href="/profile" className="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700">
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Rejected/waitlisted decisions */}
-        {decidedApps.filter((a) => a.status !== "accepted").length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-800">Application Decisions</h2>
-                <p className="text-xs text-slate-400">Decisions received on your applications</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {decidedApps
-                .filter((a) => a.status !== "accepted")
-                .map((app) => (
-                  <div key={app.id} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
-                    {app.status === "waitlisted" ? (
-                      <Clock3 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-slate-700 truncate block">{app.universityName}</span>
-                      <span className="text-xs text-slate-400 truncate block">{app.programName}</span>
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {dashboard.profileSections.map((step) => (
+                    <div key={step.slug} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-800">{step.name}</span>
+                        <span className="text-xs font-semibold text-slate-500">{step.completionPercent}%</span>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-slate-200">
+                        <div className={cn("h-2 rounded-full", step.isComplete ? "bg-sky-600" : "bg-sky-400")} style={{ width: `${step.completionPercent}%` }} />
+                      </div>
                     </div>
-                    <span className={cn(
-                      "flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full",
-                      APPLICATION_STATUS_COLORS[app.status as keyof typeof APPLICATION_STATUS_COLORS]
-                    )}>
-                      {APPLICATION_STATUS_LABELS[app.status as keyof typeof APPLICATION_STATUS_LABELS]}
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {summaryLoading
+                ? [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)
+                : (
+                  <>
+                    <StatCard icon={FileText} label="Total Applications" value={summary?.total ?? 0} color="sky" />
+                    <StatCard icon={CheckCircle} label="Submitted" value={summary?.submitted ?? 0} color="blue" />
+                    <StatCard icon={TrendingUp} label="Accepted" value={summary?.accepted ?? 0} color="green" />
+                    <StatCard icon={Clock} label="Under Review" value={summary?.under_review ?? 0} color="amber" />
+                  </>
+                )
+              }
+            </div>
+
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">Recent Applications</h2>
+                <Link href="/applications" className="text-sm font-semibold text-sky-600">View all</Link>
+              </div>
+              <div className="mt-4 space-y-3">
+                {applications?.slice(0, 3).map((app) => (
+                  <Link key={app.id} href="/applications" className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100">
+                      <GraduationCap className="w-5 h-5 text-sky-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-slate-800">{app.universityName}</div>
+                      <div className="truncate text-xs text-slate-500">{app.programName}</div>
+                    </div>
+                    <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", APPLICATION_STATUS_COLORS[app.status])}>
+                      {APPLICATION_STATUS_LABELS[app.status]}
                     </span>
-                  </div>
+                  </Link>
                 ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recommender submission notifications */}
-        {newlySubmitted.length > 0 && (
-          <div className="bg-white rounded-2xl border border-green-200 shadow-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-800">
-                  {newlySubmitted.length === 1
-                    ? "1 Recommendation Letter Received"
-                    : `${newlySubmitted.length} Recommendation Letters Received`}
-                </h2>
-                <p className="text-xs text-slate-400">Your teachers have submitted their letters</p>
+                {!applications?.length && (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                    No applications yet.
+                  </div>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              {newlySubmitted.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-3 bg-green-50 rounded-xl px-4 py-3"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-slate-700">
-                      {r.firstName} {r.lastName}
-                    </span>
-                    <span className="text-xs text-slate-400 ml-2">{r.subjectTaught}</span>
-                  </div>
-                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">Submitted</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Recent Applications */}
-        {applications && applications.length > 0 && (
-          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-slate-800">Recent Applications</h2>
-              <Link href="/applications" className="text-sm text-sky-600 hover:text-sky-700 font-medium">View all</Link>
-            </div>
-            <div className="space-y-3">
-              {applications.slice(0, 3).map((app) => (
-                <Link key={app.id} href="/applications" className="flex items-center gap-4 p-3 rounded-xl bg-sky-50/50 hover:bg-sky-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center flex-shrink-0">
-                    <GraduationCap className="w-5 h-5 text-sky-600" />
+            {acceptedApps.length > 0 && (
+              <div className="rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-sky-50 p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-100">
+                    <Trophy className="w-5 h-5 text-green-700" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-slate-800 truncate">{app.universityName}</div>
-                    <div className="text-xs text-slate-400 truncate">{app.programName}</div>
-                  </div>
-                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0", APPLICATION_STATUS_COLORS[app.status])}>
-                    {APPLICATION_STATUS_LABELS[app.status]}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quick actions when no applications */}
-        {(!applications || applications.length === 0) && !isLoading && (
-          <div className="bg-gradient-to-br from-sky-600 to-sky-700 rounded-2xl p-6 text-white">
-            <h2 className="text-lg font-semibold mb-2">Start Applying</h2>
-            <p className="text-sky-100 text-sm mb-4">
-              Browse Pakistan's top universities and add them to your application list.
-            </p>
-            <Link href="/universities" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-sky-600 font-semibold text-sm hover:bg-sky-50 transition-colors">
-              Browse Universities <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        )}
-
-        {/* Recent activity */}
-        {isLoading ? (
-          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6 space-y-3">
-            <Skeleton className="h-4 w-32 mb-4" />
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start gap-3">
-                <Skeleton className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" />
-                <Skeleton className="h-4 flex-1" />
-              </div>
-            ))}
-          </div>
-        ) : dashboard && dashboard.recentActivity.length > 0 ? (
-          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm p-6">
-            <h2 className="text-base font-semibold text-slate-800 mb-4">Recent Activity</h2>
-            <div className="space-y-3">
-              {dashboard.recentActivity.map((a, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-2 flex-shrink-0" />
                   <div>
-                    <span className="text-sm text-slate-700">{a.action}: </span>
-                    <span className="text-sm text-slate-500">{a.detail}</span>
+                    <h2 className="text-lg font-semibold text-slate-900">Acceptances</h2>
+                    <p className="text-sm text-slate-500">Open your official letter</p>
                   </div>
                 </div>
-              ))}
+                <div className="mt-4 space-y-3">
+                  {acceptedApps.map((app) => (
+                    <div key={app.id} className="flex items-center gap-3 rounded-2xl bg-white/80 p-4">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-slate-800">{app.universityName}</div>
+                        <div className="truncate text-xs text-slate-500">{app.programName}</div>
+                      </div>
+                      <Link href={`/acceptance-letter/${app.id}`} className="rounded-xl bg-green-600 px-3 py-2 text-xs font-semibold text-white">
+                        View
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <QuickActionPanel />
+
+            {newlySubmitted.length > 0 && (
+              <div className="rounded-3xl border border-green-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-50">
+                    <Users className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">Recommenders</h2>
+                    <p className="text-xs text-slate-500">Letters just came in</p>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {newlySubmitted.map((r) => (
+                    <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-green-50 p-3">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-slate-800">{r.firstName} {r.lastName}</div>
+                        <div className="truncate text-xs text-slate-500">{r.subjectTaught}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeApps.length > 0 && (
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h2 className="text-base font-semibold text-slate-900">Decision updates</h2>
+                <div className="mt-4 space-y-2">
+                  {activeApps.map((app) => (
+                    <div key={app.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                      {app.status === "waitlisted" ? <Clock3 className="w-4 h-4 text-amber-500" /> : <AlertCircle className="w-4 h-4 text-red-500" />}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-slate-800">{app.universityName}</div>
+                        <div className="truncate text-xs text-slate-500">{app.programName}</div>
+                      </div>
+                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", APPLICATION_STATUS_COLORS[app.status as keyof typeof APPLICATION_STATUS_COLORS])}>
+                        {APPLICATION_STATUS_LABELS[app.status as keyof typeof APPLICATION_STATUS_LABELS]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50">
+                  <CalendarDays className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">Deadlines</h2>
+                  <p className="text-xs text-slate-500">Coming up next</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-3">
+                {dashboard?.upcomingDeadlines?.length ? dashboard.upcomingDeadlines.slice(0, 3).map((d, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
+                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl text-xs font-bold", d.daysLeft <= 7 ? "bg-red-100 text-red-600" : d.daysLeft <= 14 ? "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600")}>
+                      {d.daysLeft}d
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-800">{d.universityName}</div>
+                      <div className="truncate text-xs text-slate-500">{d.programName}</div>
+                    </div>
+                  </div>
+                )) : <EmptyState title="No deadlines" text="You're all caught up." />}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50">
+                  <MessageSquare className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">Activity</h2>
+                  <p className="text-xs text-slate-500">Your latest updates</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-3">
+                {isLoading ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-2xl" />) : dashboard?.recentActivity?.length ? dashboard.recentActivity.map((a, i) => (
+                  <div key={i} className="rounded-2xl bg-slate-50 p-3">
+                    <div className="text-sm font-semibold text-slate-800">{a.action}</div>
+                    <div className="text-xs text-slate-500">{a.detail}</div>
+                  </div>
+                )) : <EmptyState title="No recent activity" text="Your updates will appear here." />}
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-sky-600 p-6 text-white shadow-sm">
+              <h2 className="text-base font-semibold">Need help?</h2>
+              <p className="mt-2 text-sm text-sky-50/90">Our team can help with essays, deadlines, and applications.</p>
+              <div className="mt-4 flex gap-3">
+                <Link href="/help" className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-sky-700">
+                  Support
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+                <Link href="/universities" className="inline-flex items-center justify-center rounded-2xl bg-white/15 px-4 py-3 text-sm font-semibold text-white">
+                  <Plus className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
-        ) : null}
+        </div>
       </div>
     </AppLayout>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-white/15 p-4 text-left">
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="mt-1 text-xs font-medium text-sky-50/80">{label}</div>
+    </div>
+  );
+}
+
+function QuickActionPanel() {
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-900">Quick actions</h2>
+      <div className="mt-4 space-y-3">
+        <Link href="/profile" className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+          <span className="text-sm font-semibold text-slate-800">Finish profile</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </Link>
+        <Link href="/universities" className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+          <span className="text-sm font-semibold text-slate-800">Browse universities</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </Link>
+        <Link href="/applications" className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+          <span className="text-sm font-semibold text-slate-800">Review applications</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-center">
+      <div className="text-sm font-semibold text-slate-700">{title}</div>
+      <div className="mt-1 text-xs text-slate-500">{text}</div>
+    </div>
   );
 }
 
