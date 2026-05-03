@@ -25,6 +25,7 @@ import {
   CalendarDays,
   TrendingUp,
   BadgeCheck,
+  UserPlus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -127,11 +128,19 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-        <Link href="/dashboard">
-          <button className="text-xs text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
-            ← Back to Student View
-          </button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/partners/invite">
+            <button className="flex items-center gap-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white transition-colors px-3 py-1.5 rounded-lg font-semibold">
+              <UserPlus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Invite Partner</span>
+            </button>
+          </Link>
+          <Link href="/dashboard">
+            <button className="text-xs text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
+              ← Student View
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* University context banner (when filtered) */}

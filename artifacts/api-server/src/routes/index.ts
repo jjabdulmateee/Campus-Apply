@@ -11,6 +11,7 @@ import accountRouter from "./account";
 import supportRouter from "./support";
 import recommendersRouter from "./recommenders";
 import portalRouter from "./portal";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use("/documents", documentsRouter);
 router.use("/admin", adminRouter);
 router.use("/account", accountRouter);
 router.use("/support", supportRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

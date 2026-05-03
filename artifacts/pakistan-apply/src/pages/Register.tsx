@@ -56,7 +56,7 @@ export default function Register() {
       });
       localStorage.setItem("pakapp_user_type", studentType);
       if (previousCollege) localStorage.setItem("pakapp_previous_college", previousCollege);
-      setLocation("/dashboard");
+      setLocation("/profile");
     } catch (err) {
       setError((err as Error).message || "Registration failed");
     } finally {

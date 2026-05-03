@@ -11,10 +11,14 @@ import {
   universitiesTable,
   programsTable,
   supportTicketsTable,
+  usersTable,
+  notificationsTable,
 } from "@workspace/db";
 import { eq, desc, ilike, or, and, ne } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -216,6 +220,45 @@ router.put("/applications/:id/decision", async (req, res) => {
 
   if (!updated) return res.status(404).json({ error: "Application not found" });
 
+  // ── Insert notification for the student ────────────────────────────────
+  try {
+    const [uni] = await db.select({ name: universitiesTable.name })
+      .from(universitiesTable)
+      .where(eq(universitiesTable.id, updated.universityId));
+    const [prog] = await db.select({ name: programsTable.name })
+      .from(programsTable)
+      .where(eq(programsTable.id, updated.programId));
+    const [user] = await db.select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.studentId, updated.studentId));
+
+    if (user) {
+      const uniName = uni?.name ?? "The university";
+      const progName = prog?.name ?? "your programme";
+      const statusLabels: Record<string, string> = {
+        accepted: "Accepted",
+        rejected: "Rejected",
+        waitlisted: "Waitlisted",
+        under_review: "Under Review",
+      };
+      const titleMap: Record<string, string> = {
+        accepted: `🎉 Congratulations! You've been accepted`,
+        rejected: `Application decision received`,
+        waitlisted: `You've been placed on the waitlist`,
+        under_review: `Your application is now under review`,
+      };
+      await db.execute(
+        sql`INSERT INTO notifications (user_id, student_id, type, title, message, application_id)
+            VALUES (${user.id}, ${updated.studentId}, ${body.data.status},
+                    ${titleMap[body.data.status] ?? `Status updated to ${statusLabels[body.data.status] ?? body.data.status}`},
+                    ${`${uniName} has updated your application status for ${progName} to "${statusLabels[body.data.status] ?? body.data.status}". ${body.data.decisionReason ? `Reason: ${body.data.decisionReason}` : ""}`.trim()},
+                    ${appId})`,
+      );
+    }
+  } catch (notifErr) {
+    req.log.warn({ notifErr }, "Failed to insert notification (non-fatal)");
+  }
+
   return res.json({ application: updated });
 });
 
@@ -323,6 +366,44 @@ router.put("/support/tickets/:id/reply", async (req, res) => {
     req.log.error({ err }, "admin reply ticket error");
     return res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ── POST /admin/partners/invite ────────────────────────────────────────────
+const PartnerInviteBody = z.object({
+  fullName: z.string().min(2, "Name required"),
+  email: z.string().email("Valid email required"),
+});
+
+router.post("/partners/invite", async (req, res) => {
+  const body = PartnerInviteBody.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ error: body.error.errors[0].message });
+  }
+
+  const { fullName, email } = body.data;
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const existing = await db.query.usersTable.findFirst({ where: eq(usersTable.email, normalizedEmail) });
+  if (existing) {
+    return res.status(409).json({ error: "An account with this email already exists" });
+  }
+
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  const tempPassword = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+  await db.insert(usersTable).values({
+    email: normalizedEmail,
+    passwordHash,
+    fullName,
+    role: "admin",
+    studentId: null,
+  });
+
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "localhost";
+  const loginUrl = `https://${domain}/login`;
+
+  return res.status(201).json({ email: normalizedEmail, fullName, tempPassword, loginUrl });
 });
 
 export default router;

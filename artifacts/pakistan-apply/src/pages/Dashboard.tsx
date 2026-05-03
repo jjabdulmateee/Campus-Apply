@@ -4,7 +4,7 @@ import { useGetMyDashboard, useGetApplicationsSummary, useListMyApplications, us
 import { APPLICATION_STATUS_COLORS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight, Users, CheckCircle2 } from "lucide-react";
+import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight, Users, CheckCircle2, Trophy, AlertCircle, Clock3 } from "lucide-react";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading } = useGetMyDashboard();
@@ -13,6 +13,10 @@ export default function Dashboard() {
   const { data: recommenders } = useGetMyRecommenders();
 
   const newlySubmitted = (recommenders ?? []).filter((r) => r.status === "submitted");
+  const decidedApps = (applications ?? []).filter((a) =>
+    ["accepted", "rejected", "waitlisted"].includes(a.status),
+  );
+  const acceptedApps = decidedApps.filter((a) => a.status === "accepted");
 
   return (
     <AppLayout title="Dashboard" subtitle="Track your application progress">
@@ -119,6 +123,80 @@ export default function Dashboard() {
             </div>
           </div>
         ) : null}
+
+        {/* Decision alerts */}
+        {acceptedApps.length > 0 && (
+          <div className="bg-gradient-to-br from-green-50 to-sky-50 rounded-2xl border border-green-200 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Trophy className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">
+                  {acceptedApps.length === 1
+                    ? "🎉 You've been accepted!"
+                    : `🎉 ${acceptedApps.length} acceptance offers!`}
+                </h2>
+                <p className="text-xs text-slate-400">View your official acceptance letters</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {acceptedApps.map((app) => (
+                <div key={app.id} className="flex items-center gap-3 bg-white/70 rounded-xl px-4 py-3">
+                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-slate-800 truncate block">{app.universityName}</span>
+                    <span className="text-xs text-slate-400 truncate block">{app.programName}</span>
+                  </div>
+                  <Link
+                    href={`/acceptance-letter/${app.id}`}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors"
+                  >
+                    View Letter
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rejected/waitlisted decisions */}
+        {decidedApps.filter((a) => a.status !== "accepted").length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">Application Decisions</h2>
+                <p className="text-xs text-slate-400">Decisions received on your applications</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {decidedApps
+                .filter((a) => a.status !== "accepted")
+                .map((app) => (
+                  <div key={app.id} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
+                    {app.status === "waitlisted" ? (
+                      <Clock3 className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-slate-700 truncate block">{app.universityName}</span>
+                      <span className="text-xs text-slate-400 truncate block">{app.programName}</span>
+                    </div>
+                    <span className={cn(
+                      "flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full",
+                      APPLICATION_STATUS_COLORS[app.status as keyof typeof APPLICATION_STATUS_COLORS]
+                    )}>
+                      {APPLICATION_STATUS_LABELS[app.status as keyof typeof APPLICATION_STATUS_LABELS]}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Recommender submission notifications */}
         {newlySubmitted.length > 0 && (

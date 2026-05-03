@@ -102,3 +102,18 @@ export const recommendersTable = pgTable("recommenders", {
 
 export type Recommender = typeof recommendersTable.$inferSelect;
 export type InsertRecommender = typeof recommendersTable.$inferInsert;
+
+export const notificationsTable = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  studentId: text("student_id"),
+  type: text("type").notNull().default("decision"),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  applicationId: integer("application_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Notification = typeof notificationsTable.$inferSelect;
+export type InsertNotification = typeof notificationsTable.$inferInsert;

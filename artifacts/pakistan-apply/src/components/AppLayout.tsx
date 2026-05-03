@@ -21,6 +21,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
 import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
@@ -62,11 +63,14 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <div className="text-xl font-bold text-sky-700 tracking-tight">PakApply</div>
           <div className="text-xs text-slate-400 mt-0.5">College Portal</div>
         </div>
-        {onClose && (
-          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-sky-50">
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {!onClose && <NotificationBell />}
+          {onClose && (
+            <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-sky-50">
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Admin toggle — only visible to admin users */}
@@ -246,7 +250,8 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="text-lg font-bold text-sky-700">PakApply</div>
+          <div className="text-lg font-bold text-sky-700 flex-1">PakApply</div>
+          <NotificationBell />
         </div>
 
         {/* Page area */}
