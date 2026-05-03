@@ -1,0 +1,40 @@
+Act as a Senior Frontend Architect. Your task is to refactor the entire Dashboard layout to be a pixel-perfect clone of the Common App as seen in image_51ce3f.png.
+
+Task 1: The Three-Column Grid System
+
+Column 1 (Sidebar - Left): Width: 260px. Background: #FFFFFF. Border-right: 1px solid #E5E7EB.
+
+Logo: Positioned at the very top-left. Place a placeholder for our custom logo here.
+
+Nav Menu: Items must be grouped under 'APPLY' and 'EXPLORE' headers in all-caps, light-grey, 11px font.
+
+User Card: Anchored to the bottom. Include the circular avatar, user name, email, and a unique 'CAID' (College App ID) number.
+
+Column 2 (Feed - Center): Flexible width. This is the main scrolling area.
+
+Header Graphic: A light blue (#E0F2FE) banner with the specific sun/building illustration and 'Good morning, [User]!' in dark blue (#1E3A8A).
+
+Module Wrappers: Each section ('My Common Application', 'My Colleges') must be inside a white card with a subtle border and a collapse/expand chevron.
+
+Column 3 (Help - Right): Width: 300px. Background: #FFFFFF. Border-left: 1px solid #E5E7EB.
+
+Help & Support: This section must be fixed or scroll independently. Include the 'Search FAQs' input with a magnifying glass icon and the accordion list of questions.
+
+Task 2: Precision UI Components (referencing image_51ce3f.png)
+
+Progress Bars: Use a thick green (#166534) for the completed portion and light grey (#F3F4F6) for the remainder.
+
+The Icon Grid: In the 'My Common Application' section, create a horizontal row of circular icons for: Profile, Family, Education, Testing, Activities, Writing, and Courses & Grades.
+
+Status Indicators: Use green checkmark circles for completed sections and blue dashed circles for 'In Progress'.
+
+Calendar Widget: In the bottom-right of the center column, build a mini-month view calendar using a 7x5 grid for the current month.
+
+Task 3: Styling & Typography
+
+Font: Use 'Inter' or a clean sans-serif. Titles should be #374151, body text #6B7280.
+
+Shadows: Remove heavy shadows. Use flat borders with rounded-md (6px) corners only.
+
+Technical Requirement:
+Ensure this layout is fully responsive. On mobile, Column 1 and Column 3 must move into a slide-out hamburger menu and a 'Help' floating action button respectively, leaving only Column 2 visible.
