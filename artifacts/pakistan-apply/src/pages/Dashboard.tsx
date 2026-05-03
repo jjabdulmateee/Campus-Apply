@@ -277,7 +277,7 @@ function sectionHref(slug: string) {
   if (slug.includes("course")) return "/education";
   if (slug.includes("test")) return "/testing";
   if (slug.includes("activity")) return "/activities";
-  if (slug.includes("essay")) return "/writing";
+  if (slug.includes("writing") || slug.includes("essay")) return "/writing";
   if (slug.includes("recommender")) return "/recommenders";
   return "/dashboard";
 }
@@ -290,7 +290,7 @@ function sectionLabel(slug: string, fallback: string) {
   if (slug.includes("course")) return "Courses";
   if (slug.includes("test")) return "Testing";
   if (slug.includes("activity")) return "Activities";
-  if (slug.includes("essay")) return "Writing";
+  if (slug.includes("writing") || slug.includes("essay")) return "Writing";
   if (slug.includes("recommender")) return fallback;
   return fallback;
 }
