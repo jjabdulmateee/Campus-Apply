@@ -1,15 +1,18 @@
 import AppLayout from "@/components/AppLayout";
 import { Link } from "wouter";
-import { useGetMyDashboard, useGetApplicationsSummary, useListMyApplications } from "@workspace/api-client-react";
+import { useGetMyDashboard, useGetApplicationsSummary, useListMyApplications, useGetMyRecommenders } from "@workspace/api-client-react";
 import { APPLICATION_STATUS_COLORS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight } from "lucide-react";
+import { CheckCircle, Clock, GraduationCap, FileText, TrendingUp, ArrowRight, Users, CheckCircle2 } from "lucide-react";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading } = useGetMyDashboard();
   const { data: summary, isLoading: summaryLoading } = useGetApplicationsSummary();
   const { data: applications } = useListMyApplications();
+  const { data: recommenders } = useGetMyRecommenders();
+
+  const newlySubmitted = (recommenders ?? []).filter((r) => r.status === "submitted");
 
   return (
     <AppLayout title="Dashboard" subtitle="Track your application progress">
@@ -116,6 +119,42 @@ export default function Dashboard() {
             </div>
           </div>
         ) : null}
+
+        {/* Recommender submission notifications */}
+        {newlySubmitted.length > 0 && (
+          <div className="bg-white rounded-2xl border border-green-200 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">
+                  {newlySubmitted.length === 1
+                    ? "1 Recommendation Letter Received"
+                    : `${newlySubmitted.length} Recommendation Letters Received`}
+                </h2>
+                <p className="text-xs text-slate-400">Your teachers have submitted their letters</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {newlySubmitted.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-3 bg-green-50 rounded-xl px-4 py-3"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {r.firstName} {r.lastName}
+                    </span>
+                    <span className="text-xs text-slate-400 ml-2">{r.subjectTaught}</span>
+                  </div>
+                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">Submitted</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recent Applications */}
         {applications && applications.length > 0 && (

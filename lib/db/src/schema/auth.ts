@@ -92,6 +92,10 @@ export const recommendersTable = pgTable("recommenders", {
   subjectTaught: text("subject_taught").notNull(),
   relationship: text("relationship"),
   status: recommenderStatusEnum("status").notNull().default("pending"),
+  inviteToken: text("invite_token").unique(),
+  tokenUsed: boolean("token_used").notNull().default(false),
+  letterContent: text("letter_content"),
+  yearsKnown: text("years_known"),
   invitedAt: timestamp("invited_at").defaultNow(),
   submittedAt: timestamp("submitted_at"),
 });

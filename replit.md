@@ -44,7 +44,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `/my-colleges` — Saved college list: 5-stage progress tracker per college, expandable detail panel, status advancement
 - `/applications` — Track all submitted applications (5-stage status timeline)
 - `/applications/:id/review` — 3-tab review + supplement Q&A + submit screen
-- `/recommenders` — Recommenders (FERPA): invite up to 3 teachers/mentors; status tracking (pending → submitted → declined)
+- `/recommenders` — Recommenders (FERPA): invite up to 3 teachers/mentors; generates UUID invite token, sends email (SMTP or dev-log fallback); status tracking (pending → submitted → declined)
+- `/recommendation-portal?token=xxx` — **Public** teacher portal: validates single-use UUID token, shows student+teacher info, accepts yearsKnown + 150-word letter, marks token used on submit
 - `/documents` — Document Locker: upload/manage CNIC, marksheets, transcripts, passport photo
 
 **Admin Portal** (role-gated — requires `role === "admin"` in JWT)

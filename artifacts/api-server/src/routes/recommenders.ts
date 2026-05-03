@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { recommendersTable } from "@workspace/db";
+import { recommendersTable, studentProfilesTable } from "@workspace/db";
 import { InviteRecommenderBody } from "@workspace/api-zod";
 import { eq, and } from "drizzle-orm";
 import { verifyJWT, getStudentId } from "../middleware/auth";
+import { sendRecommendationInvite } from "../utils/email";
 import { z } from "zod";
 
 const router = Router();
@@ -21,10 +22,29 @@ router.get("/me/recommenders", async (req, res) => {
 router.post("/me/recommenders", async (req, res) => {
   const sid = getStudentId(req);
   const body = InviteRecommenderBody.parse(req.body);
+  const token = crypto.randomUUID();
+
   const [created] = await db
     .insert(recommendersTable)
-    .values({ ...body, studentId: sid })
+    .values({ ...body, studentId: sid, inviteToken: token })
     .returning();
+
+  const profile = await db.query.studentProfilesTable.findFirst({
+    where: eq(studentProfilesTable.studentId, sid),
+  });
+  const studentName = profile
+    ? `${profile.firstName} ${profile.lastName}`
+    : "A student";
+
+  sendRecommendationInvite({
+    to: body.email,
+    teacherName: `${body.firstName} ${body.lastName}`,
+    studentName,
+    token,
+  }).catch((err) =>
+    req.log.error({ err }, "Failed to send recommendation invite email"),
+  );
+
   res.status(201).json(created);
 });
 

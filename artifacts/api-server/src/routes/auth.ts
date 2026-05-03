@@ -106,16 +106,6 @@ async function seedDemoAccounts() {
       .where(eq(usersTable.email, DEMO_ADMIN_EMAIL));
   }
 
-  // Ensure the demo student account has admin role for demo toggle
-  const demoStudent = await db.query.usersTable.findFirst({
-    where: eq(usersTable.email, DEMO_STUDENT_EMAIL),
-  });
-  if (demoStudent && demoStudent.role !== "admin") {
-    await db
-      .update(usersTable)
-      .set({ role: "admin" })
-      .where(eq(usersTable.email, DEMO_STUDENT_EMAIL));
-  }
 }
 
 /** Update university filter metadata (runs once on startup) */

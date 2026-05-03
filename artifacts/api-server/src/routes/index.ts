@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import accountRouter from "./account";
 import supportRouter from "./support";
 import recommendersRouter from "./recommenders";
+import portalRouter from "./portal";
 
 const router: IRouter = Router();
 
@@ -17,6 +18,7 @@ router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/students", studentsRouter);
 router.use("/students", recommendersRouter);
+router.use("/recommenders", portalRouter);
 router.use("/universities", universitiesRouter);
 router.use("/applications", applicationsRouter);
 router.use(storageRouter);

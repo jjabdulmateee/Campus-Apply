@@ -25,6 +25,7 @@ import HelpSupport from "@/pages/HelpSupport";
 import Recommenders from "@/pages/Recommenders";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
+import RecommendationPortal from "@/pages/RecommendationPortal";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -107,6 +108,7 @@ function Router() {
       <Route path="/help">{() => <ProtectedRoute component={HelpSupport} />}</Route>
       <Route path="/admin/dashboard">{() => <AdminRoute component={AdminDashboard} />}</Route>
       <Route path="/admin/applications/:id">{() => <AdminRoute component={AdminApplicationDetail} />}</Route>
+      <Route path="/recommendation-portal" component={RecommendationPortal} />
       <Route component={NotFound} />
     </Switch>
   );

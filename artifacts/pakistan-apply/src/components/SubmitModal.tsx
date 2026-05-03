@@ -405,19 +405,24 @@ export default function SubmitModal({
                   ))}
                 </div>
 
-                {paymentDone ? (
-                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-semibold text-green-700">Payment confirmed!</span>
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-4 h-4 text-slate-400" />
                   </div>
-                ) : (
-                  <Button
-                    onClick={() => setPaymentDone(true)}
-                    className="w-full bg-sky-600 hover:bg-sky-700 rounded-xl font-semibold"
-                  >
-                    Simulate Payment (Demo)
-                  </Button>
-                )}
+                  <div>
+                    <div className="text-sm font-semibold text-slate-600">Payment Integration Pending</div>
+                    <div className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                      Online payment will be available soon. For now, please visit the university
+                      admissions office to pay the application fee in person before submitting.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setPaymentDone(true)}
+                  className="w-full bg-sky-600 hover:bg-sky-700 rounded-xl font-semibold"
+                >
+                  I have paid the fee — Continue
+                </Button>
               </div>
             </div>
           )}
