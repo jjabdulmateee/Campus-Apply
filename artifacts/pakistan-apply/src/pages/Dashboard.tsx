@@ -7,8 +7,22 @@ import {
   useGetMyRecommenders,
   useListMyApplications,
 } from "@workspace/api-client-react";
-import { Bell, BookOpen, ChevronDown, FileText, Home, Menu, Search, Users, WalletCards } from "lucide-react";
+import {
+  Bell,
+  BookOpen,
+  ChevronDown,
+  FileText,
+  GraduationCap,
+  Home,
+  Menu,
+  PenLine,
+  Search,
+  ShieldCheck,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { useState } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
@@ -17,13 +31,14 @@ export default function Dashboard() {
   const { data: recommenders } = useGetMyRecommenders();
   const { user } = useAuth();
   const [helpOpen, setHelpOpen] = useState(false);
+  const activePath = typeof window !== "undefined" ? window.location.pathname : "/dashboard";
 
   const firstName = user?.fullName?.split(" ")[0] ?? "Student";
   const newlySubmitted = (recommenders ?? []).filter((r) => r.status === "submitted");
 
   return (
     <div className="grid min-h-screen grid-cols-[260px_1fr_300px] bg-[#F9FAFB]">
-      <LeftSidebar user={user} />
+      <LeftSidebar user={user} activePath={activePath} />
 
       <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between lg:hidden">
@@ -166,7 +181,7 @@ export default function Dashboard() {
   );
 }
 
-function LeftSidebar({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
+function LeftSidebar({ user, activePath }: { user: ReturnType<typeof useAuth>["user"]; activePath: string }) {
   const appId = `APP-${String(user?.id ?? "44324581").slice(0, 8).toUpperCase()}`;
   return (
     <aside className="hidden w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
@@ -175,13 +190,16 @@ function LeftSidebar({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
       </div>
       <nav className="px-2">
         <NavHeader label="APPLY" />
-        <NavItem icon={Home} label="Dashboard" active />
-        <NavItem icon={FileText} label="My Application" />
-        <NavItem icon={BookOpen} label="My Colleges" />
+        <NavLink href="/dashboard" icon={Home} label="Dashboard" active={activePath === "/dashboard"} />
+        <NavLink href="/profile" icon={ShieldCheck} label="My Profile" active={activePath.startsWith("/profile")} />
+        <NavLink href="/education" icon={GraduationCap} label="Education" active={activePath.startsWith("/education")} />
+        <NavLink href="/testing" icon={FileText} label="Test Scores" active={activePath.startsWith("/testing")} />
+        <NavLink href="/activities" icon={BookOpen} label="Activities" active={activePath.startsWith("/activities")} />
+        <NavLink href="/writing" icon={PenLine} label="Essays" active={activePath.startsWith("/writing")} />
+        <NavLink href="/recommenders" icon={Users} label="Recommenders" active={activePath.startsWith("/recommenders")} />
         <NavHeader label="EXPLORE" />
-        <NavItem icon={Search} label="College search" />
-        <NavItem icon={WalletCards} label="Direct admissions" />
-        <NavItem icon={Users} label="Financial aid" />
+        <NavLink href="/universities" icon={Search} label="University Search" active={activePath.startsWith("/universities")} />
+        <NavLink href="/my-colleges" icon={WalletCards} label="My Colleges" active={activePath.startsWith("/my-colleges")} />
       </nav>
       <div className="mt-auto border-t border-slate-200 p-4">
         <div className="rounded-md border border-slate-200 bg-white p-4">
@@ -205,16 +223,26 @@ function NavHeader({ label }: { label: string }) {
   return <div className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">{label}</div>;
 }
 
-function NavItem({ icon: Icon, label, active }: { icon: React.ElementType; label: string; active?: boolean }) {
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  active,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  active?: boolean;
+}) {
   return (
-    <div className={cn("flex items-center gap-3 rounded-md px-4 py-3 text-sm", active ? "bg-slate-200 text-slate-800" : "text-slate-600")}>
+    <Link href={href} className={cn("flex items-center gap-3 rounded-md px-4 py-3 text-sm", active ? "bg-slate-200 text-slate-800" : "text-slate-600")}>
       <Icon className="h-4 w-4" />
       <span>{label}</span>
-    </div>
+    </Link>
   );
 }
 
-function CollapsibleCard({ title, subtitle, children, open = false }: { title: string; subtitle?: string; children: React.ReactNode; open?: boolean }) {
+function CollapsibleCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode; open?: boolean }) {
   return (
     <div className="rounded-md border border-slate-200 bg-white">
       <div className="flex items-center justify-between border-b border-slate-200 bg-[#E5E7EB] px-4 py-3">
