@@ -14,6 +14,8 @@ import {
   Settings,
   FlaskConical,
   User,
+  CircleCheckBig,
+  CircleDashed,
 } from "lucide-react";
 import { useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -38,6 +40,71 @@ const navSections = [
       { href: "/direct-admissions", label: "Direct admissions", icon: Landmark },
       { href: "/financial-aid", label: "Financial aid", icon: DollarSign },
     ],
+  },
+];
+
+const sidebarTree = [
+  {
+    key: "profile",
+    label: "Profile",
+    href: "/profile",
+    status: "complete" as const,
+    children: [
+      { label: "Personal Information", href: "/profile" },
+      { label: "Address", href: "/profile" },
+      { label: "Contact Details", href: "/profile" },
+    ],
+  },
+  {
+    key: "family",
+    label: "Family",
+    href: "/profile",
+    status: "incomplete" as const,
+    children: [
+      {
+        label: "Household",
+        href: "/profile",
+        children: [
+          { label: "Parent 1", href: "/profile" },
+          { label: "Parent 2", href: "/profile" },
+        ],
+      },
+    ],
+  },
+  {
+    key: "education",
+    label: "Education",
+    href: "/education",
+    status: "complete" as const,
+    children: [{ label: "Academic History", href: "/education" }],
+  },
+  {
+    key: "testing",
+    label: "Testing",
+    href: "/testing",
+    status: "incomplete" as const,
+    children: [{ label: "Test Scores", href: "/testing" }],
+  },
+  {
+    key: "activities",
+    label: "Activities",
+    href: "/activities",
+    status: "incomplete" as const,
+    children: [{ label: "Activity List", href: "/activities" }],
+  },
+  {
+    key: "writing",
+    label: "Writing",
+    href: "/writing",
+    status: "incomplete" as const,
+    children: [{ label: "Essays", href: "/writing" }],
+  },
+  {
+    key: "courses",
+    label: "Courses & Grades",
+    href: "/education",
+    status: "incomplete" as const,
+    children: [{ label: "Courses", href: "/education" }, { label: "Grades", href: "/education" }],
   },
 ];
 
@@ -71,32 +138,26 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-2">
-        {navSections.map((section) => (
-          <div key={section.title} className="mb-3">
-            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{section.title}</div>
-            <div className="space-y-1">
-              {section.items.map(({ href, label, icon: Icon, expandable }) => {
-                const isActive = location === href || location.startsWith(href + "/");
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive ? "bg-[#D1D5DB] text-slate-800" : "text-slate-700 hover:bg-slate-100",
-                    )}
-                    onClick={onClose}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">{label}</span>
-                    {expandable ? <ChevronDown className="h-3.5 w-3.5 opacity-70" /> : isActive && <ChevronRight className="h-3 w-3 opacity-60" />}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <nav className="flex-1 overflow-y-auto px-0 py-0">
+        <div className="px-3 py-2">
+          <Link
+            href="/dashboard"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+              location === "/dashboard" ? "bg-[#D1D5DB] text-slate-800" : "text-slate-700 hover:bg-slate-100",
+            )}
+            onClick={onClose}
+          >
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Dashboard</span>
+          </Link>
+        </div>
+
+        <div className="border-t border-slate-200">
+          {sidebarTree.map((item) => (
+            <SidebarAccordionItem key={item.key} item={item} location={location} onClose={onClose} level={0} />
+          ))}
+        </div>
       </nav>
 
       {/* Bottom — user card */}
@@ -152,6 +213,107 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+    </div>
+  );
+}
+
+function SidebarAccordionItem({
+  item,
+  location,
+  onClose,
+  level,
+}: {
+  item: {
+    label: string;
+    href: string;
+    status: "complete" | "incomplete";
+    children?: Array<{ label: string; href: string; children?: Array<{ label: string; href: string }> }>;
+  };
+  location: string;
+  onClose?: () => void;
+  level: number;
+}) {
+  const isActive = location === item.href || location.startsWith(item.href + "/");
+  const [open, setOpen] = useState(isActive);
+  const hasChildren = !!item.children?.length;
+
+  return (
+    <div className="border-b border-slate-200">
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-2.5 text-sm",
+          level > 0 && "pl-8",
+          isActive ? "bg-[#D1D5DB] text-slate-800 font-semibold" : "text-slate-700",
+        )}
+      >
+        {hasChildren ? (
+          <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center">
+            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </button>
+        ) : (
+          <span className="w-3.5" />
+        )}
+        {item.status === "complete" ? (
+          <CircleCheckBig className="h-4 w-4 text-[#15803d]" />
+        ) : (
+          <CircleDashed className="h-4 w-4 text-slate-400" />
+        )}
+        <Link href={item.href} onClick={onClose} className="flex-1">
+          {item.label}
+        </Link>
+      </div>
+      {hasChildren && open && (
+        <div>
+          {item.children!.map((child) => (
+            <SidebarSubItem key={child.label} item={child} location={location} onClose={onClose} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SidebarSubItem({
+  item,
+  location,
+  onClose,
+  level,
+}: {
+  item: { label: string; href: string; children?: Array<{ label: string; href: string }> };
+  location: string;
+  onClose?: () => void;
+  level: number;
+}) {
+  const isActive = location === item.href || location.startsWith(item.href + "/");
+  const [open, setOpen] = useState(isActive);
+  const hasChildren = !!item.children?.length;
+
+  return (
+    <div>
+      <div className={cn("flex items-center gap-2 px-3 py-2 text-sm", level > 0 && "pl-10", isActive && "bg-[#D1D5DB] font-semibold text-slate-800")}>
+        {hasChildren ? (
+          <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center">
+            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </button>
+        ) : (
+          <span className="w-3.5" />
+        )}
+        <span className="w-4" />
+        <Link href={item.href} onClick={onClose} className="flex-1">
+          {item.label}
+        </Link>
+      </div>
+      {hasChildren && open && (
+        <div>
+          {item.children!.map((child) => (
+            <div key={child.label} className={cn("px-3 py-1.5 text-sm", "pl-14")}>
+              <Link href={child.href} onClick={onClose} className={cn(location === child.href ? "font-semibold text-slate-800" : "text-slate-600")}>
+                {child.label}
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
