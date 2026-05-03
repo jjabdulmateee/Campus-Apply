@@ -343,6 +343,30 @@ router.delete("/:applicationId", async (req, res) => {
 router.post("/:applicationId/submit", async (req, res) => {
   const sid = getStudentId(req);
   const { applicationId } = SubmitApplicationParams.parse(req.params);
+
+  // ── Server-side pre-flight validation ──────────────────────────────────────
+  const [profile, academics, tests] = await Promise.all([
+    db.query.studentProfilesTable.findFirst({
+      where: eq(studentProfilesTable.studentId, sid),
+    }),
+    db.select().from(academicRecordsTable).where(eq(academicRecordsTable.studentId, sid)),
+    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
+  ]);
+
+  const missing: string[] = [];
+  if (!profile?.firstName || !profile?.lastName)
+    missing.push("Personal profile (first and last name) must be completed");
+  if (academics.length === 0)
+    missing.push("At least one education record is required");
+  if (tests.length === 0)
+    missing.push("At least one test score is required");
+
+  if (missing.length > 0) {
+    res.status(400).json({ error: "Application incomplete", missing });
+    return;
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   const [updated] = await db
     .update(applicationsTable)
     .set({ status: "submitted", submittedAt: new Date(), updatedAt: new Date() })

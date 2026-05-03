@@ -490,39 +490,71 @@ router.get("/me/dashboard", async (req, res) => {
   );
   const sections = computeSections(profile, academics, tests, acts, essays);
 
-  const upcomingDeadlines = await Promise.all(
+  // ── Deadlines: merge active applications + saved-college watchlist ──────────
+  function calcDaysLeft(deadlineStr: string): number {
+    if (!deadlineStr || deadlineStr === "TBD") return 999;
+    const dl = new Date(deadlineStr);
+    if (isNaN(dl.getTime())) return 999;
+    return Math.max(0, Math.ceil((dl.getTime() - Date.now()) / 86400000));
+  }
+
+  const savedColleges = await db
+    .select()
+    .from(userCollegesTable)
+    .where(eq(userCollegesTable.studentId, sid));
+
+  const appDeadlineEntries = await Promise.all(
     apps
       .filter((a) => a.status !== "withdrawn" && a.status !== "rejected")
-      .slice(0, 3)
       .map(async (a) => {
         const [uni, prog] = await Promise.all([
-          db.query.universitiesTable.findFirst({
-            where: eq(universitiesTable.id, a.universityId),
-          }),
-          db.query.programsTable.findFirst({
-            where: eq(programsTable.id, a.programId),
-          }),
+          db.query.universitiesTable.findFirst({ where: eq(universitiesTable.id, a.universityId) }),
+          db.query.programsTable.findFirst({ where: eq(programsTable.id, a.programId) }),
         ]);
-        const deadlineStr =
-          prog?.applicationDeadline ?? uni?.applicationDeadline ?? "TBD";
-        let daysLeft = 30;
-        if (deadlineStr && deadlineStr !== "TBD") {
-          const dl = new Date(deadlineStr);
-          if (!isNaN(dl.getTime())) {
-            daysLeft = Math.max(
-              0,
-              Math.ceil((dl.getTime() - Date.now()) / 86400000),
-            );
-          }
-        }
+        const deadlineStr = prog?.applicationDeadline ?? uni?.applicationDeadline ?? "TBD";
         return {
+          universityId: a.universityId,
           universityName: uni?.shortName ?? uni?.name ?? "University",
           programName: prog?.name ?? "Program",
           deadline: deadlineStr,
-          daysLeft,
+          daysLeft: calcDaysLeft(deadlineStr),
         };
       }),
   );
+
+  const watchlistDeadlineEntries = await Promise.all(
+    savedColleges.map(async (c) => {
+      const uni = await db.query.universitiesTable.findFirst({
+        where: eq(universitiesTable.id, c.universityId),
+      });
+      const deadlineStr = uni?.applicationDeadline ?? "TBD";
+      return {
+        universityId: c.universityId,
+        universityName: uni?.shortName ?? uni?.name ?? "University",
+        programName: "Saved — not yet applied",
+        deadline: deadlineStr,
+        daysLeft: calcDaysLeft(deadlineStr),
+      };
+    }),
+  );
+
+  // Applications take priority; watchlist fills in only unseen universities
+  const seenUniversityIds = new Set(appDeadlineEntries.map((e) => e.universityId));
+  const uniqueWatchlist = watchlistDeadlineEntries.filter(
+    (e) => !seenUniversityIds.has(e.universityId),
+  );
+
+  const upcomingDeadlines = [...appDeadlineEntries, ...uniqueWatchlist]
+    .filter((e) => e.deadline !== "TBD")
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 3)
+    .map(({ universityName, programName, deadline, daysLeft }) => ({
+      universityName,
+      programName,
+      deadline,
+      daysLeft,
+    }));
+  // ───────────────────────────────────────────────────────────────────────────
 
   const recentActivity = [
     ...(profile

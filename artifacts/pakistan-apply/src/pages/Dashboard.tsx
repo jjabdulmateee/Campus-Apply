@@ -52,11 +52,11 @@ export default function Dashboard() {
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
                 {dashboard?.profileSections.slice(0, 7).map((step) => {
-                  const href = sectionHref(step.slug);
+                  const map = SECTION_MAP[step.slug] ?? { href: "/dashboard", label: step.name };
                   return (
                     <Link
                       key={step.slug}
-                      href={href}
+                      href={map.href}
                       className="flex flex-col items-center gap-1.5 text-center group"
                     >
                       <div
@@ -74,7 +74,7 @@ export default function Dashboard() {
                         )}
                       </div>
                       <div className="text-[11px] text-slate-500 leading-tight">
-                        {sectionLabel(step.slug, step.name)}
+                        {map.label}
                       </div>
                     </Link>
                   );
@@ -269,28 +269,14 @@ function CollapsibleCard({
   );
 }
 
-function sectionHref(slug: string) {
-  if (slug.includes("profile")) return "/profile";
-  if (slug.includes("family")) return "/profile";
-  if (slug.includes("education")) return "/education";
-  if (slug.includes("grade")) return "/education";
-  if (slug.includes("course")) return "/education";
-  if (slug.includes("test")) return "/testing";
-  if (slug.includes("activity")) return "/activities";
-  if (slug.includes("writing") || slug.includes("essay")) return "/writing";
-  if (slug.includes("recommender")) return "/recommenders";
-  return "/dashboard";
-}
-
-function sectionLabel(slug: string, fallback: string) {
-  if (slug.includes("profile")) return "Profile";
-  if (slug.includes("family")) return "Family";
-  if (slug.includes("education")) return "Education";
-  if (slug.includes("grade")) return "Courses";
-  if (slug.includes("course")) return "Courses";
-  if (slug.includes("test")) return "Testing";
-  if (slug.includes("activity")) return "Activities";
-  if (slug.includes("writing") || slug.includes("essay")) return "Writing";
-  if (slug.includes("recommender")) return fallback;
-  return fallback;
-}
+const SECTION_MAP: Record<string, { href: string; label: string }> = {
+  profile:      { href: "/profile",      label: "Profile" },
+  family:       { href: "/profile",      label: "Family" },
+  education:    { href: "/education",    label: "Education" },
+  testing:      { href: "/testing",      label: "Testing" },
+  activities:   { href: "/activities",   label: "Activities" },
+  writing:      { href: "/writing",      label: "Writing" },
+  courses:      { href: "/education",    label: "Courses" },
+  documents:    { href: "/documents",    label: "Documents" },
+  recommenders: { href: "/recommenders", label: "Recommenders" },
+};

@@ -1,0 +1,37 @@
+Act as a Lead Full-Stack Developer. We are in the final push. The UI looks great, but the 'plumbing' is leaking. You must execute these five tasks bit-by-bit and confirm each one with a 'Task Complete' message.
+
+Task 1: Hard-Fix Dashboard Navigation (The 'Activities' Bug)
+
+Stop using complex slug-matching logic for the dashboard icon grid.
+
+In the Dashboard component, explicitly map the 'Activities' icon to /activities and the 'Writing' icon to /writing.
+
+Test the click handler: Ensure that clicking the physical icon AND the text label under it triggers the Link.
+
+Task 2: Profile Data & Image Persistence
+
+The Problem: Profile changes (including the photo) are not saving long-term.
+
+The Fix: Ensure the Profile form component has a 'Save' or 'Update' function that hits the PATCH /api/students/me or /api/profile endpoint.
+
+After a document/photo upload is successful in the Document Locker, you MUST fire a database update to link that new file URL to the user's avatarUrl or profilePicture field in the students table.
+
+Task 3: Dashboard Deadlines (Watchlist Sync)
+
+Modify the GET /api/students/me/dashboard endpoint.
+
+Currently, it only shows deadlines for started applications. Update it to ALSO pull deadlines from the saved_colleges table.
+
+Merge these two lists, sort them by the closest date, and return the top 3 to the dashboard.
+
+Task 4: Server-Side Submission Guard (Security)
+
+Add a validation check inside the POST /api/applications/:id/submit route.
+
+The server must re-verify that the Profile, Education, and Testing records exist for this student before allowing the status to change to 'submitted'. Return a 400 Bad Request with a specific error message if data is missing.
+
+Task 5: Storage Confirmation
+
+Print a summary of where user_credentials, application_data, and uploaded_files are being stored to confirm the backend is fully connected to PostgreSQL and Object Storage.
+
+Constraint: Do not leave any 'hollow' links. Every button in the center column of the dashboard must lead to a functional page

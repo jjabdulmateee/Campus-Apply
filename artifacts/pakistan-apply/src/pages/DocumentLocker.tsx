@@ -8,6 +8,9 @@ import {
   useCreateDocument,
   useDeleteDocument,
   getListDocumentsQueryKey,
+  useGetMyProfile,
+  useUpdateMyProfile,
+  getGetMyProfileQueryKey,
 } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 import {
@@ -113,9 +116,10 @@ interface UploadSlotProps {
   } | null;
   onDelete: (id: number) => void;
   isDeleting: boolean;
+  onPhotoUploaded?: (objectPath: string) => void;
 }
 
-function UploadSlot({ def, existing, onDelete, isDeleting }: UploadSlotProps) {
+function UploadSlot({ def, existing, onDelete, isDeleting, onPhotoUploaded }: UploadSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -141,6 +145,9 @@ function UploadSlot({ def, existing, onDelete, isDeleting }: UploadSlotProps) {
           objectPath: res.objectPath,
         },
       });
+      if (def.key === "passport_photo" && onPhotoUploaded) {
+        onPhotoUploaded(res.objectPath);
+      }
       toast({ title: `${def.label} uploaded successfully` });
     },
     onError: (err) => {
@@ -296,6 +303,7 @@ function DocGroup({
   documents,
   deletingId,
   onDelete,
+  onPhotoUploaded,
 }: {
   title: string;
   subtitle: string;
@@ -311,6 +319,7 @@ function DocGroup({
   }>;
   deletingId: number | null;
   onDelete: (id: number) => void;
+  onPhotoUploaded?: (objectPath: string) => void;
 }) {
   return (
     <div>
@@ -328,6 +337,7 @@ function DocGroup({
               existing={existing}
               onDelete={onDelete}
               isDeleting={deletingId === existing?.id}
+              onPhotoUploaded={onPhotoUploaded}
             />
           );
         })}
@@ -341,6 +351,30 @@ export default function DocumentLocker() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const { data: profile } = useGetMyProfile();
+  const { mutate: updateProfile } = useUpdateMyProfile({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetMyProfileQueryKey() });
+      },
+    },
+  });
+
+  const handlePhotoUploaded = useCallback(
+    (objectPath: string) => {
+      if (!profile?.firstName || !profile?.lastName || !profile?.email) return;
+      updateProfile({
+        data: {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          email: profile.email,
+          photoUrl: objectPath,
+        },
+      });
+    },
+    [profile, updateProfile],
+  );
 
   const { mutate: deleteDoc } = useDeleteDocument({
     mutation: {
@@ -441,6 +475,7 @@ export default function DocumentLocker() {
               documents={documents}
               deletingId={deletingId}
               onDelete={handleDelete}
+              onPhotoUploaded={handlePhotoUploaded}
             />
           </div>
         )}
