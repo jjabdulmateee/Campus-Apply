@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
-import { usersTable, studentProfilesTable } from "@workspace/db";
+import { usersTable, studentProfilesTable, universitiesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { JWT_SECRET, verifyJWT } from "../middleware/auth";
@@ -46,7 +46,7 @@ async function seedDemoAccounts() {
   const DEMO_STUDENT_EMAIL = "student@pakmail.pk";
   const DEMO_ADMIN_EMAIL = "admin@pakmail.pk";
 
-  const existingStudent = await db.query.usersTable.findFirst({
+  let existingStudent = await db.query.usersTable.findFirst({
     where: eq(usersTable.email, DEMO_STUDENT_EMAIL),
   });
   if (!existingStudent) {
@@ -69,6 +69,22 @@ async function seedDemoAccounts() {
       lastName: "Student",
       email: DEMO_STUDENT_EMAIL,
     });
+    existingStudent = await db.query.usersTable.findFirst({ where: eq(usersTable.id, u.id) });
+  }
+
+  // Ensure profile row exists for the demo student (in case seeded via seed-demo.ts without profile)
+  if (existingStudent?.studentId) {
+    const existingProfile = await db.query.studentProfilesTable.findFirst({
+      where: eq(studentProfilesTable.studentId, existingStudent.studentId),
+    });
+    if (!existingProfile) {
+      await db.insert(studentProfilesTable).values({
+        studentId: existingStudent.studentId,
+        firstName: "Demo",
+        lastName: "Student",
+        email: DEMO_STUDENT_EMAIL,
+      });
+    }
   }
 
   const existingAdmin = await db.query.usersTable.findFirst({
@@ -102,11 +118,48 @@ async function seedDemoAccounts() {
   }
 }
 
+/** Update university filter metadata (runs once on startup) */
+async function ensureUniversityMetadata() {
+  const metadata: Array<{
+    shortName: string;
+    deadlineType: string;
+    applicationFeeRequired: boolean;
+    essayRequired: boolean;
+    acceptsTransfer: boolean;
+  }> = [
+    { shortName: "LUMS",     deadlineType: "early_action",      applicationFeeRequired: true,  essayRequired: true,  acceptsTransfer: false },
+    { shortName: "NUST",     deadlineType: "early_action",      applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "FAST-NU",  deadlineType: "regular_decision",  applicationFeeRequired: true,  essayRequired: false, acceptsTransfer: true  },
+    { shortName: "IBA",      deadlineType: "regular_decision",  applicationFeeRequired: true,  essayRequired: true,  acceptsTransfer: false },
+    { shortName: "UET",      deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "AKU",      deadlineType: "early_action",      applicationFeeRequired: true,  essayRequired: true,  acceptsTransfer: false },
+    { shortName: "COMSATS",  deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "PU",       deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "QAU",      deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "UOP",      deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "BUITEMS",  deadlineType: "rolling",           applicationFeeRequired: false, essayRequired: false, acceptsTransfer: true  },
+    { shortName: "HU",       deadlineType: "regular_decision",  applicationFeeRequired: true,  essayRequired: true,  acceptsTransfer: false },
+  ];
+
+  for (const m of metadata) {
+    await db
+      .update(universitiesTable)
+      .set({
+        deadlineType: m.deadlineType,
+        applicationFeeRequired: m.applicationFeeRequired,
+        essayRequired: m.essayRequired,
+        acceptsTransfer: m.acceptsTransfer,
+      })
+      .where(eq(universitiesTable.shortName, m.shortName));
+  }
+}
+
 let seeded = false;
 router.use(async (_req, _res, next) => {
   if (!seeded) {
     seeded = true;
     await seedDemoAccounts().catch(() => {});
+    await ensureUniversityMetadata().catch(() => {});
   }
   next();
 });

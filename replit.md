@@ -97,13 +97,13 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `POST /api/admin/applications/:id/remarks` — Add internal remark (auto-advances status to under_review)
 
 ### Auth Middleware (`artifacts/api-server/src/middleware/auth.ts`)
-- `verifyJWT` — Requires valid Bearer token
-- `optionalJWT` — Attaches user if token present
+- `verifyJWT` — Requires valid Bearer token (ALL student routes now use this — no unauthenticated access)
+- `optionalJWT` — Attaches user if token present (used only where public access is needed)
 - `requireAdmin` — Requires valid Bearer token AND `role === "admin"` in payload (403 otherwise)
 - `getStudentId(req)` — Returns real studentId or `"demo-student-001"`
 
 ### Database Schema (`lib/db/src/schema/`)
-- `students` — Profile, academics, test scores, activities, essays
+- `students` — Profile, academics, test scores, activities, essays; profile now has `cnicDocumentUrl`, `transcriptUrl`, `photoUrl` columns for verification uploads
 - `universities` — 12 Pakistani universities seeded; new columns: `deadlineType`, `applicationFeeRequired`, `essayRequired`, `acceptsTransfer`
 - `user_colleges` — Student saved-college list with 5-stage status: `researching → questions_started → recommenders_invited → review_and_submit → submitted`
 - `applications` — Student→Program applications with status + `adminNotes`, `decisionReason`, `reviewedAt` columns
@@ -126,7 +126,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 | Demo student (has admin role for testing) | `student@pakmail.pk` | `demo123` | admin |
 | Dedicated admin | `admin@pakmail.pk` | `admin123` | admin |
 
-- 12 universities seeded: LUMS, NUST, FAST-NU, IBA, UET, AKU, COMSATS, PU, KU, GIKI, BZU, QAU
+- 12 universities seeded: LUMS, NUST, FAST-NU, IBA, UET, AKU, COMSATS, PU, QAU, UOP, BUITEMS, HU
 - Programs seeded with degree, department, duration, seats, entry test requirements
 - Demo student has `role = "admin"` so the **Admin Portal** button appears in the sidebar immediately after login with `student@pakmail.pk / demo123`
 

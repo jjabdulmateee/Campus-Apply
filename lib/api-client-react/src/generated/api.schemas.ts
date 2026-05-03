@@ -60,6 +60,9 @@ export interface StudentProfile {
   guardianRelation?: string;
   guardianEmail?: string;
   previousCollege?: string;
+  cnicDocumentUrl?: string;
+  transcriptUrl?: string;
+  photoUrl?: string;
   profileCompletionPercent: number;
   createdAt?: string;
   updatedAt?: string;
@@ -114,6 +117,9 @@ export interface UpsertStudentProfileBody {
   guardianRelation?: string;
   guardianEmail?: string;
   previousCollege?: string;
+  cnicDocumentUrl?: string;
+  transcriptUrl?: string;
+  photoUrl?: string;
 }
 
 export type AcademicRecordLevel =

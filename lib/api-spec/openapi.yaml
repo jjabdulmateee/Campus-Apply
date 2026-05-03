@@ -1232,6 +1232,12 @@ components:
           type: string
         previousCollege:
           type: string
+        cnicDocumentUrl:
+          type: string
+        transcriptUrl:
+          type: string
+        photoUrl:
+          type: string
         profileCompletionPercent:
           type: integer
         createdAt:
@@ -1293,6 +1299,12 @@ components:
         guardianEmail:
           type: string
         previousCollege:
+          type: string
+        cnicDocumentUrl:
+          type: string
+        transcriptUrl:
+          type: string
+        photoUrl:
           type: string
       required:
         - firstName

@@ -1,4 +1,5 @@
 import AppLayout from "@/components/AppLayout";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useUpload } from "@/hooks/useUpload";
 import { PROVINCES, RELIGIONS } from "@/lib/constants";
-import { Loader2, Save, User, MapPin, Phone, Users, CheckCircle2 } from "lucide-react";
+import { Loader2, Save, User, MapPin, Phone, Users, CheckCircle2, ShieldCheck, Upload, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -37,12 +39,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-// Profile completion sections config
 const COMPLETION_SECTIONS = [
-  { key: "legal_name", label: "Legal Name", icon: User, color: "sky", weight: 25 },
-  { key: "address", label: "Address", icon: MapPin, color: "violet", weight: 25 },
-  { key: "contact", label: "Contact", icon: Phone, color: "amber", weight: 25 },
-  { key: "guardian", label: "Guardian", icon: Users, color: "emerald", weight: 25 },
+  { key: "legal_name", label: "Legal Name", icon: User, color: "sky" },
+  { key: "address", label: "Address", icon: MapPin, color: "violet" },
+  { key: "contact", label: "Contact", icon: Phone, color: "amber" },
+  { key: "guardian", label: "Guardian", icon: Users, color: "emerald" },
+  { key: "documents", label: "Documents", icon: ShieldCheck, color: "blue" },
 ] as const;
 
 function computeSectionComplete(data: Partial<FormData>) {
@@ -99,13 +101,26 @@ export default function Profile() {
 
   const formValues = watch();
   const sectionComplete = computeSectionComplete(formValues);
-  const completedSections = Object.values(sectionComplete).filter(Boolean).length;
-  const totalPct = Math.round((completedSections / 4) * 100);
+  const docsComplete = !!(profile?.cnicDocumentUrl && profile?.transcriptUrl);
+  const completedSections =
+    Object.values(sectionComplete).filter(Boolean).length + (docsComplete ? 1 : 0);
+  const totalPct = Math.round((completedSections / 5) * 100);
   const apiPct = profile?.profileCompletionPercent ?? 0;
   const displayPct = Math.max(totalPct, apiPct);
 
   const onSubmit = (data: FormData) => {
     update({ data });
+  };
+
+  const handleDocUploaded = (field: "cnicDocumentUrl" | "transcriptUrl") => (objectPath: string) => {
+    update({
+      data: {
+        firstName: profile?.firstName ?? "",
+        lastName: profile?.lastName ?? "",
+        email: profile?.email ?? "",
+        [field]: objectPath,
+      },
+    });
   };
 
   return (
@@ -133,9 +148,11 @@ export default function Profile() {
             style={{ width: `${displayPct}%` }}
           />
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {COMPLETION_SECTIONS.map(({ key, label, icon: Icon, color }) => {
-            const done = sectionComplete[key];
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+          {COMPLETION_SECTIONS.map(({ key, label, icon: Icon }) => {
+            const done = key === "documents"
+              ? docsComplete
+              : sectionComplete[key as keyof typeof sectionComplete];
             return (
               <div
                 key={key}
@@ -171,163 +188,283 @@ export default function Profile() {
           ))}
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-          {/* ── Legal Name ── */}
-          <Section title="Legal Name" icon={User} iconColor="text-sky-600" iconBg="bg-sky-50" complete={sectionComplete.legal_name}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="First Name" error={errors.firstName?.message} required>
-                <Input {...register("firstName")} placeholder="Ali" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Middle Name (optional)">
-                <Input {...register("middleName")} placeholder="Raza" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Last Name" error={errors.lastName?.message} required>
-                <Input {...register("lastName")} placeholder="Khan" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <Field label="Father's Name">
-                <Input {...register("fatherName")} placeholder="Mohammad Khan" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="CNIC / B-Form Number">
-                <Input {...register("cnicNumber")} placeholder="35201-1234567-8" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-            </div>
-          </Section>
-
-          {/* ── Address ── */}
-          <Section title="Home Address" icon={MapPin} iconColor="text-violet-600" iconBg="bg-violet-50" complete={sectionComplete.address}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Province" required>
-                <Select value={watch("province") ?? ""} onValueChange={(v) => setValue("province", v)}>
-                  <SelectTrigger className="border-slate-200 focus:border-sky-400">
-                    <SelectValue placeholder="Select province" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROVINCES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="City" required>
-                <Input {...register("city")} placeholder="Lahore" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <div className="md:col-span-2">
-                <Field label="Street Address" required>
-                  <Input {...register("address")} placeholder="House 12, Street 5, DHA Phase 1" className="border-slate-200 focus:border-sky-400" />
+            {/* ── Legal Name ── */}
+            <Section title="Legal Name" icon={User} iconColor="text-sky-600" iconBg="bg-sky-50" complete={sectionComplete.legal_name}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label="First Name" error={errors.firstName?.message} required>
+                  <Input {...register("firstName")} placeholder="Ali" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Middle Name (optional)">
+                  <Input {...register("middleName")} placeholder="Raza" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Last Name" error={errors.lastName?.message} required>
+                  <Input {...register("lastName")} placeholder="Khan" className="border-slate-200 focus:border-sky-400" />
                 </Field>
               </div>
-              <Field label="Postal / ZIP Code">
-                <Input {...register("zipCode")} placeholder="54000" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-            </div>
-          </Section>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <Field label="Father's Name">
+                  <Input {...register("fatherName")} placeholder="Mohammad Khan" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="CNIC / B-Form Number">
+                  <Input {...register("cnicNumber")} placeholder="35201-1234567-8" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+              </div>
+            </Section>
 
-          {/* ── Contact ── */}
-          <Section title="Contact Information" icon={Phone} iconColor="text-amber-600" iconBg="bg-amber-50" complete={sectionComplete.contact}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Email Address" error={errors.email?.message} required>
-                <Input {...register("email")} type="email" placeholder="ali@example.com" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Phone Number" required>
-                <Input {...register("phoneNumber")} placeholder="+92 300 1234567" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Preferred Contact Method" required>
-                <Select
-                  value={watch("preferredContact") ?? ""}
-                  onValueChange={(v) => setValue("preferredContact", v as FormData["preferredContact"])}
-                >
-                  <SelectTrigger className="border-slate-200 focus:border-sky-400">
-                    <SelectValue placeholder="How should we reach you?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="sms">SMS / Text</SelectItem>
-                    <SelectItem value="phone">Phone Call</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-          </Section>
+            {/* ── Address ── */}
+            <Section title="Home Address" icon={MapPin} iconColor="text-violet-600" iconBg="bg-violet-50" complete={sectionComplete.address}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Province" required>
+                  <Select value={watch("province") ?? ""} onValueChange={(v) => setValue("province", v)}>
+                    <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                      <SelectValue placeholder="Select province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROVINCES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="City" required>
+                  <Input {...register("city")} placeholder="Lahore" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <div className="md:col-span-2">
+                  <Field label="Street Address" required>
+                    <Input {...register("address")} placeholder="House 12, Street 5, DHA Phase 1" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                </div>
+                <Field label="Postal / ZIP Code">
+                  <Input {...register("zipCode")} placeholder="54000" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+              </div>
+            </Section>
 
-          {/* ── Demographics ── */}
-          <Section title="Demographics" complete={false}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Date of Birth">
-                <Input type="date" {...register("dateOfBirth")} className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Gender">
-                <Select value={watch("gender") ?? ""} onValueChange={(v) => setValue("gender", v as FormData["gender"])}>
-                  <SelectTrigger className="border-slate-200 focus:border-sky-400">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Nationality">
-                <Input {...register("nationality")} placeholder="Pakistani" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Religion">
-                <Select value={watch("religion") ?? ""} onValueChange={(v) => setValue("religion", v)}>
-                  <SelectTrigger className="border-slate-200 focus:border-sky-400">
-                    <SelectValue placeholder="Select religion" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RELIGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-          </Section>
+            {/* ── Contact ── */}
+            <Section title="Contact Information" icon={Phone} iconColor="text-amber-600" iconBg="bg-amber-50" complete={sectionComplete.contact}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Email Address" error={errors.email?.message} required>
+                  <Input {...register("email")} type="email" placeholder="ali@example.com" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Phone Number" required>
+                  <Input {...register("phoneNumber")} placeholder="+92 300 1234567" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Preferred Contact Method" required>
+                  <Select
+                    value={watch("preferredContact") ?? ""}
+                    onValueChange={(v) => setValue("preferredContact", v as FormData["preferredContact"])}
+                  >
+                    <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                      <SelectValue placeholder="How should we reach you?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="sms">SMS / Text</SelectItem>
+                      <SelectItem value="phone">Phone Call</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            </Section>
 
-          {/* ── Parent / Guardian ── */}
-          <Section title="Parent / Guardian" icon={Users} iconColor="text-emerald-600" iconBg="bg-emerald-50" complete={sectionComplete.guardian}>
-            <p className="text-xs text-slate-400 mb-4">
-              Provide your primary parent or guardian's contact details. This information may be used by universities for admission correspondence.
+            {/* ── Demographics ── */}
+            <Section title="Demographics" complete={false}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Date of Birth">
+                  <Input type="date" {...register("dateOfBirth")} className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Gender">
+                  <Select value={watch("gender") ?? ""} onValueChange={(v) => setValue("gender", v as FormData["gender"])}>
+                    <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Nationality">
+                  <Input {...register("nationality")} placeholder="Pakistani" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Religion">
+                  <Select value={watch("religion") ?? ""} onValueChange={(v) => setValue("religion", v)}>
+                    <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                      <SelectValue placeholder="Select religion" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELIGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            </Section>
+
+            {/* ── Parent / Guardian ── */}
+            <Section title="Parent / Guardian" icon={Users} iconColor="text-emerald-600" iconBg="bg-emerald-50" complete={sectionComplete.guardian}>
+              <p className="text-xs text-slate-400 mb-4">
+                Provide your primary parent or guardian's contact details. This information may be used by universities for admission correspondence.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label="Full Name" required>
+                  <Input {...register("guardianName")} placeholder="Mohammad Khan" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+                <Field label="Relation" required>
+                  <Select value={watch("guardianRelation") ?? ""} onValueChange={(v) => setValue("guardianRelation", v)}>
+                    <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                      <SelectValue placeholder="Select relation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Father">Father</SelectItem>
+                      <SelectItem value="Mother">Mother</SelectItem>
+                      <SelectItem value="Guardian">Guardian</SelectItem>
+                      <SelectItem value="Sibling">Sibling</SelectItem>
+                      <SelectItem value="Spouse">Spouse</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Email Address" error={errors.guardianEmail?.message}>
+                  <Input {...register("guardianEmail")} type="email" placeholder="parent@example.com" className="border-slate-200 focus:border-sky-400" />
+                </Field>
+              </div>
+            </Section>
+
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="bg-sky-600 hover:bg-sky-700 px-8 h-11 rounded-xl gap-2 font-semibold"
+              >
+                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Profile
+              </Button>
+            </div>
+          </form>
+
+          {/* ── Verification Documents (outside main form) ── */}
+          <Section
+            title="Verification Documents"
+            icon={ShieldCheck}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50"
+            complete={docsComplete}
+          >
+            <p className="text-xs text-slate-400 mb-5">
+              Upload your identity and academic documents. These are required by universities to verify your application before admission.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Full Name" required>
-                <Input {...register("guardianName")} placeholder="Mohammad Khan" className="border-slate-200 focus:border-sky-400" />
-              </Field>
-              <Field label="Relation" required>
-                <Select value={watch("guardianRelation") ?? ""} onValueChange={(v) => setValue("guardianRelation", v)}>
-                  <SelectTrigger className="border-slate-200 focus:border-sky-400">
-                    <SelectValue placeholder="Select relation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Father">Father</SelectItem>
-                    <SelectItem value="Mother">Mother</SelectItem>
-                    <SelectItem value="Guardian">Guardian</SelectItem>
-                    <SelectItem value="Sibling">Sibling</SelectItem>
-                    <SelectItem value="Spouse">Spouse</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Email Address" error={errors.guardianEmail?.message}>
-                <Input {...register("guardianEmail")} type="email" placeholder="parent@example.com" className="border-slate-200 focus:border-sky-400" />
-              </Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DocumentUploadSlot
+                label="CNIC / B-Form"
+                description="Front side of your CNIC or B-Form (identity document)"
+                existingUrl={profile?.cnicDocumentUrl ?? null}
+                onUploaded={handleDocUploaded("cnicDocumentUrl")}
+              />
+              <DocumentUploadSlot
+                label="Academic Transcript"
+                description="Matric/FSc transcript or most recent academic result"
+                existingUrl={profile?.transcriptUrl ?? null}
+                onUploaded={handleDocUploaded("transcriptUrl")}
+              />
             </div>
+            {docsComplete && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                Both documents uploaded. Your identity and transcript are verified for applications.
+              </div>
+            )}
           </Section>
-
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="bg-sky-600 hover:bg-sky-700 px-8 h-11 rounded-xl gap-2 font-semibold"
-            >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Profile
-            </Button>
-          </div>
-        </form>
+        </>
       )}
     </AppLayout>
+  );
+}
+
+function DocumentUploadSlot({
+  label,
+  description,
+  existingUrl,
+  onUploaded,
+}: {
+  label: string;
+  description: string;
+  existingUrl: string | null | undefined;
+  onUploaded: (objectPath: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading, progress } = useUpload({
+    onSuccess: (res) => onUploaded(res.objectPath),
+  });
+
+  const filename = existingUrl
+    ? existingUrl.split("/").pop()?.split("?")[0] ?? "document"
+    : null;
+
+  return (
+    <div
+      className={cn(
+        "relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center gap-3 text-center transition-all cursor-pointer group",
+        existingUrl
+          ? "border-green-300 bg-green-50/30 hover:border-green-400"
+          : "border-slate-200 hover:border-sky-300 hover:bg-sky-50/30",
+        isUploading && "pointer-events-none",
+      )}
+      onClick={() => !isUploading && inputRef.current?.click()}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) uploadFile(f);
+          e.target.value = "";
+        }}
+      />
+
+      {isUploading ? (
+        <>
+          <Loader2 className="w-9 h-9 text-sky-500 animate-spin" />
+          <div className="text-xs text-slate-500">Uploading... {progress}%</div>
+          <div className="w-full max-w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-sky-500 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </>
+      ) : existingUrl ? (
+        <>
+          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-green-600" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-green-700">Uploaded</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-40">{filename}</div>
+          </div>
+          <div className="text-[10px] text-sky-600 group-hover:underline">Click to replace</div>
+        </>
+      ) : (
+        <>
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+            {label.includes("Transcript") ? (
+              <FileText className="w-6 h-6 text-slate-400 group-hover:text-sky-500 transition-colors" />
+            ) : (
+              <Upload className="w-6 h-6 text-slate-400 group-hover:text-sky-500 transition-colors" />
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-700">{label}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{description}</div>
+          </div>
+          <div className="text-[10px] text-slate-400">PDF, JPG, PNG · max 2MB</div>
+        </>
+      )}
+    </div>
   );
 }
 

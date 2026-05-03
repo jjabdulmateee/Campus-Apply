@@ -28,6 +28,9 @@ export const studentProfilesTable = pgTable("student_profiles", {
   guardianRelation: text("guardian_relation"),
   guardianEmail: text("guardian_email"),
   previousCollege: text("previous_college"),
+  cnicDocumentUrl: text("cnic_document_url"),
+  transcriptUrl: text("transcript_url"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

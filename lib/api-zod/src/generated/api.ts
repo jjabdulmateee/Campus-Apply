@@ -41,6 +41,9 @@ export const GetMyProfileResponse = zod.object({
   guardianRelation: zod.string().optional(),
   guardianEmail: zod.string().optional(),
   previousCollege: zod.string().optional(),
+  cnicDocumentUrl: zod.string().optional(),
+  transcriptUrl: zod.string().optional(),
+  photoUrl: zod.string().optional(),
   profileCompletionPercent: zod.number(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),
@@ -71,6 +74,9 @@ export const UpdateMyProfileBody = zod.object({
   guardianRelation: zod.string().optional(),
   guardianEmail: zod.string().optional(),
   previousCollege: zod.string().optional(),
+  cnicDocumentUrl: zod.string().optional(),
+  transcriptUrl: zod.string().optional(),
+  photoUrl: zod.string().optional(),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -97,6 +103,9 @@ export const UpdateMyProfileResponse = zod.object({
   guardianRelation: zod.string().optional(),
   guardianEmail: zod.string().optional(),
   previousCollege: zod.string().optional(),
+  cnicDocumentUrl: zod.string().optional(),
+  transcriptUrl: zod.string().optional(),
+  photoUrl: zod.string().optional(),
   profileCompletionPercent: zod.number(),
   createdAt: zod.string().optional(),
   updatedAt: zod.string().optional(),

@@ -35,10 +35,10 @@ import {
   UpdateCollegeStatusParams,
 } from "@workspace/api-zod";
 import { eq, and, desc } from "drizzle-orm";
-import { optionalJWT, getStudentId } from "../middleware/auth";
+import { verifyJWT, getStudentId } from "../middleware/auth";
 
 const router = Router();
-router.use(optionalJWT);
+router.use(verifyJWT);
 
 // ─── Shared completion helpers ─────────────────────────────────────────────────
 
@@ -67,6 +67,8 @@ function computeCompletion(
   if (activityCount >= 3) pct += 5;
   if (essayWordCount >= 50) pct += 5;
   if (essayWordCount >= 300) pct += 5;
+  if (profile?.cnicDocumentUrl) pct += 5;
+  if (profile?.transcriptUrl) pct += 5;
   return Math.min(pct, 100);
 }
 
@@ -161,6 +163,13 @@ function computeSections(
       slug: "courses",
       isComplete: academics.length >= 1,
       completionPercent: academics.length > 0 ? 100 : 0,
+    },
+    {
+      name: "Documents",
+      slug: "documents",
+      isComplete: !!(profile?.cnicDocumentUrl && profile?.transcriptUrl),
+      completionPercent:
+        ((profile?.cnicDocumentUrl ? 1 : 0) + (profile?.transcriptUrl ? 1 : 0)) * 50,
     },
   ];
 }
