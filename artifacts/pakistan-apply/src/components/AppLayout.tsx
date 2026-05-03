@@ -4,8 +4,6 @@ import {
   FileText,
   GraduationCap,
   Search,
-  Landmark,
-  DollarSign,
   Menu,
   X,
   ChevronRight,
@@ -16,6 +14,9 @@ import {
   User,
   CircleCheckBig,
   CircleDashed,
+  FolderOpen,
+  LifeBuoy,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -24,24 +25,6 @@ import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-
 import { useAuth } from "@/contexts/AuthContext";
 import { SettingsModal } from "@/components/SettingsModal";
 
-const navSections = [
-  {
-    title: "APPLY",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/my-application", label: "My Common Application", icon: FileText, expandable: true },
-      { href: "/my-colleges", label: "My Colleges", icon: GraduationCap, expandable: true },
-    ],
-  },
-  {
-    title: "EXPLORE",
-    items: [
-      { href: "/universities", label: "College search", icon: Search },
-      { href: "/direct-admissions", label: "Direct admissions", icon: Landmark },
-      { href: "/financial-aid", label: "Financial aid", icon: DollarSign },
-    ],
-  },
-];
 
 const sidebarTree = [
   {
@@ -157,6 +140,19 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           {sidebarTree.map((item) => (
             <SidebarAccordionItem key={item.key} item={item} location={location} onClose={onClose} level={0} />
           ))}
+        </div>
+
+        <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-2 py-1.5">My List</div>
+          <SidebarFlatLink href="/my-colleges" icon={GraduationCap} label="My Colleges" location={location} onClose={onClose} />
+          <SidebarFlatLink href="/applications" icon={ClipboardList} label="My Applications" location={location} onClose={onClose} />
+        </div>
+
+        <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-2 py-1.5">Explore</div>
+          <SidebarFlatLink href="/universities" icon={Search} label="College Search" location={location} onClose={onClose} />
+          <SidebarFlatLink href="/documents" icon={FolderOpen} label="Documents" location={location} onClose={onClose} />
+          <SidebarFlatLink href="/help" icon={LifeBuoy} label="Help & Support" location={location} onClose={onClose} />
         </div>
       </nav>
 
@@ -315,6 +311,35 @@ function SidebarSubItem({
         </div>
       )}
     </div>
+  );
+}
+
+function SidebarFlatLink({
+  href,
+  icon: Icon,
+  label,
+  location,
+  onClose,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  location: string;
+  onClose?: () => void;
+}) {
+  const isActive = location === href || location.startsWith(href + "/");
+  return (
+    <Link
+      href={href}
+      onClick={onClose}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        isActive ? "bg-[#D1D5DB] text-slate-800" : "text-slate-600 hover:bg-slate-100",
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
+    </Link>
   );
 }
 

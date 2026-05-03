@@ -215,8 +215,8 @@ export default function Profile() {
         </div>
       ) : (
         <>
-          {/* ── Mobile Stepper (< lg) ── */}
-          <div className="lg:hidden mb-5">
+          {/* ── Step Navigator ── */}
+          <div className="mb-5">
             {/* Step pills */}
             <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
               {MOBILE_STEPS.map((step, idx) => {
@@ -255,7 +255,7 @@ export default function Profile() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
             {/* ── Legal Name ── */}
-            <div className={cn(mobileStep !== "legal_name" && "hidden lg:block")}>
+            <div className={cn(mobileStep !== "legal_name" && "hidden")}>
               <Section title="Legal Name" icon={User} iconColor="text-sky-600" iconBg="bg-sky-50" complete={sectionComplete.legal_name}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field label="First Name" error={errors.firstName?.message} required>
@@ -280,7 +280,7 @@ export default function Profile() {
             </div>
 
             {/* ── Address ── */}
-            <div className={cn(mobileStep !== "address" && "hidden lg:block")}>
+            <div className={cn(mobileStep !== "address" && "hidden")}>
               <Section title="Home Address" icon={MapPin} iconColor="text-violet-600" iconBg="bg-violet-50" complete={sectionComplete.address}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field label="Province" required>
@@ -309,7 +309,7 @@ export default function Profile() {
             </div>
 
             {/* ── Contact ── */}
-            <div className={cn(mobileStep !== "contact" && "hidden lg:block")}>
+            <div className={cn(mobileStep !== "contact" && "hidden")}>
               <Section title="Contact Information" icon={Phone} iconColor="text-amber-600" iconBg="bg-amber-50" complete={sectionComplete.contact}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field label="Email Address" error={errors.email?.message} required>
@@ -338,7 +338,7 @@ export default function Profile() {
             </div>
 
             {/* ── Demographics ── */}
-            <div className={cn(mobileStep !== "demographics" && "hidden lg:block")}>
+            <div className={cn(mobileStep !== "demographics" && "hidden")}>
               <Section title="Demographics" complete={false}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field label="Date of Birth">
@@ -375,7 +375,7 @@ export default function Profile() {
             </div>
 
             {/* ── Parent / Guardian ── */}
-            <div className={cn(mobileStep !== "guardian" && "hidden lg:block")}>
+            <div className={cn(mobileStep !== "guardian" && "hidden")}>
               <Section title="Parent / Guardian" icon={Users} iconColor="text-emerald-600" iconBg="bg-emerald-50" complete={sectionComplete.guardian}>
                 <p className="text-xs text-slate-400 mb-4">
                   Provide your primary parent or guardian's contact details. This information may be used by universities for admission correspondence.
@@ -406,11 +406,9 @@ export default function Profile() {
               </Section>
             </div>
 
-            {/* Save button — always visible on desktop; hidden on mobile for the documents step */}
             {mobileStep !== "documents" && (
               <div className="flex justify-between items-center">
-                {/* Mobile: prev/next navigation */}
-                <div className="flex gap-2 lg:hidden">
+                <div className="flex gap-2">
                   {!isFirstStep && (
                     <Button
                       type="button"
@@ -434,14 +432,13 @@ export default function Profile() {
                     {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save
                   </Button>
-                  {/* Mobile: Next button */}
                   {!isLastStep && (
                     <Button
                       type="button"
                       variant="outline"
                       size="default"
                       onClick={() => setMobileStep(MOBILE_STEPS[stepIndex + 1].key)}
-                      className="lg:hidden gap-1 h-10"
+                      className="gap-1 h-10"
                     >
                       Next <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -451,8 +448,7 @@ export default function Profile() {
             )}
           </form>
 
-          {/* ── Verification Documents (outside main form, shown on "documents" step or always on desktop) ── */}
-          <div className={cn(mobileStep !== "documents" && "hidden lg:block")}>
+          <div className={cn(mobileStep !== "documents" && "hidden")}>
             <Section
               title="Verification Documents"
               icon={ShieldCheck}
@@ -485,8 +481,7 @@ export default function Profile() {
               )}
             </Section>
 
-            {/* Mobile: Back button on documents step */}
-            <div className="lg:hidden mt-4 flex gap-2">
+            <div className="mt-4 flex gap-2">
               <Button
                 type="button"
                 variant="outline"

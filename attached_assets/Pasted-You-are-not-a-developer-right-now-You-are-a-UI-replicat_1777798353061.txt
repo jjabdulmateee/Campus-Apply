@@ -1,0 +1,147 @@
+You are not a developer right now.
+You are a UI replication engineer.
+
+Your ONLY job is to match the Common App interface structure and behavior as closely as possible.
+
+----------------------------------
+CRITICAL PROBLEM TO FIX
+----------------------------------
+The current app claims tasks are complete, but the UI does NOT match Common App.
+
+This is a FAILURE.
+
+From now on:
+You are NOT allowed to say “done” unless the UI STRUCTURE, FLOW, and COMPONENTS match Common App patterns.
+
+----------------------------------
+NON-NEGOTIABLE RULES
+----------------------------------
+1. DO NOT claim completion unless UI matches required structure.
+2. DO NOT summarize work as "done".
+3. DO NOT skip layout details.
+4. DO NOT redesign anything.
+5. DO NOT use generic dashboards or templates.
+6. DO NOT improvise UI.
+
+You are COPYING a system, not designing one.
+
+----------------------------------
+WHAT "COMMON APP UI" MEANS (STRICT DEFINITION)
+----------------------------------
+
+You MUST replicate these EXACT structural patterns:
+
+1. LEFT SIDEBAR NAVIGATION (FIXED)
+   - Vertical sidebar (not top navbar)
+   - Sections:
+     • Dashboard
+     • Profile
+     • Colleges
+     • My Applications
+   - Active state highlight
+   - Clean minimal icons + text
+
+2. MULTI-STEP FORM SYSTEM
+   - Forms are NOT one long page
+   - Each section is broken into steps
+   - Example:
+     Profile → Personal Info → Contact → Demographics → etc.
+   - Navigation:
+     • Next / Back buttons
+     • Section progress tracking
+
+3. TOP PROGRESS INDICATOR
+   - Shows completion percentage
+   - Updates dynamically
+   - Visible across profile sections
+
+4. CLEAN FORM LAYOUT
+   - Centered container (NOT full-width)
+   - Consistent spacing
+   - Label → Input → helper text
+   - No clutter
+   - No random Tailwind styling
+
+5. APPLICATION FLOW STRUCTURE
+   - Colleges list → Add college
+   - Each college has:
+     • Status tracker (stepper)
+     • Sections: Questions, Recommenders, Review, Submit
+
+6. REVIEW PAGE (CRITICAL)
+   - Structured summary (NOT raw data dump)
+   - Grouped sections
+   - Clean readable layout
+
+7. DASHBOARD
+   - NOT generic cards
+   - Must include:
+     • Application progress overview
+     • Deadlines
+     • Minimal clean layout
+
+----------------------------------
+STRICT VISUAL RULES
+----------------------------------
+- No random colors → use minimal neutral palette
+- No heavy gradients
+- No “startup landing page style”
+- No oversized components
+- Use spacing like a professional SaaS tool
+
+----------------------------------
+MANDATORY OUTPUT FORMAT
+----------------------------------
+
+You MUST respond like this:
+
+1. WHAT YOU ARE FIXING (UI area)
+2. UI STRUCTURE BREAKDOWN (exact layout hierarchy)
+3. FILE TREE (only changed files)
+4. FULL CODE
+5. VISUAL VERIFICATION CHECKLIST
+
+----------------------------------
+CRITICAL: VERIFICATION CHECKLIST
+----------------------------------
+
+Before you say anything is complete, you MUST verify:
+
+[ ] Sidebar is fixed and matches structure
+[ ] Forms are multi-step (NOT one page)
+[ ] Progress indicator exists and updates
+[ ] Layout is centered and clean
+[ ] Application flow uses stepper system
+[ ] Review page is structured properly
+[ ] No generic dashboard UI
+
+If ANY checkbox is false → YOU ARE NOT DONE
+
+----------------------------------
+CURRENT TASK
+----------------------------------
+
+TASK: Fix the ENTIRE UI STRUCTURE to match Common App patterns.
+
+This includes:
+- Sidebar layout
+- Profile multi-step flow
+- Dashboard cleanup
+- Application stepper system
+- Review page structure
+
+----------------------------------
+STRICT EXECUTION RULE
+----------------------------------
+You are NOT allowed to:
+- Say “everything is done”
+- Skip parts
+- Only describe UI
+
+You MUST implement real UI code.
+
+If something already exists but is wrong → FIX IT.
+
+----------------------------------
+START NOW
+----------------------------------
