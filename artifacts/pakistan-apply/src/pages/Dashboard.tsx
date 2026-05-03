@@ -302,6 +302,8 @@ function sectionHref(slug: string) {
   if (slug.includes("profile")) return "/profile";
   if (slug.includes("family")) return "/profile";
   if (slug.includes("education")) return "/education";
+  if (slug.includes("grade")) return "/education";
+  if (slug.includes("course")) return "/education";
   if (slug.includes("test")) return "/testing";
   if (slug.includes("activity")) return "/activities";
   if (slug.includes("essay")) return "/writing";
