@@ -1,0 +1,40 @@
+Step 8: The University Admin Portal & UX Polish
+To reach your goal of "launching today," we need to ensure the University Admins (the people at NUST, LUMS, etc.) have a high-quality experience when they log in to see the students. We also need to fix the "monolithic" (too long) forms that might frustrate mobile users.
+
+Copy and paste this exact prompt into Replit:
+
+"Act as a Lead Systems Architect. We are in the final push for launch. We need to polish the 'University Admin' experience and fix the UI bottlenecks identified in the audit.
+
+Task 1: The University Admissions Officer (AO) Portal
+
+Improve the /admin dashboard specifically for university staff.
+
+When an Admin logs in, they should see a list of applications only for their specific university.
+
+The Reviewer View: When they click a student, show the 'Application Snapshot' (Profile + Test Scores + Essay + Recommendation Letter) in a clean, printable layout.
+
+Decision Engine: Add a simple 'Decision' dropdown for the Admin: 'Under Review', 'Accepted', 'Waitlisted', or 'Rejected'. Updating this should trigger a notification on the Student's dashboard.
+
+Task 2: Real-time 'Writing' Auto-save
+
+Refactor the 'Writing/Essay' page. Implement a 'Debounced Auto-save' (e.g., save every 2 seconds of inactivity).
+
+Add a small 'All changes saved' or 'Saving...' indicator next to the word counter so the student feels secure that their work is safe.
+
+Task 3: Mobile UI Refactor (The 'Step-by-Step' Fix)
+
+The audit mentioned forms are too 'monolithic' (too long) for mobile.
+
+For the 'Profile' and 'Education' pages, refactor the long scroll into a 'Vertical Tab' or 'Stepper' layout on mobile devices.
+
+Ensure that 'Save & Continue' buttons are always visible at the bottom of the screen.
+
+Task 4: The 'Launch Ready' Banner
+
+Add a global 'Beta' or 'Alpha' banner at the very top of the app explaining that this is a new platform for Pakistani University Admissions.
+
+Technical Requirements:
+
+Ensure the applications table status updates are reflected in real-time.
+
+Keep the design minimalist, using the 'sky-blue' theme."
