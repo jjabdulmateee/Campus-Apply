@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import SubmitModal from "@/components/SubmitModal";
 import {
   Building2,
   MapPin,
@@ -318,12 +319,19 @@ function DetailItem({
   );
 }
 
+interface SubmitTarget {
+  universityId: number;
+  universityName: string;
+  feeRequired: boolean | null | undefined;
+}
+
 export default function MyColleges() {
   const { data: colleges, isLoading } = useListMyColleges();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [advancingId, setAdvancingId] = useState<number | null>(null);
+  const [submitTarget, setSubmitTarget] = useState<SubmitTarget | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListMyCollegesQueryKey() });
 
@@ -355,6 +363,15 @@ export default function MyColleges() {
   };
 
   const handleAdvance = (universityId: number, status: CollegeStatus) => {
+    if (status === "submitted") {
+      const college = colleges?.find((c) => c.universityId === universityId);
+      setSubmitTarget({
+        universityId,
+        universityName: college?.university?.name ?? "University",
+        feeRequired: college?.university?.applicationFeeRequired,
+      });
+      return;
+    }
     setAdvancingId(universityId);
     advance({ universityId, data: { status } });
   };
@@ -438,6 +455,19 @@ export default function MyColleges() {
           </div>
         )}
       </div>
+
+      {submitTarget && (
+        <SubmitModal
+          universityId={submitTarget.universityId}
+          universityName={submitTarget.universityName}
+          feeRequired={submitTarget.feeRequired}
+          onClose={() => setSubmitTarget(null)}
+          onSuccess={() => {
+            invalidate();
+            setSubmitTarget(null);
+          }}
+        />
+      )}
     </AppLayout>
   );
 }

@@ -619,6 +619,75 @@ export const UpdateCollegeStatusResponse = zod.object({
 });
 
 /**
+ * @summary Check if student is eligible to submit to a college
+ */
+export const ValidateCollegeSubmissionParams = zod.object({
+  universityId: zod.coerce.number(),
+});
+
+export const ValidateCollegeSubmissionResponse = zod.object({
+  canSubmit: zod.boolean(),
+  missing: zod.array(zod.string()),
+  profileCompletionPercent: zod.number(),
+  profile: zod.record(zod.string(), zod.unknown()).nullish(),
+  tests: zod.array(zod.record(zod.string(), zod.unknown())),
+  essays: zod.array(zod.record(zod.string(), zod.unknown())),
+});
+
+/**
+ * @summary Officially submit a college application with digital signature
+ */
+export const SubmitCollegeApplicationParams = zod.object({
+  universityId: zod.coerce.number(),
+});
+
+export const submitCollegeApplicationBodySignatureMin = 2;
+
+export const SubmitCollegeApplicationBody = zod.object({
+  signature: zod.string().min(submitCollegeApplicationBodySignatureMin),
+  paymentSimulated: zod.boolean().optional(),
+});
+
+export const SubmitCollegeApplicationResponse = zod.object({
+  id: zod.number(),
+  studentId: zod.string(),
+  universityId: zod.number(),
+  status: zod.enum([
+    "researching",
+    "questions_started",
+    "recommenders_invited",
+    "review_and_submit",
+    "submitted",
+  ]),
+  addedAt: zod.string().optional(),
+  university: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      shortName: zod.string().optional(),
+      province: zod.string(),
+      city: zod.string(),
+      type: zod.enum(["public", "private", "semi_government"]),
+      ranking: zod.number().optional(),
+      established: zod.number().optional(),
+      website: zod.string().optional(),
+      description: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+      programCount: zod.number().optional(),
+      applicationDeadline: zod.string().optional(),
+      deadlineType: zod
+        .enum(["early_action", "regular_decision", "rolling"])
+        .optional(),
+      applicationFeeRequired: zod.boolean().optional(),
+      essayRequired: zod.boolean().optional(),
+      acceptsTransfer: zod.boolean().optional(),
+      isFeatured: zod.boolean().optional(),
+      admissionOpen: zod.boolean().optional(),
+    })
+    .optional(),
+});
+
+/**
  * @summary Get student recommenders
  */
 export const GetMyRecommendersResponseItem = zod.object({

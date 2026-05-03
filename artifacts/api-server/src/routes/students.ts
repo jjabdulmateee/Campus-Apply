@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db } from "@workspace/db";
 import {
   studentProfilesTable,
@@ -639,6 +640,124 @@ router.patch("/me/colleges/:universityId", async (req, res) => {
     .returning();
 
   const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, universityId)).limit(1);
+  res.json({ ...updated, university: uni ?? null });
+});
+
+// ─── College Submission: Validate + Submit ────────────────────────────────────
+
+const SubmitCollegeParams = z.object({ universityId: z.coerce.number() });
+const CollegeSubmitBodySchema = z.object({
+  signature: z.string().min(2),
+  paymentSimulated: z.boolean().optional(),
+});
+
+router.get("/me/colleges/:universityId/validate", async (req, res) => {
+  const sid = getStudentId(req);
+  const { universityId } = SubmitCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
+
+  const [profile, tests, essays] = await Promise.all([
+    db.query.studentProfilesTable.findFirst({ where: eq(studentProfilesTable.studentId, sid) }),
+    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
+    db.select().from(essaysTable).where(eq(essaysTable.studentId, sid)),
+  ]);
+
+  const profileFields = [
+    profile?.firstName, profile?.lastName, profile?.dateOfBirth,
+    profile?.gender, profile?.phoneNumber, profile?.province, profile?.city,
+  ];
+  const profileCompletionPercent = Math.round(
+    (profileFields.filter(Boolean).length / profileFields.length) * 100,
+  );
+
+  const missing: string[] = [];
+  if (!profile?.firstName || !profile?.lastName)
+    missing.push("Complete your personal profile — first and last name are required");
+  if (profileCompletionPercent < 60)
+    missing.push(`Your profile is only ${profileCompletionPercent}% complete — fill in more details`);
+  if (!profile?.cnicDocumentUrl && !profile?.transcriptUrl)
+    missing.push("Upload at least one verification document (CNIC or transcript) in Document Locker");
+  if (tests.length === 0)
+    missing.push("Add at least one test score (ECAT, MDCAT, SAT, IELTS, etc.)");
+
+  const psEssay = essays.find((e) => e.type === "personal_statement");
+  const psWords = psEssay?.content
+    ? psEssay.content.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+  if (psWords < 250)
+    missing.push(
+      `Write a Personal Statement of at least 250 words — currently ${psWords} word${psWords === 1 ? "" : "s"}`,
+    );
+
+  res.json({
+    canSubmit: missing.length === 0,
+    missing,
+    profileCompletionPercent,
+    profile: profile ?? null,
+    tests: tests.map((t) => ({ id: t.id, testName: t.testName, score: t.score, maxScore: t.maxScore, testDate: t.testDate, notes: t.notes })),
+    essays: essays.map((e) => ({
+      id: e.id,
+      type: e.type,
+      prompt: e.prompt,
+      content: e.content,
+      wordCount: e.content ? e.content.trim().split(/\s+/).filter(Boolean).length : 0,
+    })),
+  });
+});
+
+router.post("/me/colleges/:universityId/submit", async (req, res) => {
+  const sid = getStudentId(req);
+  const { universityId } = SubmitCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
+  const { signature } = CollegeSubmitBodySchema.parse(req.body);
+
+  const [college] = await db
+    .select()
+    .from(userCollegesTable)
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+    .limit(1);
+
+  if (!college) { res.status(404).json({ error: "College not in your list" }); return; }
+  if (college.status === "submitted") { res.status(400).json({ error: "Already submitted" }); return; }
+
+  const [profile, tests, essays] = await Promise.all([
+    db.query.studentProfilesTable.findFirst({ where: eq(studentProfilesTable.studentId, sid) }),
+    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
+    db.select().from(essaysTable).where(eq(essaysTable.studentId, sid)),
+  ]);
+
+  const missing: string[] = [];
+  if (!profile?.firstName || !profile?.lastName) missing.push("Profile name required");
+  if (tests.length === 0) missing.push("At least one test score required");
+  const psWords = essays.find((e) => e.type === "personal_statement")?.content
+    ?.trim().split(/\s+/).filter(Boolean).length ?? 0;
+  if (psWords < 250) missing.push("Personal statement must be at least 250 words");
+
+  if (missing.length > 0) {
+    res.status(400).json({ error: "Validation failed", missing });
+    return;
+  }
+
+  const payload = JSON.stringify({
+    profile,
+    tests,
+    essays: essays.map((e) => ({
+      ...e,
+      wordCount: e.content ? e.content.trim().split(/\s+/).filter(Boolean).length : 0,
+    })),
+    snapshotAt: new Date().toISOString(),
+  });
+
+  const [updated] = await db
+    .update(userCollegesTable)
+    .set({ status: "submitted", payload, signature, submittedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+    .returning();
+
+  const [uni] = await db
+    .select()
+    .from(universitiesTable)
+    .where(eq(universitiesTable.id, universityId))
+    .limit(1);
+
   res.json({ ...updated, university: uni ?? null });
 });
 

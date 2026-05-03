@@ -426,6 +426,27 @@ export interface UpdateCollegeStatusBody {
   status: UpdateCollegeStatusBodyStatus;
 }
 
+export type CollegeSubmitValidationProfile = { [key: string]: unknown } | null;
+
+export type CollegeSubmitValidationTestsItem = { [key: string]: unknown };
+
+export type CollegeSubmitValidationEssaysItem = { [key: string]: unknown };
+
+export interface CollegeSubmitValidation {
+  canSubmit: boolean;
+  missing: string[];
+  profileCompletionPercent: number;
+  profile?: CollegeSubmitValidationProfile;
+  tests: CollegeSubmitValidationTestsItem[];
+  essays: CollegeSubmitValidationEssaysItem[];
+}
+
+export interface CollegeSubmitBody {
+  /** @minLength 2 */
+  signature: string;
+  paymentSimulated?: boolean;
+}
+
 export type UniversityStatsByProvinceItem = {
   province: string;
   count: number;

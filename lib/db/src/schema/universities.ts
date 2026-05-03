@@ -60,6 +60,9 @@ export const userCollegesTable = pgTable("user_colleges", {
   status: text("status").notNull().default("researching"),
   addedAt: timestamp("added_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  payload: text("payload"),
+  signature: text("signature"),
+  submittedAt: timestamp("submitted_at"),
 });
 
 export type UserCollege = typeof userCollegesTable.$inferSelect;

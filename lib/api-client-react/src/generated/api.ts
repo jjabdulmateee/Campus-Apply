@@ -35,6 +35,8 @@ import type {
   ChangeEmailBody,
   ChangePassword200,
   ChangePasswordBody,
+  CollegeSubmitBody,
+  CollegeSubmitValidation,
   CreateAcademicRecordBody,
   CreateActivityBody,
   CreateApplicationBody,
@@ -2055,6 +2057,192 @@ export const useUpdateCollegeStatus = <
   TContext
 > => {
   return useMutation(getUpdateCollegeStatusMutationOptions(options));
+};
+
+/**
+ * @summary Check if student is eligible to submit to a college
+ */
+export const getValidateCollegeSubmissionUrl = (universityId: number) => {
+  return `/api/students/me/colleges/${universityId}/validate`;
+};
+
+export const validateCollegeSubmission = async (
+  universityId: number,
+  options?: RequestInit,
+): Promise<CollegeSubmitValidation> => {
+  return customFetch<CollegeSubmitValidation>(
+    getValidateCollegeSubmissionUrl(universityId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getValidateCollegeSubmissionQueryKey = (universityId: number) => {
+  return [`/api/students/me/colleges/${universityId}/validate`] as const;
+};
+
+export const getValidateCollegeSubmissionQueryOptions = <
+  TData = Awaited<ReturnType<typeof validateCollegeSubmission>>,
+  TError = ErrorType<unknown>,
+>(
+  universityId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof validateCollegeSubmission>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getValidateCollegeSubmissionQueryKey(universityId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof validateCollegeSubmission>>
+  > = ({ signal }) =>
+    validateCollegeSubmission(universityId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!universityId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof validateCollegeSubmission>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ValidateCollegeSubmissionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof validateCollegeSubmission>>
+>;
+export type ValidateCollegeSubmissionQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Check if student is eligible to submit to a college
+ */
+
+export function useValidateCollegeSubmission<
+  TData = Awaited<ReturnType<typeof validateCollegeSubmission>>,
+  TError = ErrorType<unknown>,
+>(
+  universityId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof validateCollegeSubmission>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getValidateCollegeSubmissionQueryOptions(
+    universityId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Officially submit a college application with digital signature
+ */
+export const getSubmitCollegeApplicationUrl = (universityId: number) => {
+  return `/api/students/me/colleges/${universityId}/submit`;
+};
+
+export const submitCollegeApplication = async (
+  universityId: number,
+  collegeSubmitBody: CollegeSubmitBody,
+  options?: RequestInit,
+): Promise<UserCollege> => {
+  return customFetch<UserCollege>(
+    getSubmitCollegeApplicationUrl(universityId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(collegeSubmitBody),
+    },
+  );
+};
+
+export const getSubmitCollegeApplicationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitCollegeApplication>>,
+    TError,
+    { universityId: number; data: BodyType<CollegeSubmitBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitCollegeApplication>>,
+  TError,
+  { universityId: number; data: BodyType<CollegeSubmitBody> },
+  TContext
+> => {
+  const mutationKey = ["submitCollegeApplication"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitCollegeApplication>>,
+    { universityId: number; data: BodyType<CollegeSubmitBody> }
+  > = (props) => {
+    const { universityId, data } = props ?? {};
+
+    return submitCollegeApplication(universityId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitCollegeApplicationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitCollegeApplication>>
+>;
+export type SubmitCollegeApplicationMutationBody = BodyType<CollegeSubmitBody>;
+export type SubmitCollegeApplicationMutationError = ErrorType<void>;
+
+/**
+ * @summary Officially submit a college application with digital signature
+ */
+export const useSubmitCollegeApplication = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitCollegeApplication>>,
+    TError,
+    { universityId: number; data: BodyType<CollegeSubmitBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitCollegeApplication>>,
+  TError,
+  { universityId: number; data: BodyType<CollegeSubmitBody> },
+  TContext
+> => {
+  return useMutation(getSubmitCollegeApplicationMutationOptions(options));
 };
 
 /**
