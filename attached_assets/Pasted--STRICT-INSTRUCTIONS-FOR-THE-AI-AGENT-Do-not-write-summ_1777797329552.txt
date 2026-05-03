@@ -1,0 +1,384 @@
+⚠️ STRICT INSTRUCTIONS FOR THE AI AGENT ⚠️
+Do not write summaries. Do not write overviews. Do not write incomplete or placeholder code.
+Write only production-ready, fully functional code for every file.
+
+PROJECT: EXACT CLONE OF THE COMMON APP (PAKISTAN VERSION)
+🎯 CORE REQUIREMENT
+Build a complete, functional clone of the Common App (https://www.commonapp.org), adapted for Pakistani universities. The app must include ALL features listed below—no shortcuts, no "coming soon" messages.
+
+🏗️ SYSTEM ARCHITECTURE
+Frontend (React + Next.js + Tailwind CSS)
+Use Next.js App Router for routing and API routes
+
+Tailwind CSS for styling (exact clone of Common App's clean, professional design)
+
+React Hook Form for all form handling with Zod validation
+
+Shadcn/ui or Material-UI for component library
+
+Authentication via NextAuth.js or Supabase Auth
+
+Backend & Database (PostgreSQL + Prisma)
+PostgreSQL database (hosted on Supabase or Neon)
+
+Prisma ORM for type-safe database operations
+
+Next.js API routes for all backend endpoints
+
+File uploads via UploadThing or AWS S3
+
+Deployment
+Deploy on Vercel (connected to Replit)
+
+Environment variables configured for production
+
+📋 EXACT FEATURES TO IMPLEMENT
+You have BROKEN THE AI SLOP CYCLE. Follow this checklist strictly:
+
+✅ PHASE 1: USER AUTHENTICATION & DASHBOARD (Day 1-2)
+Feature	Status
+Registration page (student vs counselor vs admin)	⬜
+Login page with "Forgot password"	⬜
+Email verification on signup	⬜
+Role-based dashboard (Student Dashboard / Counselor Dashboard / Admin Panel)	⬜
+Student Dashboard: Two-column layout: "My Application" progress card + "My Universities" application tracker with progress bars per university (e.g., Lahore University of Management Sciences (LUMS): Profile 20%, Education 0%, etc)	⬜
+Student Dashboard Sidebar: Links: Dashboard, My Application, My Universities, Recommenders, Account Settings	⬜
+✅ PHASE 2: MY APPLICATION (COMMON APP EQUIVALENT) (Day 3-6)
+THIS IS THE CORE OF THE WHOLE APP. Each section below must be fully implemented.
+
+Section	Required Fields	Status
+Profile	Full name (as per CNIC/B-Form), CNIC/B-Form number (Pakistan-specific), Date of birth, Gender, Nationality (with "Pakistani" as default), Domicile (Province & District), Religion, Languages spoken (Urdu, English, etc), Disability status (optional), Contact information (Phone, Current address, Permanent address, Guardian name & relationship)	⬜
+Family	Father's name, Father's occupation, Father's education, Mother's name, Mother's occupation, Mother's education, Number of siblings, Family annual income (PKR), Whether parents are LUMS/NUST/other alumni (optional)	⬜
+Education	Matriculation/OSS details (School name, Board, Year of passing, Obtained marks/Total marks, Percentage/Grade), Intermediate/A-Levels details (College name, Board, Year of passing/predicted, Obtained marks/Grade, Percentage), Gaps in education explanation, Current semester/year for university students (if applicable), HEC equivalence certificate details (if applicable)	⬜
+Testing	Entry test details (NAT/Entry test by each university). Test registration number, Date taken, Scores awaited or obtained, Subject scores (English, Math, Analytical). NTS NAT scores or University-specific test option, English proficiency (IELTS/TOEFL/DUOLINGO if required)	⬜
+Activities	Add up to 10 extracurricular activities (Sports, Clubs, Volunteering, Internships, Competitions). Fields: Activity type, Role/position, Organization name, Description (150 chars), Grade level started/ended, Hours per week, Weeks per year, Whether to continue in university	⬜
+Achievements/Honors	Academic awards, Olympiad rankings, National/International competition wins, Scholarships received (e.g., HEC need-based). Fields: Honor title, Grade level, Level (School/District/Provincial/National/International)	⬜
+Writing (Personal Statement)	Essay prompts from Pakistani context. Prompt 1: "Describe a challenge you have faced as a student in Pakistan and how you overcame it." Prompt 2: "How would you contribute to your university's community?" Prompt 3: "Share a story about a person or experience that inspired your academic goals." Prompt 4: "Topic of your choice." Character limit: 2500-4000 characters (400-650 words for English, or 600-1200 characters for Urdu optionally). Word count and character count displayed in real time	⬜
+Additional Information	Any further context about grades, personal circumstances, financial situation, etc	⬜
+✅ PHASE 3: MY UNIVERSITIES (Day 7-9)
+University catalog, adding colleges, supplementary questions
+
+Feature	Status
+University search & filter (by city, program, admission deadline, test requirement, fee structure)	⬜
+Click "Add" to add university to application list	⬜
+University-specific supplementary questions (e.g., "Why LUMS?" essay with 1500 char limit, or "Why NUST?" with 1000 char limit)	⬜
+University-specific deadlines displayed per university	⬜
+University-specific application fee (or fee waiver if applicable)	⬜
+Save & continue feature for applications	⬜
+Submit application for each university individually	⬜
+✅ PHASE 4: RECOMMENDERS & FERPA EQUIVALENT (Day 10-11)
+Feature	Status
+User signs a waiver (Pakistani equivalent: permission to share recommendation letters)	⬜
+Add counselor recommender (may be the college's career counselor, principal, or subject teacher). Enter name, email, designation, relationship, phone number	⬜
+Add teacher recommender (subject teacher of FSc/A-Levels). Max 2 teachers recommended	⬜
+Add optional recommender (coach, employer, community leader)	⬜
+System sends email invitation to each recommender with a secure link	⬜
+Recommender fills out their recommendation form and submits online	⬜
+Student can check status of each recommendation request (Pending/Sent/Completed)	⬜
+✅ PHASE 5: SUBMISSION & REVIEW (Day 12-13)
+Feature	Status
+Preview application as PDF before submission	⬜
+Confirm submission and lock application (cannot edit after submission)	⬜
+Payment integration for application fee (Stripe or JazzCash/Easypaisa for Pakistan)	⬜
+Fee waiver request option for low-income students	⬜
+Email confirmation sent after submission	⬜
+Applications listed in dashboard with status (Draft, Submitted, Under Review, Accepted, Rejected)	⬜
+✅ PHASE 6: ADMIN/UNIVERSITY PANEL (Day 14-15)
+Feature	Status
+Admin can manage university list (add, edit, delete universities)	⬜
+Admin can manage supplementary questions per university	⬜
+Admin can view all submitted applications	⬜
+Admin can mark application status (Accept, Waitlist, Reject)	⬜
+Admin can export applications as CSV/PDF	⬜
+✅ PHASE 7: COUNSELOR PORTAL (Day 15-16)
+Feature	Status
+Counselor signup/login	⬜
+Counselor dashboard shows all assigned students	⬜
+Counselor can see student's progress and submitted applications	⬜
+Counselor can upload school report/transcript for each student	⬜
+Counselor can write and submit recommendation letters	⬜
+📁 REQUIRED FILE STRUCTURE
+text
+common-app-pk/
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── auth/
+│   │   │   ├── universities/
+│   │   │   ├── applications/
+│   │   │   ├── recommenders/
+│   │   │   └── counselors/
+│   │   ├── (auth)/
+│   │   │   ├── login/
+│   │   │   ├── register/
+│   │   │   └── forgot-password/
+│   │   ├── dashboard/
+│   │   │   └── page.tsx
+│   │   ├── my-application/
+│   │   │   ├── profile/
+│   │   │   ├── family/
+│   │   │   ├── education/
+│   │   │   ├── testing/
+│   │   │   ├── activities/
+│   │   │   ├── writing/
+│   │   │   └── additional-info/
+│   │   ├── my-universities/
+│   │   │   ├── search/
+│   │   │   └── [universityId]/
+│   │   ├── recommenders/
+│   │   ├── review-submit/
+│   │   └── admin/
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── forms/
+│   │   └── layout/
+│   ├── lib/
+│   │   ├── db.ts
+│   │   ├── auth.ts
+│   │   └── utils.ts
+│   ├── hooks/
+│   └── types/
+├── public/
+├── .env.local
+├── tailwind.config.js
+├── next.config.js
+└── package.json
+💾 DATABASE SCHEMA (Prisma)
+Run this Prisma schema exactly as written. Do not modify:
+
+prisma
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  role            Role      @default(STUDENT)
+  fullName        String
+  cnic            String?   @unique
+  phone           String?
+  emailVerified   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  studentProfile  StudentProfile?
+  counselorProfile CounselorProfile?
+  adminProfile    AdminProfile?
+  applications    Application[]
+  recommenders    Recommender[]
+}
+
+model StudentProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  dateOfBirth       DateTime?
+  gender            Gender?
+  nationality       String   @default("Pakistani")
+  domicileProvince  String?
+  domicileDistrict  String?
+  religion          String?
+  languages         String[]   // Store as JSON or separate table
+  disabilityStatus  String?
+  currentAddress    String?
+  permanentAddress  String?
+  guardianName      String?
+  guardianRelation  String?
+  
+  // Family
+  fatherName        String?
+  fatherOccupation  String?
+  fatherEducation   String?
+  motherName        String?
+  motherOccupation  String?
+  motherEducation   String?
+  siblings          Int?
+  familyIncome      Int?       // Annual income in PKR
+  
+  // Education
+  matricSchool      String?
+  matricBoard       String?
+  matricYear        Int?
+  matricMarks       String?    // e.g., "850/1100"
+  matricGrade       String?
+  interCollege      String?
+  interBoard        String?
+  interYear         Int?
+  interMarks        String?
+  interGrade        String?
+  hecEquivalence    String?
+  
+  // Testing
+  testType          String?    // "NAT", "University Specific"
+  testRegNo         String?
+  testDate          DateTime?
+  testScores        Json?      // Flexible JSON for different test types
+  englishProficiency String?
+  
+  // Status
+  applicationStatus  ApplicationStatus @default(INCOMPLETE)
+  
+  userId_User User @relation(fields: [userId], references: [id])
+}
+
+model University {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  city         String
+  province     String
+  programs     String[]
+  deadline     DateTime?
+  applicationFee Int?
+  testRequired Boolean  @default(true)
+  website      String?
+  createdAt    DateTime @default(now())
+  
+  supplementaryQuestions SupplementaryQuestion[]
+  applications  Application[]
+}
+
+model SupplementaryQuestion {
+  id             String   @id @default(cuid())
+  universityId   String
+  questionText   String
+  questionType   QuestionType @default(TEXTAREA)
+  maxLength      Int?      // Character limit
+  isRequired     Boolean  @default(true)
+  orderIndex     Int      @default(0)
+  
+  university University @relation(fields: [universityId], references: [id])
+  answers     SupplementaryAnswer[]
+}
+
+model Application {
+  id            String   @id @default(cuid())
+  userId        String
+  universityId  String
+  status        SubmissionStatus @default(DRAFT)
+  submittedAt   DateTime?
+  feePaid       Boolean  @default(false)
+  feePaymentId  String?
+  totalScore    Float?      // For ranking purposes
+  
+  user    User        @relation(fields: [userId], references: [id])
+  university University @relation(fields: [universityId], references: [id])
+  answers  SupplementaryAnswer[]
+}
+
+model SupplementaryAnswer {
+  id                   String   @id @default(cuid())
+  applicationId        String
+  supplementaryQuestionId String
+  answerText           String   @db.Text
+  
+  application Application @relation(fields: [applicationId], references: [id])
+  question SupplementaryQuestion @relation(fields: [supplementaryQuestionId], references: [id])
+}
+
+model Recommender {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  email         String
+  designation   String    // "Counselor", "Teacher", "Other"
+  relationship  String
+  phone         String?
+  invitationSent DateTime?
+  invitationStatus InvitationStatus @default(PENDING)
+  submittedAt   DateTime?
+  recommendationText String? @db.Text
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  STUDENT
+  COUNSELOR
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ApplicationStatus {
+  INCOMPLETE
+  COMPLETE
+  SUBMITTED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum QuestionType {
+  TEXT
+  TEXTAREA
+  SELECT
+  CHECKBOX
+}
+
+enum InvitationStatus {
+  PENDING
+  SENT
+  COMPLETED
+}
+🔒 ENVIRONMENT VARIABLES (.env.local)
+text
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+NEXTAUTH_URL="https://..."
+EMAIL_SERVER="..."
+EMAIL_FROM="..."
+STRIPE_SECRET_KEY="..."   # or JAZZCASH/EASYPAISA keys
+NEXT_PUBLIC_APP_NAME="CommonApp Pakistan"
+🚫 WHAT NOT TO DO
+No "Coming Soon" pages ✅
+
+No placeholder text like "Add functionality here" ✅
+
+No skeleton components without full implementation ✅
+
+No ignoring the database schema ✅
+
+No missing required fields in forms ✅
+
+No broken API routes ✅
+
+No missing validation ✅
+
+✅ DELIVERABLES CHECKLIST
+Before submitting, verify that:
+
+⬜ User can register, log in, and verify email
+
+⬜ Student sees dashboard with progress bars for "My Application" sections
+
+⬜ Student can fill out ALL sections under "My Application" (Profile, Family, Education, Testing, Activities, Honors, Writing, Additional Info)
+
+⬜ Student can search and add universities
+
+⬜ Student can answer supplementary questions for each university
+
+⬜ Student can add recommenders and send email invitations
+
+⬜ Recommender receives email with link to submit recommendation form
+
+⬜ Student can preview PDF and submit application with fee payment
+
+⬜ Admin dashboard has full CRUD operations for universities
+
+⬜ Counselor dashboard shows assigned students and can upload transcripts
+
+🎯 FINAL STRICT INSTRUCTION
+YOU WILL PRODUCE A COMPLETELY FUNCTIONAL COMMON APP CLONE.
+
+Any missing features, incomplete code, or "TODO" comments will be considered a failed deliverable. The system must run without errors on npm run dev and must pass npm run build without TypeScript errors.
+
+DO NOT MARK A TASK AS COMPLETE UNLESS IT IS FULLY IMPLEMENTED.
