@@ -1,4 +1,3 @@
-import AppLayout from "@/components/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -8,9 +7,8 @@ import {
   useGetMyRecommenders,
   useListMyApplications,
 } from "@workspace/api-client-react";
-import { Bell, BookOpen, ChevronDown, FileText, Home, Menu, MessageSquare, Search, Users, WalletCards } from "lucide-react";
+import { Bell, BookOpen, ChevronDown, FileText, Home, Menu, Search, Users, WalletCards } from "lucide-react";
 import { useState } from "react";
-import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
@@ -24,159 +22,123 @@ export default function Dashboard() {
   const newlySubmitted = (recommenders ?? []).filter((r) => r.status === "submitted");
 
   return (
-    <AppLayout>
-      <div className="grid min-h-screen grid-cols-[260px_1fr_300px] bg-[#F9FAFB]">
-        <LeftSidebar user={user} />
+    <div className="grid min-h-screen grid-cols-[260px_1fr_300px] bg-[#F9FAFB]">
+      <LeftSidebar user={user} />
 
-        <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
-          <div className="mb-4 flex items-center justify-between lg:hidden">
-            <button className="rounded-md border border-slate-200 bg-white p-2">
-              <Menu className="h-5 w-5 text-slate-700" />
-            </button>
-            <div className="text-lg font-semibold text-slate-800">Dashboard</div>
-            <button onClick={() => setHelpOpen(true)} className="rounded-md border border-slate-200 bg-white p-2">
-              <MessageSquare className="h-5 w-5 text-slate-700" />
-            </button>
-          </div>
+      <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <button className="rounded-md border border-slate-200 bg-white p-2">
+            <Menu className="h-5 w-5 text-slate-700" />
+          </button>
+          <div className="text-lg font-semibold text-slate-800">Dashboard</div>
+          <button onClick={() => setHelpOpen(true)} className="rounded-md border border-slate-200 bg-white p-2">
+            <Search className="h-5 w-5 text-slate-700" />
+          </button>
+        </div>
 
-          <div className="mb-4 hidden lg:block">
-            <h1 className="text-3xl font-semibold text-slate-800">Dashboard</h1>
-          </div>
+        <div className="mb-4 hidden lg:block">
+          <h1 className="text-3xl font-semibold text-slate-800">Dashboard</h1>
+        </div>
 
-          <div className="rounded-md border border-slate-200 bg-[#E0F2FE] p-4">
-            <div className="flex items-center gap-4">
-              <img src="@assets/image_1777791042006.png" alt="" className="hidden h-16 w-24 object-contain md:block" />
-              <div>
-                <div className="text-2xl font-semibold text-[#1E3A8A]">Good morning, {firstName}!</div>
-                <div className="text-sm text-[#4B5563]">Finish your application and stay on top of deadlines.</div>
-              </div>
+        <div className="rounded-md border border-slate-200 bg-[#E0F2FE] p-4">
+          <div className="flex items-center gap-4">
+            <img src="@assets/image_1777791042006.png" alt="" className="hidden h-16 w-24 object-contain md:block" />
+            <div>
+              <div className="text-2xl font-semibold text-[#1E3A8A]">Good morning, {firstName}!</div>
+              <div className="text-sm text-[#4B5563]">Finish your application and stay on top of deadlines.</div>
             </div>
           </div>
+        </div>
 
-          <div className="mt-5 space-y-4">
-            <CollapsibleCard title="My Application" subtitle={`${dashboard?.profileCompletionPercent ?? 0}/7 sections complete`} open>
-              {isLoading ? (
-                <Skeleton className="h-36 rounded-md" />
-              ) : (
-                <div className="space-y-4">
-                  <div className="h-4 rounded-full bg-[#F3F4F6]">
-                    <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${dashboard?.profileCompletionPercent ?? 0}%` }} />
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    {dashboard?.profileSections.slice(0, 7).map((step) => (
-                      <div key={step.slug} className="flex min-w-[72px] flex-col items-center gap-1 text-center">
-                        <div
-                          className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
-                            step.isComplete ? "border-[#166534] text-[#166534]" : "border-[#3B82F6] border-dashed text-[#3B82F6]",
-                          )}
-                        >
-                          {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
-                        </div>
-                        <div className="text-xs text-[#4B5563]">{step.name}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CollapsibleCard>
-
-            <CollapsibleCard title="My Colleges" subtitle={`${applications?.length ?? 0} colleges on my list`}>
+        <div className="mt-5 space-y-4">
+          <CollapsibleCard title="My Application" subtitle={`${dashboard?.profileCompletionPercent ?? 0}/7 sections complete`} open>
+            {isLoading ? (
+              <Skeleton className="h-36 rounded-md" />
+            ) : (
               <div className="space-y-4">
                 <div className="h-4 rounded-full bg-[#F3F4F6]">
-                  <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${Math.min((applications?.length ?? 0) * 10, 100)}%` }} />
+                  <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${dashboard?.profileCompletionPercent ?? 0}%` }} />
                 </div>
-
-                <div className="space-y-3">
-                  {(applications ?? []).slice(0, 3).map((app) => (
-                    <div key={app.id} className="rounded-md border border-slate-200 bg-white p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-slate-700">{app.universityName}</div>
-                          <div className="truncate text-xs text-slate-500">{app.programName}</div>
-                        </div>
-                        <div className="text-xs text-slate-500">{app.status}</div>
+                <div className="flex flex-wrap gap-4">
+                  {dashboard?.profileSections.slice(0, 7).map((step) => (
+                    <div key={step.slug} className="flex min-w-[72px] flex-col items-center gap-1 text-center">
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
+                          step.isComplete ? "border-[#166534] text-[#166534]" : "border-[#3B82F6] border-dashed text-[#3B82F6]",
+                        )}
+                      >
+                        {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
-                  <div className="rounded-md border border-slate-200 bg-white p-4">
-                    <div className="mb-3 text-sm font-medium text-slate-700">Deadlines</div>
-                    <div className="space-y-2 text-sm text-[#4B5563]">
-                      {(dashboard?.upcomingDeadlines ?? []).slice(0, 3).map((d, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3">
-                          <span className="truncate">{d.universityName}</span>
-                          <span className="text-xs text-slate-500">{d.daysLeft} days</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <MiniCalendar />
-                </div>
-              </div>
-            </CollapsibleCard>
-
-            {newlySubmitted.length > 0 && (
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-sm font-medium text-slate-700">Recommenders</div>
-                <div className="space-y-2">
-                  {newlySubmitted.map((r) => (
-                    <div key={r.id} className="rounded-md border border-slate-200 bg-[#F9FAFB] p-3 text-sm text-slate-600">
-                      {r.firstName} {r.lastName} · {r.subjectTaught}
+                      <div className="text-xs text-[#4B5563]">{step.name}</div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
-        </main>
+          </CollapsibleCard>
 
-        <aside className="hidden overflow-y-auto border-l border-slate-200 bg-white px-4 py-4 xl:block">
-          <div className="rounded-md border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-base font-medium text-slate-700">
-              <Bell className="h-4 w-4" />
-              Help & support
-            </div>
-            <div className="mt-4 relative">
-              <Input placeholder="Search FAQs" className="pr-10" />
-              <Search className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400" />
-            </div>
-            <div className="mt-4 space-y-3">
-              <FaqItem question="How can I add a college to My Colleges?" />
-              <FaqItem question="Can I change answers after submitting?" />
-              <FaqItem question="How many colleges can I add?" />
-              <FaqItem question="When is my submission deadline?" />
-            </div>
-            <button className="mt-4 w-full rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-600">
-              Contact Support
-            </button>
-          </div>
-          <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
-            <div className="mb-3 text-sm font-medium text-slate-700">Application Steps</div>
-            <div className="space-y-2">
-              {dashboard?.profileSections.map((s) => (
-                <div key={s.slug} className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
-                      s.isComplete ? "border-[#166534] bg-[#166534]" : "border-slate-200",
-                    )}
-                  >
-                    {s.isComplete && <div className="h-2 w-2 rounded-full bg-white" />}
+          <CollapsibleCard title="My Colleges" subtitle={`${applications?.length ?? 0} colleges on my list`}>
+            <div className="space-y-4">
+              <div className="h-4 rounded-full bg-[#F3F4F6]">
+                <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${Math.min((applications?.length ?? 0) * 10, 100)}%` }} />
+              </div>
+
+              <div className="space-y-3">
+                {(applications ?? []).slice(0, 3).map((app) => (
+                  <div key={app.id} className="rounded-md border border-slate-200 bg-white p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-slate-700">{app.universityName}</div>
+                        <div className="truncate text-xs text-slate-500">{app.programName}</div>
+                      </div>
+                      <div className="text-xs text-slate-500">{app.status}</div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-slate-700">{s.name}</div>
-                    {!s.isComplete && <Progress value={s.completionPercent} className="mt-1 h-1 bg-slate-100" />}
+                ))}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <div className="mb-3 text-sm font-medium text-slate-700">Deadlines</div>
+                  <div className="space-y-2 text-sm text-[#4B5563]">
+                    {(dashboard?.upcomingDeadlines ?? []).slice(0, 3).map((d, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3">
+                        <span className="truncate">{d.universityName}</span>
+                        <span className="text-xs text-slate-500">{d.daysLeft} days</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+
+                <MiniCalendar />
+              </div>
             </div>
+          </CollapsibleCard>
+        </div>
+      </main>
+
+      <aside className="hidden overflow-y-auto border-l border-slate-200 bg-white px-4 py-4 xl:block">
+        <div className="rounded-md border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-base font-medium text-slate-700">
+            <Bell className="h-4 w-4" />
+            Help & support
           </div>
-        </aside>
-      </div>
+          <div className="mt-4 relative">
+            <Input placeholder="Search FAQs" className="pr-10" />
+            <Search className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400" />
+          </div>
+          <div className="mt-4 space-y-3">
+            <FaqItem question="How can I add a college to My Colleges?" />
+            <FaqItem question="Can I change answers after submitting?" />
+            <FaqItem question="How many colleges can I add?" />
+            <FaqItem question="When is my submission deadline?" />
+          </div>
+          <button className="mt-4 w-full rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-600">
+            Contact Support
+          </button>
+        </div>
+      </aside>
 
       {helpOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 xl:hidden" onClick={() => setHelpOpen(false)}>
@@ -200,7 +162,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    </AppLayout>
+    </div>
   );
 }
 
@@ -233,11 +195,6 @@ function LeftSidebar({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
               <div className="text-xs text-slate-500">{appId}</div>
             </div>
           </div>
-        </div>
-        <div className="mt-4 text-xs text-slate-500">
-          <div className="mb-1">Need help?</div>
-          <div className="mb-1">Privacy and legal</div>
-          <div>Social links</div>
         </div>
       </div>
     </aside>
