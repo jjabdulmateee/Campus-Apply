@@ -9,12 +9,14 @@ import documentsRouter from "./documents";
 import adminRouter from "./admin";
 import accountRouter from "./account";
 import supportRouter from "./support";
+import recommendersRouter from "./recommenders";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/students", studentsRouter);
+router.use("/students", recommendersRouter);
 router.use("/universities", universitiesRouter);
 router.use("/applications", applicationsRouter);
 router.use(storageRouter);

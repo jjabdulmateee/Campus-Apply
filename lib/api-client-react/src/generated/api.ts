@@ -50,6 +50,7 @@ import type {
   Document,
   Essay,
   HealthStatus,
+  InviteRecommenderBody,
   ListAdminApplicationsParams,
   ListAdminRemarks200,
   ListAdminSupportTickets200,
@@ -57,6 +58,7 @@ import type {
   ListMyTickets200,
   ListUniversitiesParams,
   Program,
+  Recommender,
   ReplyToTicket200,
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
@@ -2053,6 +2055,251 @@ export const useUpdateCollegeStatus = <
   TContext
 > => {
   return useMutation(getUpdateCollegeStatusMutationOptions(options));
+};
+
+/**
+ * @summary Get student recommenders
+ */
+export const getGetMyRecommendersUrl = () => {
+  return `/api/students/me/recommenders`;
+};
+
+export const getMyRecommenders = async (
+  options?: RequestInit,
+): Promise<Recommender[]> => {
+  return customFetch<Recommender[]>(getGetMyRecommendersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyRecommendersQueryKey = () => {
+  return [`/api/students/me/recommenders`] as const;
+};
+
+export const getGetMyRecommendersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyRecommenders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyRecommenders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyRecommendersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMyRecommenders>>
+  > = ({ signal }) => getMyRecommenders({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyRecommenders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyRecommendersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyRecommenders>>
+>;
+export type GetMyRecommendersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get student recommenders
+ */
+
+export function useGetMyRecommenders<
+  TData = Awaited<ReturnType<typeof getMyRecommenders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyRecommenders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyRecommendersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Invite a recommender
+ */
+export const getInviteRecommenderUrl = () => {
+  return `/api/students/me/recommenders`;
+};
+
+export const inviteRecommender = async (
+  inviteRecommenderBody: InviteRecommenderBody,
+  options?: RequestInit,
+): Promise<Recommender> => {
+  return customFetch<Recommender>(getInviteRecommenderUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(inviteRecommenderBody),
+  });
+};
+
+export const getInviteRecommenderMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteRecommender>>,
+    TError,
+    { data: BodyType<InviteRecommenderBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof inviteRecommender>>,
+  TError,
+  { data: BodyType<InviteRecommenderBody> },
+  TContext
+> => {
+  const mutationKey = ["inviteRecommender"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof inviteRecommender>>,
+    { data: BodyType<InviteRecommenderBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return inviteRecommender(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InviteRecommenderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof inviteRecommender>>
+>;
+export type InviteRecommenderMutationBody = BodyType<InviteRecommenderBody>;
+export type InviteRecommenderMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Invite a recommender
+ */
+export const useInviteRecommender = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteRecommender>>,
+    TError,
+    { data: BodyType<InviteRecommenderBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof inviteRecommender>>,
+  TError,
+  { data: BodyType<InviteRecommenderBody> },
+  TContext
+> => {
+  return useMutation(getInviteRecommenderMutationOptions(options));
+};
+
+/**
+ * @summary Remove a recommender invitation
+ */
+export const getDeleteRecommenderUrl = (recommenderId: number) => {
+  return `/api/students/me/recommenders/${recommenderId}`;
+};
+
+export const deleteRecommender = async (
+  recommenderId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteRecommenderUrl(recommenderId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteRecommenderMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteRecommender>>,
+    TError,
+    { recommenderId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteRecommender>>,
+  TError,
+  { recommenderId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteRecommender"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteRecommender>>,
+    { recommenderId: number }
+  > = (props) => {
+    const { recommenderId } = props ?? {};
+
+    return deleteRecommender(recommenderId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteRecommenderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteRecommender>>
+>;
+
+export type DeleteRecommenderMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a recommender invitation
+ */
+export const useDeleteRecommender = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteRecommender>>,
+    TError,
+    { recommenderId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteRecommender>>,
+  TError,
+  { recommenderId: number },
+  TContext
+> => {
+  return useMutation(getDeleteRecommenderMutationOptions(options));
 };
 
 /**

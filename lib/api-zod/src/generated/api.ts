@@ -619,6 +619,44 @@ export const UpdateCollegeStatusResponse = zod.object({
 });
 
 /**
+ * @summary Get student recommenders
+ */
+export const GetMyRecommendersResponseItem = zod.object({
+  id: zod.number(),
+  studentId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  email: zod.string(),
+  subjectTaught: zod.string(),
+  relationship: zod.string().nullish(),
+  status: zod.enum(["pending", "submitted", "declined"]),
+  invitedAt: zod.string().nullish(),
+  submittedAt: zod.string().nullish(),
+});
+export const GetMyRecommendersResponse = zod.array(
+  GetMyRecommendersResponseItem,
+);
+
+/**
+ * @summary Invite a recommender
+ */
+
+export const InviteRecommenderBody = zod.object({
+  firstName: zod.string().min(1),
+  lastName: zod.string().min(1),
+  email: zod.string().email(),
+  subjectTaught: zod.string().min(1),
+  relationship: zod.string().optional(),
+});
+
+/**
+ * @summary Remove a recommender invitation
+ */
+export const DeleteRecommenderParams = zod.object({
+  recommenderId: zod.coerce.number(),
+});
+
+/**
  * @summary List all universities
  */
 export const ListUniversitiesQueryParams = zod.object({

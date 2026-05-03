@@ -17,6 +17,7 @@ import {
   Settings,
   LifeBuoy,
   Bookmark,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/testing", label: "Test Scores", icon: ClipboardList },
   { href: "/activities", label: "Activities", icon: BookOpen },
   { href: "/writing", label: "Essays", icon: PenLine },
+  { href: "/recommenders", label: "Recommenders", icon: Users },
   { href: "/universities", label: "University Search", icon: Search },
   { href: "/my-colleges", label: "My Colleges", icon: Bookmark },
   { href: "/applications", label: "My Applications", icon: FileText },

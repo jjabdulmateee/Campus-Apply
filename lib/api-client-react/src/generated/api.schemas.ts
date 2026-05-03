@@ -816,6 +816,43 @@ export interface AdminReplyBody {
   status: AdminReplyBodyStatus;
 }
 
+export type RecommenderStatus =
+  (typeof RecommenderStatus)[keyof typeof RecommenderStatus];
+
+export const RecommenderStatus = {
+  pending: "pending",
+  submitted: "submitted",
+  declined: "declined",
+} as const;
+
+export interface Recommender {
+  id: number;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subjectTaught: string;
+  relationship?: string | null;
+  status: RecommenderStatus;
+  invitedAt?: string | null;
+  submittedAt?: string | null;
+}
+
+export interface InviteRecommenderBody {
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  email: string;
+  /** @minLength 1 */
+  subjectTaught: string;
+  relationship?: string;
+}
+
+export interface DeleteRecommenderParams {
+  recommenderId: number;
+}
+
 export type ListUniversitiesParams = {
   province?: string;
   type?: string;

@@ -80,3 +80,21 @@ export const supportTicketsTable = pgTable("support_tickets", {
 
 export type SupportTicket = typeof supportTicketsTable.$inferSelect;
 export type InsertSupportTicket = typeof supportTicketsTable.$inferInsert;
+
+export const recommenderStatusEnum = pgEnum("recommender_status", ["pending", "submitted", "declined"]);
+
+export const recommendersTable = pgTable("recommenders", {
+  id: serial("id").primaryKey(),
+  studentId: text("student_id").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  subjectTaught: text("subject_taught").notNull(),
+  relationship: text("relationship"),
+  status: recommenderStatusEnum("status").notNull().default("pending"),
+  invitedAt: timestamp("invited_at").defaultNow(),
+  submittedAt: timestamp("submitted_at"),
+});
+
+export type Recommender = typeof recommendersTable.$inferSelect;
+export type InsertRecommender = typeof recommendersTable.$inferInsert;

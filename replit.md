@@ -44,6 +44,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `/my-colleges` — Saved college list: 5-stage progress tracker per college, expandable detail panel, status advancement
 - `/applications` — Track all submitted applications (5-stage status timeline)
 - `/applications/:id/review` — 3-tab review + supplement Q&A + submit screen
+- `/recommenders` — Recommenders (FERPA): invite up to 3 teachers/mentors; status tracking (pending → submitted → declined)
 - `/documents` — Document Locker: upload/manage CNIC, marksheets, transcripts, passport photo
 
 **Admin Portal** (role-gated — requires `role === "admin"` in JWT)
@@ -104,6 +105,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ### Database Schema (`lib/db/src/schema/`)
 - `students` — Profile, academics, test scores, activities, essays; profile now has `cnicDocumentUrl`, `transcriptUrl`, `photoUrl` columns for verification uploads
+- `auth` — users, application_answers, admin_remarks, user_preferences, support_tickets, **recommenders** (studentId, firstName, lastName, email, subjectTaught, relationship, status: pending|submitted|declined)
 - `universities` — 12 Pakistani universities seeded; new columns: `deadlineType`, `applicationFeeRequired`, `essayRequired`, `acceptsTransfer`
 - `user_colleges` — Student saved-college list with 5-stage status: `researching → questions_started → recommenders_invited → review_and_submit → submitted`
 - `applications` — Student→Program applications with status + `adminNotes`, `decisionReason`, `reviewedAt` columns
