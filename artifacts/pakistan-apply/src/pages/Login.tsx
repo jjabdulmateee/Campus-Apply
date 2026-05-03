@@ -104,11 +104,6 @@ export default function Login() {
                 Create one
               </Link>
             </p>
-            <div className="mt-3 px-4 py-3 rounded-xl bg-sky-50 text-xs text-sky-700 text-left">
-              <div className="font-semibold mb-1">Demo account</div>
-              <div>Email: student@pakmail.pk</div>
-              <div>Password: demo123</div>
-            </div>
           </div>
         </div>
       </div>

@@ -295,40 +295,6 @@ function DefaultRightPanel({
           </div>
         </div>
       )}
-
-      <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-4">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Application Steps</h3>
-        <div className="space-y-2">
-          {dashboard.profileSections.map((s) => (
-            <div key={s.slug} className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                  s.isComplete ? "border-sky-500 bg-sky-500" : "border-slate-200",
-                )}
-              >
-                {s.isComplete && <div className="w-2 h-2 rounded-full bg-white" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-slate-700">{s.name}</div>
-                {!s.isComplete && (
-                  <Progress value={s.completionPercent} className="h-1 mt-1 bg-slate-100" />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-sky-600 rounded-2xl p-4 text-white">
-        <div className="text-sm font-semibold mb-1">Need help?</div>
-        <div className="text-xs text-sky-100 mb-3">
-          Our team is available to assist with your application.
-        </div>
-        <button className="w-full py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-xs font-semibold">
-          Contact Support
-        </button>
-      </div>
     </>
   );
 }
