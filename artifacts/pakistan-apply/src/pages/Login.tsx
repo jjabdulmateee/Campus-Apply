@@ -37,7 +37,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <div className="text-2xl font-bold text-sky-700 tracking-tight">PakApply</div>
+            <div className="text-2xl font-bold text-sky-700 tracking-tight">Campus Apply</div>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-slate-900">Welcome back</h1>
           <p className="mt-1 text-sm text-slate-500">Sign in to your account to continue</p>

@@ -381,7 +381,7 @@ function NotificationsTab() {
 
   return (
     <div>
-      <PanelHeader title="Notification Preferences" subtitle="Control what emails you receive from PakApply" />
+      <PanelHeader title="Notification Preferences" subtitle="Control what emails you receive from Campus Apply" />
       <div className="p-6 space-y-4">
         {loading ? (
           <div className="space-y-3">

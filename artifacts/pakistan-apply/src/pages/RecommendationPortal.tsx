@@ -118,7 +118,7 @@ export default function RecommendationPortal() {
             <GraduationCap className="w-4 h-4 text-white" />
           </div>
           <div>
-            <span className="font-black text-sky-600 text-lg">PakApply</span>
+            <span className="font-black text-sky-600 text-lg">Campus Apply</span>
             <span className="text-slate-400 text-xs ml-2">Recommendation Portal</span>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function RecommendationPortal() {
                     <h2 className="text-base font-bold text-slate-800">
                       Recommendation Request
                     </h2>
-                    <p className="text-xs text-slate-400">PakApply · Secure Submission Portal</p>
+                    <p className="text-xs text-slate-400">Campus Apply · Secure Submission Portal</p>
                   </div>
                 </div>
 

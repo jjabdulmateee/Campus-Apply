@@ -277,7 +277,7 @@ export default function ReviewApplication() {
         <div className="print-header hidden">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-slate-900">PakApply</div>
+              <div className="text-2xl font-bold text-slate-900">Campus Apply</div>
               <div className="text-sm text-slate-500">Official Application — {new Date().toLocaleDateString("en-PK", { year: "numeric", month: "long", day: "numeric" })}</div>
             </div>
             <div className="text-right">

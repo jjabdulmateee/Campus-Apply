@@ -78,7 +78,7 @@ export default function VerifyEmail() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <div className="text-2xl font-bold text-sky-700 tracking-tight">PakApply</div>
+            <div className="text-2xl font-bold text-sky-700 tracking-tight">Campus Apply</div>
           </Link>
         </div>
 

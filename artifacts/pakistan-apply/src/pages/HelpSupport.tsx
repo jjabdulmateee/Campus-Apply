@@ -46,7 +46,7 @@ const FAQ_ITEMS = [
   {
     category: "application_tips",
     q: "Can I apply to multiple universities at once?",
-    a: "Yes! PakApply supports parallel applications. Each application is tracked separately under My Applications. You can apply to as many universities as you like within their deadlines.",
+    a: "Yes! Campus Apply supports parallel applications. Each application is tracked separately under My Applications. You can apply to as many universities as you like within their deadlines.",
   },
   {
     category: "application_tips",
@@ -115,7 +115,7 @@ const FAQ_ITEMS = [
   },
   {
     category: "university_specifics",
-    q: "Can overseas Pakistanis apply through PakApply?",
+    q: "Can overseas Pakistanis apply through Campus Apply?",
     a: "Yes. Most public universities reserve a dedicated Overseas Pakistani quota. You may need to provide a valid NICOP or foreign passport in addition to your academic documents. Check the specific university page for quota details.",
   },
   {

@@ -143,7 +143,7 @@ export default function Recommenders() {
         <div>
           <div className="text-sm font-semibold text-sky-800 mb-1">FERPA Waiver Notice</div>
           <p className="text-xs text-sky-700 leading-relaxed">
-            By inviting recommenders through PakApply, you waive your right to view their
+            By inviting recommenders through Campus Apply, you waive your right to view their
             confidential letters of recommendation. Recommenders can submit letters directly
             through a secure link sent to their email address. Most universities prefer waived
             access as it increases the credibility of recommendations.
@@ -348,7 +348,7 @@ export default function Recommenders() {
 
             <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-700">
               An email invitation will be sent to this address. The recommender can submit their
-              letter directly through a secure link — no PakApply account required.
+              letter directly through a secure link — no Campus Apply account required.
             </div>
 
             <div className="flex gap-3 justify-end">

@@ -100,7 +100,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-sky-100 flex items-center justify-between">
         <div>
-          <div className="text-xl font-bold text-sky-700 tracking-tight">PakApply</div>
+          <div className="text-xl font-bold text-sky-700 tracking-tight">Campus Apply</div>
           <div className="text-xs text-slate-400 mt-0.5">College Portal</div>
         </div>
         <div className="flex items-center gap-1">
@@ -518,9 +518,9 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
               <FlaskConical className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
               <span className="font-semibold">Beta</span>
               <span className="opacity-80 hidden sm:inline">
-                PakApply is in public beta — some features are still in development. Your feedback helps us improve.
+                Campus Apply is in public beta — some features are still in development. Your feedback helps us improve.
               </span>
-              <span className="opacity-80 sm:hidden">PakApply is in public beta.</span>
+              <span className="opacity-80 sm:hidden">Campus Apply is in public beta.</span>
             </div>
             <button
               onClick={dismissBeta}
@@ -540,7 +540,7 @@ export default function AppLayout({ children, rightPanel, title, subtitle }: App
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="text-lg font-bold text-sky-700 flex-1">PakApply</div>
+          <div className="text-lg font-bold text-sky-700 flex-1">Campus Apply</div>
           <NotificationBell />
         </div>
 

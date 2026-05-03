@@ -122,7 +122,7 @@ export default function AdminDashboard() {
             <Building2 className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="text-sm font-bold tracking-tight">PakApply — Admissions Portal</div>
+            <div className="text-sm font-bold tracking-tight">Campus Apply — Admissions Portal</div>
             <div className="text-xs text-slate-400">
               {selectedUni ? `Viewing: ${selectedUni.name}` : "All Universities"}
             </div>
