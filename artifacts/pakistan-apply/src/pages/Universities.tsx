@@ -67,7 +67,7 @@ export default function Universities() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListMyCollegesQueryKey() });
         setSavingId(null);
-        toast({ title: "College saved", description: "Added to My Colleges list." });
+        toast({ title: "University saved", description: "Added to My Universities list." });
       },
       onError: () => { setSavingId(null); toast({ title: "Failed to save", variant: "destructive" }); },
     },
@@ -78,7 +78,7 @@ export default function Universities() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListMyCollegesQueryKey() });
         setSavingId(null);
-        toast({ title: "Removed from My Colleges" });
+        toast({ title: "Removed from My Universities" });
       },
       onError: () => { setSavingId(null); toast({ title: "Failed to remove", variant: "destructive" }); },
     },
@@ -362,7 +362,7 @@ function UniversityCard({
       <button
         onClick={(e) => { e.preventDefault(); onSaveToggle(u.id); }}
         disabled={saving}
-        title={saved ? "Remove from My Colleges" : "Add to My Colleges"}
+        title={saved ? "Remove from My Universities" : "Add to My Universities"}
         className={cn(
           "absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center border transition-all z-10",
           saved

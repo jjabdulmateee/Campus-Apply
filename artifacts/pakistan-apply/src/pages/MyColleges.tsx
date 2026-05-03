@@ -384,7 +384,7 @@ export default function MyColleges() {
   ).length ?? 0;
 
   return (
-    <AppLayout title="My Colleges" subtitle="Track your college list and application progress">
+    <AppLayout title="My Universities" subtitle="Track your university list and application progress">
       <div className="space-y-5">
         {/* Summary chips */}
         {total > 0 && (
@@ -442,7 +442,7 @@ export default function MyColleges() {
             <div className="w-14 h-14 rounded-2xl bg-sky-100 flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-7 h-7 text-sky-500" />
             </div>
-            <h3 className="text-base font-semibold text-slate-700 mb-1">Your college list is empty</h3>
+            <h3 className="text-base font-semibold text-slate-700 mb-1">Your university list is empty</h3>
             <p className="text-sm text-slate-400 mb-6 max-w-xs mx-auto">
               Search and save universities to track your applications in one place.
             </p>
@@ -450,7 +450,7 @@ export default function MyColleges() {
               href="/universities"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-sm hover:bg-sky-700 transition-colors"
             >
-              <Search className="w-4 h-4" /> Find your first college
+              <Search className="w-4 h-4" /> Find your first university
             </Link>
           </div>
         )}

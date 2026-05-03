@@ -76,7 +76,11 @@ export default function Dashboard() {
                 </div>
                 <div className="flex flex-wrap gap-4">
                   {dashboard?.profileSections.slice(0, 7).map((step) => (
-                    <div key={step.slug} className="flex min-w-[72px] flex-col items-center gap-1 text-center">
+                    <Link
+                      key={step.slug}
+                      href={sectionHref(step.slug)}
+                      className="flex min-w-[72px] flex-col items-center gap-1 text-center"
+                    >
                       <div
                         className={cn(
                           "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
@@ -86,14 +90,14 @@ export default function Dashboard() {
                         {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
                       </div>
                       <div className="text-xs text-[#4B5563]">{step.name}</div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
             )}
           </CollapsibleCard>
 
-          <CollapsibleCard title="My Colleges" subtitle={`${applications?.length ?? 0} colleges on my list`}>
+          <CollapsibleCard title="My Universities" subtitle={`${applications?.length ?? 0} universities on my list`}>
             <div className="space-y-4">
               <div className="h-4 rounded-full bg-[#F3F4F6]">
                 <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${Math.min((applications?.length ?? 0) * 10, 100)}%` }} />
@@ -101,7 +105,7 @@ export default function Dashboard() {
 
               <div className="space-y-3">
                 {(applications ?? []).slice(0, 3).map((app) => (
-                  <div key={app.id} className="rounded-md border border-slate-200 bg-white p-3">
+                  <Link key={app.id} href={`/applications/${app.id}/review`} className="block rounded-md border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-700">{app.universityName}</div>
@@ -109,7 +113,7 @@ export default function Dashboard() {
                       </div>
                       <div className="text-xs text-slate-500">{app.status}</div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
 
@@ -128,6 +132,12 @@ export default function Dashboard() {
 
                 <MiniCalendar />
               </div>
+              <div className="rounded-md border border-slate-200 bg-white p-4">
+                <div className="mb-3 text-sm font-medium text-slate-700">Search Universities</div>
+                <Link href="/universities" className="inline-flex items-center justify-center rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white">
+                  Search universities
+                </Link>
+              </div>
             </div>
           </CollapsibleCard>
         </div>
@@ -144,9 +154,9 @@ export default function Dashboard() {
             <Search className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400" />
           </div>
           <div className="mt-4 space-y-3">
-            <FaqItem question="How can I add a college to My Colleges?" />
+            <FaqItem question="How can I add a university to My Universities?" />
             <FaqItem question="Can I change answers after submitting?" />
-            <FaqItem question="How many colleges can I add?" />
+            <FaqItem question="How many universities can I add?" />
             <FaqItem question="When is my submission deadline?" />
           </div>
           <button className="mt-4 w-full rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-600">
@@ -166,9 +176,9 @@ export default function Dashboard() {
               <Input placeholder="Search FAQs" />
             </div>
             <div className="mt-4 space-y-3">
-              <FaqItem question="How can I add a college to My Colleges?" />
+              <FaqItem question="How can I add a university to My Universities?" />
               <FaqItem question="Can I change answers after submitting?" />
-              <FaqItem question="How many colleges can I add?" />
+              <FaqItem question="How many universities can I add?" />
               <FaqItem question="When is my submission deadline?" />
             </div>
             <button className="mt-4 w-full rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-600">
@@ -286,4 +296,15 @@ function FaqItem({ question }: { question: string }) {
       <div className="mt-1 text-xs text-slate-500">Read full answer</div>
     </div>
   );
+}
+
+function sectionHref(slug: string) {
+  if (slug.includes("profile")) return "/profile";
+  if (slug.includes("family")) return "/profile";
+  if (slug.includes("education")) return "/education";
+  if (slug.includes("test")) return "/testing";
+  if (slug.includes("activity")) return "/activities";
+  if (slug.includes("essay")) return "/writing";
+  if (slug.includes("recommender")) return "/recommenders";
+  return "/dashboard";
 }
