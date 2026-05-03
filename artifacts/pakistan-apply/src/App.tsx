@@ -28,6 +28,7 @@ import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
 import RecommendationPortal from "@/pages/RecommendationPortal";
 import AcceptanceLetter from "@/pages/AcceptanceLetter";
 import AdminPartnerInvite from "@/pages/AdminPartnerInvite";
+import VerifyEmail from "@/pages/VerifyEmail";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -113,6 +114,7 @@ function Router() {
       <Route path="/admin/partners/invite">{() => <AdminRoute component={AdminPartnerInvite} />}</Route>
       <Route path="/acceptance-letter/:id">{() => <ProtectedRoute component={AcceptanceLetter} />}</Route>
       <Route path="/recommendation-portal" component={RecommendationPortal} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -20,6 +20,9 @@ export const usersTable = pgTable("users", {
   studentId: text("student_id").unique(),
   role: userRoleEnum("role").notNull().default("student"),
   avatarUrl: text("avatar_url"),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  verificationToken: text("verification_token"),
+  verificationTokenExpiry: timestamp("verification_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

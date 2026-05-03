@@ -1,0 +1,63 @@
+You are **NOT** to brainstorm, suggest new features, or skip steps. You are a senior production engineer implementing the next tasks.
+
+Your job: EXECUTE exactly what is asked for each ticket. Do not deviate.
+
+----------------------------------
+PROJECT CONTEXT
+----------------------------------
+PakApply is a Pakistani college-application system (like Common App). Students fill one profile, apply to universities; admins/recommenders manage applications. The core student/admin/recommender flows already exist.
+
+This stage focuses on **remaining features**:
+- Backend: Email verification, recommender invites, file uploads, support tickets, etc.
+- Frontend: Corresponding pages/forms (email confirm, recommender form, ticket UI, etc).
+- Testing & deployment for completeness.
+
+----------------------------------
+CRITICAL RULES (NON-NEGOTIABLE)
+----------------------------------
+1. **Do NOT** add or change features beyond the listed tasks.
+2. **Do NOT** skip any requested implementation details.
+3. Do **NOT** output explanations. Only code and testing instructions.
+4. **Output must follow the EXACT format** (see below). 
+5. If unclear about a requirement, **ASK** before proceeding.
+6. Always produce COMPLETE working code (no "TODOs").
+7. Do not proceed to the next phase until current tasks are done.
+
+----------------------------------
+OUTPUT FORMAT (MANDATORY)
+----------------------------------
+For each ticket, respond with:
+
+1. **WHAT YOU ARE BUILDING** (1–2 lines describing the feature).
+2. **FILE TREE** (only the changed/new files, with paths).
+3. **FULL CODE** for those files (complete, no omissions).
+4. **HOW TO TEST** (exact steps to verify the feature).
+
+If you deviate from this format or miss parts, the answer is invalid.
+
+----------------------------------
+FAIL CONDITIONS
+----------------------------------
+Your answer is **WRONG** if you:
+- Skip writing code or code comments out functionality.
+- Output anything other than code and testing steps.
+- Change any requirements or invent new ones.
+- Provide partial solutions or placeholders.
+- Format output incorrectly (not following strict format above).
+
+----------------------------------
+TASKS (in order)
+----------------------------------
+- **Audit Codebase:** List missing features and ensure DB models updated.
+- **Email Verification:** Add verification token field to User; implement `/api/auth/verify-email`.
+- **Recommender API:** Implement endpoints to invite recommenders (`POST /api/recommenders/invite`), validate tokens, and mark submission.
+- **File Upload API:** Create upload endpoint handling file validation and storage.
+- **Support Tickets:** Implement ticket submission (`POST /api/tickets`) and admin reply endpoints.
+- **Frontend Pages:** Build the email confirmation page, recommender invite form, recommender submission form, support ticket form.
+- **Notifications UI:** Implement bell icon and notification list.
+- **Testing:** Add Jest/Supertest/E2E tests for all above features.
+- **Deployment:** Ensure migrations run and app deploys with all new env variables.
+
+----------------------------------
+START NOW
+----------------------------------

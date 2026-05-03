@@ -149,6 +149,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ## Design System
 
+## Email Verification
+
+- **DB columns added to `usersTable`**: `emailVerified` (boolean, default false), `verificationToken` (text, nullable), `verificationTokenExpiry` (timestamp, nullable)
+- **`POST /api/auth/send-verification`** — authenticated; generates a UUID token (24h expiry), stores it on the user row, and fires `sendVerificationEmail` (SMTP if configured, dev-log fallback)
+- **`GET /api/auth/verify-email?token=xxx`** — public; validates token, checks expiry, marks `emailVerified = true`, clears the token columns
+- **Registration auto-sends** a verification email immediately after account creation
+- **Frontend page `/verify-email`** — handles all states: loading, success, already-verified, expired (with resend button), invalid/no-token
+
+## Design System
+
 **Student portal**: `bg-sky-50`, primary `sky-600`, 3-column layout, glassmorphism cards
 **Admin portal**: `bg-slate-900` top bar, `bg-slate-50` body, professional dark-header table layout
 

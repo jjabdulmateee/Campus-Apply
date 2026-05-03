@@ -6,6 +6,7 @@ import { usersTable, studentProfilesTable, universitiesTable } from "@workspace/
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { JWT_SECRET, verifyJWT } from "../middleware/auth";
+import { sendVerificationEmail } from "../utils/email";
 
 const router = Router();
 
@@ -197,6 +198,15 @@ router.post("/register", async (req, res) => {
 
     const token = makeToken({ ...user, studentId, role: "student" });
 
+    const verifyToken = crypto.randomUUID();
+    const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await db
+      .update(usersTable)
+      .set({ verificationToken: verifyToken, verificationTokenExpiry: verifyExpiry })
+      .where(eq(usersTable.id, user.id));
+
+    sendVerificationEmail({ to: normalizedEmail, fullName, token: verifyToken }).catch(() => {});
+
     return res.status(201).json({
       token,
       user: { id: user.id, email: normalizedEmail, fullName, studentId, role: "student" },
@@ -248,6 +258,72 @@ router.post("/login", async (req, res) => {
 
 router.get("/me", verifyJWT, (req, res) => {
   res.json(req.user);
+});
+
+/** POST /api/auth/send-verification — send (or resend) verification email to the logged-in user */
+router.post("/send-verification", verifyJWT, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, userId) });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.emailVerified) {
+      return res.status(400).json({ error: "Email is already verified" });
+    }
+
+    const token = crypto.randomUUID();
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await db
+      .update(usersTable)
+      .set({ verificationToken: token, verificationTokenExpiry: expiry })
+      .where(eq(usersTable.id, userId));
+
+    sendVerificationEmail({ to: user.email, fullName: user.fullName, token }).catch((err) =>
+      req.log.error({ err }, "Failed to send verification email"),
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "send-verification error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/** GET /api/auth/verify-email?token=xxx — verify token and mark email as verified */
+router.get("/verify-email", async (req, res) => {
+  const tokenParam = z.string().min(1).safeParse(req.query.token);
+  if (!tokenParam.success) {
+    return res.status(400).json({ error: "Missing or invalid token" });
+  }
+
+  try {
+    const user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.verificationToken, tokenParam.data),
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Invalid verification token" });
+    }
+
+    if (user.emailVerified) {
+      return res.json({ ok: true, alreadyVerified: true });
+    }
+
+    if (user.verificationTokenExpiry && user.verificationTokenExpiry < new Date()) {
+      return res.status(410).json({ error: "Verification link has expired. Please request a new one." });
+    }
+
+    await db
+      .update(usersTable)
+      .set({ emailVerified: true, verificationToken: null, verificationTokenExpiry: null })
+      .where(eq(usersTable.id, user.id));
+
+    return res.json({ ok: true, alreadyVerified: false });
+  } catch (err) {
+    req.log.error({ err }, "verify-email error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;
