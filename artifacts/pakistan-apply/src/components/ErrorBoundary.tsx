@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[PakApply] Uncaught error:", error, info.componentStack);
+    console.error("[Campus Apply] Uncaught error:", error, info.componentStack);
   }
 
   render() {
