@@ -1,0 +1,128 @@
+You are a senior software engineer and product auditor with 15+ years of experience in shipping production-grade mobile and web applications.
+
+Your task is to perform a COMPLETE, DEEP, and HONEST audit of the current project.
+
+This is NOT a summary. This is a full technical inspection.
+
+----------------------------------
+
+🔹 CONTEXT:
+This app was built using AI (Triplet). It is intended to be a REAL, production-ready app (not a demo or prototype).
+
+----------------------------------
+
+🔹 OBJECTIVE:
+Break down EVERYTHING that currently exists in the project and identify:
+
+1. What is ACTUALLY built and working
+2. What is partially built / unstable
+3. What is fake / placeholder / demo
+4. What is completely missing
+5. What is broken or likely to crash
+
+----------------------------------
+
+🔹 AUDIT SECTIONS (MANDATORY)
+
+1. 🧠 PROJECT OVERVIEW
+- What is this app supposed to do?
+- Current architecture (frontend, backend, database, APIs)
+- Tech stack used (frameworks, languages, services)
+
+----------------------------------
+
+2. 🎨 FRONTEND AUDIT
+- Which screens/pages are implemented?
+- Which screens are incomplete or UI-only?
+- State management approach (real or fake?)
+- API integration status (real backend or mocked?)
+- UX issues (lag, navigation problems, responsiveness)
+- Any hardcoded/demo data in UI?
+
+----------------------------------
+
+3. ⚙️ BACKEND AUDIT
+- Is there a real backend or just mock functions?
+- Authentication system (real or fake?)
+- Database setup (schema, collections/tables)
+- API endpoints (list all, and mention which work)
+- Error handling and validation
+- Security issues (auth bypass, exposed keys, etc.)
+
+----------------------------------
+
+4. 🗄️ DATABASE & DATA
+- Is the data persistent or temporary?
+- Which data is REAL vs DEMO?
+- Any fake users, fake posts, or hardcoded content?
+- Data flow: how data moves from frontend → backend → DB
+- Missing data models or relationships
+
+----------------------------------
+
+5. 🔌 INTEGRATIONS
+- Third-party services used (Firebase, Stripe, etc.)
+- Are they properly configured or just placeholders?
+- Any broken or incomplete integrations?
+
+----------------------------------
+
+6. 🧪 FUNCTIONAL TESTING
+- List all working features
+- List broken features
+- List features that appear to work but are fake
+- Identify crash points or high-risk bugs
+
+----------------------------------
+
+7. 🚨 PRODUCTION READINESS CHECK
+- Can this app be deployed TODAY? (Yes/No + why)
+- What are the biggest blockers?
+- Performance issues
+- Security risks
+- Scalability concerns
+
+----------------------------------
+
+8. 📉 GAP ANALYSIS
+- What is missing to make this a REAL app?
+- What features are only UI but not functional?
+- What backend logic is missing?
+- What critical flows are incomplete?
+
+----------------------------------
+
+9. 🛠️ FIX PLAN (VERY IMPORTANT)
+Create a PRIORITIZED action plan:
+
+PHASE 1 (Critical fixes)
+PHASE 2 (Core functionality completion)
+PHASE 3 (Polish & scaling)
+
+Each task must include:
+- What to fix
+- Why it matters
+- How to fix it (technical direction)
+
+----------------------------------
+
+10. 🧾 FINAL VERDICT
+- % of app that is реально functional
+- % that is fake/demo
+- % missing
+- Clear statement: “This app is / is not production-ready”
+
+----------------------------------
+
+🔹 RULES:
+- Be brutally honest
+- Do NOT assume things are working — verify logically
+- Call out fake/demo logic clearly
+- Think like you are responsible for launching this app to 10,000 users
+
+----------------------------------
+
+🔹 OUTPUT FORMAT:
+Use clear sections, bullet points, and technical clarity.
+No fluff. No generic advice.
+Only real engineering analysis.
