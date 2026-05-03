@@ -341,6 +341,17 @@ export interface DashboardSummary {
   profileSections: ProfileSection[];
 }
 
+export type UserCollegeStatus =
+  (typeof UserCollegeStatus)[keyof typeof UserCollegeStatus];
+
+export const UserCollegeStatus = {
+  researching: "researching",
+  questions_started: "questions_started",
+  recommenders_invited: "recommenders_invited",
+  review_and_submit: "review_and_submit",
+  submitted: "submitted",
+} as const;
+
 export type UniversityType =
   (typeof UniversityType)[keyof typeof UniversityType];
 
@@ -348,6 +359,15 @@ export const UniversityType = {
   public: "public",
   private: "private",
   semi_government: "semi_government",
+} as const;
+
+export type UniversityDeadlineType =
+  (typeof UniversityDeadlineType)[keyof typeof UniversityDeadlineType];
+
+export const UniversityDeadlineType = {
+  early_action: "early_action",
+  regular_decision: "regular_decision",
+  rolling: "rolling",
 } as const;
 
 export interface University {
@@ -364,8 +384,40 @@ export interface University {
   logoUrl?: string;
   programCount?: number;
   applicationDeadline?: string;
+  deadlineType?: UniversityDeadlineType;
+  applicationFeeRequired?: boolean;
+  essayRequired?: boolean;
+  acceptsTransfer?: boolean;
   isFeatured?: boolean;
   admissionOpen?: boolean;
+}
+
+export interface UserCollege {
+  id: number;
+  studentId: string;
+  universityId: number;
+  status: UserCollegeStatus;
+  addedAt?: string;
+  university?: University;
+}
+
+export interface SaveCollegeBody {
+  universityId: number;
+}
+
+export type UpdateCollegeStatusBodyStatus =
+  (typeof UpdateCollegeStatusBodyStatus)[keyof typeof UpdateCollegeStatusBodyStatus];
+
+export const UpdateCollegeStatusBodyStatus = {
+  researching: "researching",
+  questions_started: "questions_started",
+  recommenders_invited: "recommenders_invited",
+  review_and_submit: "review_and_submit",
+  submitted: "submitted",
+} as const;
+
+export interface UpdateCollegeStatusBody {
+  status: UpdateCollegeStatusBodyStatus;
 }
 
 export type UniversityStatsByProvinceItem = {
@@ -762,6 +814,9 @@ export type ListUniversitiesParams = {
   province?: string;
   type?: string;
   search?: string;
+  deadlineType?: string;
+  noFee?: string;
+  noEssay?: string;
 };
 
 export type DeleteDocument200 = {

@@ -69,6 +69,15 @@ router.get("/", async (req, res) => {
         u.city.toLowerCase().includes(s)
     );
   }
+  if (query.deadlineType) {
+    unis = unis.filter((u) => u.deadlineType === query.deadlineType);
+  }
+  if (query.noFee === "true") {
+    unis = unis.filter((u) => u.applicationFeeRequired === false);
+  }
+  if (query.noEssay === "true") {
+    unis = unis.filter((u) => u.essayRequired === false);
+  }
 
   const withProgramCount = await Promise.all(
     unis.map(async (u) => {

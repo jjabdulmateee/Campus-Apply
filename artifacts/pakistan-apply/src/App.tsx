@@ -20,6 +20,7 @@ import Applications from "@/pages/Applications";
 import Apply from "@/pages/Apply";
 import ReviewApplication from "@/pages/ReviewApplication";
 import DocumentLocker from "@/pages/DocumentLocker";
+import MyColleges from "@/pages/MyColleges";
 import HelpSupport from "@/pages/HelpSupport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/writing">{() => <ProtectedRoute component={Writing} />}</Route>
       <Route path="/universities">{() => <ProtectedRoute component={Universities} />}</Route>
       <Route path="/universities/:id">{() => <ProtectedRoute component={UniversityDetail} />}</Route>
+      <Route path="/my-colleges">{() => <ProtectedRoute component={MyColleges} />}</Route>
       <Route path="/applications">{() => <ProtectedRoute component={Applications} />}</Route>
       <Route path="/applications/:id/review">{() => <ProtectedRoute component={ReviewApplication} />}</Route>
       <Route path="/apply/:universityId">{() => <ProtectedRoute component={Apply} />}</Route>

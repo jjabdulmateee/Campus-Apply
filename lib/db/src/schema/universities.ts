@@ -17,6 +17,10 @@ export const universitiesTable = pgTable("universities", {
   description: text("description"),
   logoUrl: text("logo_url"),
   applicationDeadline: text("application_deadline"),
+  deadlineType: text("deadline_type"),
+  applicationFeeRequired: boolean("application_fee_required").default(true),
+  essayRequired: boolean("essay_required").default(true),
+  acceptsTransfer: boolean("accepts_transfer").default(false),
   isFeatured: boolean("is_featured").default(false),
   admissionOpen: boolean("admission_open").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -48,3 +52,14 @@ export const programsTable = pgTable("programs", {
 export const insertProgramSchema = createInsertSchema(programsTable).omit({ id: true, createdAt: true });
 export type InsertProgram = z.infer<typeof insertProgramSchema>;
 export type Program = typeof programsTable.$inferSelect;
+
+export const userCollegesTable = pgTable("user_colleges", {
+  id: serial("id").primaryKey(),
+  studentId: text("student_id").notNull(),
+  universityId: integer("university_id").notNull(),
+  status: text("status").notNull().default("researching"),
+  addedAt: timestamp("added_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserCollege = typeof userCollegesTable.$inferSelect;

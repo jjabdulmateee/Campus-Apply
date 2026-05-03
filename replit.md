@@ -39,8 +39,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `/testing` — Entrance exam scores (ECAT, MDCAT, NTS, SAT, GAT)
 - `/activities` — Extracurriculars and achievements
 - `/writing` — Personal statements / essays
-- `/universities` — Search and filter 12 Pakistani universities
+- `/universities` — Search and filter 12 Pakistani universities (debounced search, province/type/deadline type/no-fee/no-essay filters, + save buttons)
 - `/universities/:id` — University detail with programs list + Apply button
+- `/my-colleges` — Saved college list: 5-stage progress tracker per college, expandable detail panel, status advancement
 - `/applications` — Track all submitted applications (5-stage status timeline)
 - `/applications/:id/review` — 3-tab review + supplement Q&A + submit screen
 - `/documents` — Document Locker: upload/manage CNIC, marksheets, transcripts, passport photo
@@ -69,6 +70,10 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `GET/POST /api/students/me/activities`, `PUT/DELETE /api/students/me/activities/:id`
 - `GET/POST /api/students/me/essays`, `PUT/DELETE /api/students/me/essays/:id`
 - `GET /api/students/me/dashboard`
+- `GET /api/students/me/colleges` — List saved colleges (with joined university data)
+- `POST /api/students/me/colleges` — Save a college (idempotent)
+- `DELETE /api/students/me/colleges/:universityId` — Remove from saved list
+- `PATCH /api/students/me/colleges/:universityId` — Update application progress status
 
 **Universities & Applications**
 - `GET /api/universities`, `/featured`, `/stats`, `/:id`, `/:id/programs`
@@ -99,7 +104,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ### Database Schema (`lib/db/src/schema/`)
 - `students` — Profile, academics, test scores, activities, essays
-- `universities` — 12 Pakistani universities seeded
+- `universities` — 12 Pakistani universities seeded; new columns: `deadlineType`, `applicationFeeRequired`, `essayRequired`, `acceptsTransfer`
+- `user_colleges` — Student saved-college list with 5-stage status: `researching → questions_started → recommenders_invited → review_and_submit → submitted`
 - `applications` — Student→Program applications with status + `adminNotes`, `decisionReason`, `reviewedAt` columns
 - `auth` — `users` table (email, passwordHash, fullName, studentId, **role: student|admin**) + `application_answers` + **`admin_remarks`** tables
 - `documents` — Student uploaded document metadata

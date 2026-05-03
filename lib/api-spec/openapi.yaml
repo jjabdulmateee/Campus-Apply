@@ -369,6 +369,77 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
 
+  # ── My Colleges (Saved list) ─────────────────────────────────────────────────
+  /students/me/colleges:
+    get:
+      operationId: listMyColleges
+      tags: [student-colleges]
+      summary: List colleges saved by the student
+      responses:
+        "200":
+          description: Saved colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserCollege"
+    post:
+      operationId: saveCollege
+      tags: [student-colleges]
+      summary: Save a college to the student's list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveCollegeBody"
+      responses:
+        "201":
+          description: College saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCollege"
+
+  /students/me/colleges/{universityId}:
+    delete:
+      operationId: removeCollege
+      tags: [student-colleges]
+      summary: Remove a college from the student's list
+      parameters:
+        - name: universityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+    patch:
+      operationId: updateCollegeStatus
+      tags: [student-colleges]
+      summary: Update progress status for a saved college
+      parameters:
+        - name: universityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCollegeStatusBody"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCollege"
+
   # ── Universities ─────────────────────────────────────────────────────────────
   /universities:
     get:
@@ -385,6 +456,18 @@ paths:
           schema:
             type: string
         - name: search
+          in: query
+          schema:
+            type: string
+        - name: deadlineType
+          in: query
+          schema:
+            type: string
+        - name: noFee
+          in: query
+          schema:
+            type: string
+        - name: noEssay
           in: query
           schema:
             type: string
@@ -1490,6 +1573,46 @@ components:
         - isComplete
         - completionPercent
 
+    # ── User Colleges ─────────────────────────────────────────────────────────
+    UserCollege:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: string
+        universityId:
+          type: integer
+        status:
+          type: string
+          enum: [researching, questions_started, recommenders_invited, review_and_submit, submitted]
+        addedAt:
+          type: string
+        university:
+          $ref: "#/components/schemas/University"
+      required:
+        - id
+        - studentId
+        - universityId
+        - status
+
+    SaveCollegeBody:
+      type: object
+      properties:
+        universityId:
+          type: integer
+      required:
+        - universityId
+
+    UpdateCollegeStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [researching, questions_started, recommenders_invited, review_and_submit, submitted]
+      required:
+        - status
+
     # ── Universities ──────────────────────────────────────────────────────────
     University:
       type: object
@@ -1521,6 +1644,15 @@ components:
           type: integer
         applicationDeadline:
           type: string
+        deadlineType:
+          type: string
+          enum: [early_action, regular_decision, rolling]
+        applicationFeeRequired:
+          type: boolean
+        essayRequired:
+          type: boolean
+        acceptsTransfer:
+          type: boolean
         isFeatured:
           type: boolean
         admissionOpen:

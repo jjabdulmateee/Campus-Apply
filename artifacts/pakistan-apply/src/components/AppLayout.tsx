@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Settings,
   LifeBuoy,
+  Bookmark,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/activities", label: "Activities", icon: BookOpen },
   { href: "/writing", label: "Essays", icon: PenLine },
   { href: "/universities", label: "University Search", icon: Search },
+  { href: "/my-colleges", label: "My Colleges", icon: Bookmark },
   { href: "/applications", label: "My Applications", icon: FileText },
   { href: "/documents", label: "Document Locker", icon: FolderLock },
   { href: "/help", label: "Help & Support", icon: LifeBuoy },

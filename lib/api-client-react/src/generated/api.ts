@@ -62,13 +62,16 @@ import type {
   RequestUploadUrlResponse,
   SaveAvatar200,
   SaveAvatarBody,
+  SaveCollegeBody,
   StudentProfile,
   SubmitAdminDecision200,
   TestScore,
   University,
   UniversityStats,
   UpdateApplicationBody,
+  UpdateCollegeStatusBody,
   UpsertStudentProfileBody,
+  UserCollege,
   UserPreferences,
   UserPreferencesUpdate,
 } from "./api.schemas";
@@ -1719,6 +1722,338 @@ export function useGetMyDashboard<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List colleges saved by the student
+ */
+export const getListMyCollegesUrl = () => {
+  return `/api/students/me/colleges`;
+};
+
+export const listMyColleges = async (
+  options?: RequestInit,
+): Promise<UserCollege[]> => {
+  return customFetch<UserCollege[]>(getListMyCollegesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyCollegesQueryKey = () => {
+  return [`/api/students/me/colleges`] as const;
+};
+
+export const getListMyCollegesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyColleges>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyColleges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyCollegesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyColleges>>> = ({
+    signal,
+  }) => listMyColleges({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyColleges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyCollegesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyColleges>>
+>;
+export type ListMyCollegesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List colleges saved by the student
+ */
+
+export function useListMyColleges<
+  TData = Awaited<ReturnType<typeof listMyColleges>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyColleges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyCollegesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Save a college to the student's list
+ */
+export const getSaveCollegeUrl = () => {
+  return `/api/students/me/colleges`;
+};
+
+export const saveCollege = async (
+  saveCollegeBody: SaveCollegeBody,
+  options?: RequestInit,
+): Promise<UserCollege> => {
+  return customFetch<UserCollege>(getSaveCollegeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveCollegeBody),
+  });
+};
+
+export const getSaveCollegeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveCollege>>,
+    TError,
+    { data: BodyType<SaveCollegeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveCollege>>,
+  TError,
+  { data: BodyType<SaveCollegeBody> },
+  TContext
+> => {
+  const mutationKey = ["saveCollege"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveCollege>>,
+    { data: BodyType<SaveCollegeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return saveCollege(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveCollegeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveCollege>>
+>;
+export type SaveCollegeMutationBody = BodyType<SaveCollegeBody>;
+export type SaveCollegeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Save a college to the student's list
+ */
+export const useSaveCollege = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveCollege>>,
+    TError,
+    { data: BodyType<SaveCollegeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveCollege>>,
+  TError,
+  { data: BodyType<SaveCollegeBody> },
+  TContext
+> => {
+  return useMutation(getSaveCollegeMutationOptions(options));
+};
+
+/**
+ * @summary Remove a college from the student's list
+ */
+export const getRemoveCollegeUrl = (universityId: number) => {
+  return `/api/students/me/colleges/${universityId}`;
+};
+
+export const removeCollege = async (
+  universityId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getRemoveCollegeUrl(universityId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRemoveCollegeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCollege>>,
+    TError,
+    { universityId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeCollege>>,
+  TError,
+  { universityId: number },
+  TContext
+> => {
+  const mutationKey = ["removeCollege"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeCollege>>,
+    { universityId: number }
+  > = (props) => {
+    const { universityId } = props ?? {};
+
+    return removeCollege(universityId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveCollegeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeCollege>>
+>;
+
+export type RemoveCollegeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a college from the student's list
+ */
+export const useRemoveCollege = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCollege>>,
+    TError,
+    { universityId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeCollege>>,
+  TError,
+  { universityId: number },
+  TContext
+> => {
+  return useMutation(getRemoveCollegeMutationOptions(options));
+};
+
+/**
+ * @summary Update progress status for a saved college
+ */
+export const getUpdateCollegeStatusUrl = (universityId: number) => {
+  return `/api/students/me/colleges/${universityId}`;
+};
+
+export const updateCollegeStatus = async (
+  universityId: number,
+  updateCollegeStatusBody: UpdateCollegeStatusBody,
+  options?: RequestInit,
+): Promise<UserCollege> => {
+  return customFetch<UserCollege>(getUpdateCollegeStatusUrl(universityId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateCollegeStatusBody),
+  });
+};
+
+export const getUpdateCollegeStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCollegeStatus>>,
+    TError,
+    { universityId: number; data: BodyType<UpdateCollegeStatusBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCollegeStatus>>,
+  TError,
+  { universityId: number; data: BodyType<UpdateCollegeStatusBody> },
+  TContext
+> => {
+  const mutationKey = ["updateCollegeStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCollegeStatus>>,
+    { universityId: number; data: BodyType<UpdateCollegeStatusBody> }
+  > = (props) => {
+    const { universityId, data } = props ?? {};
+
+    return updateCollegeStatus(universityId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCollegeStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCollegeStatus>>
+>;
+export type UpdateCollegeStatusMutationBody = BodyType<UpdateCollegeStatusBody>;
+export type UpdateCollegeStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update progress status for a saved college
+ */
+export const useUpdateCollegeStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCollegeStatus>>,
+    TError,
+    { universityId: number; data: BodyType<UpdateCollegeStatusBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCollegeStatus>>,
+  TError,
+  { universityId: number; data: BodyType<UpdateCollegeStatusBody> },
+  TContext
+> => {
+  return useMutation(getUpdateCollegeStatusMutationOptions(options));
+};
 
 /**
  * @summary List all universities

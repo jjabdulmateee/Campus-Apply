@@ -497,12 +497,128 @@ export const GetMyDashboardResponse = zod.object({
 });
 
 /**
+ * @summary List colleges saved by the student
+ */
+export const ListMyCollegesResponseItem = zod.object({
+  id: zod.number(),
+  studentId: zod.string(),
+  universityId: zod.number(),
+  status: zod.enum([
+    "researching",
+    "questions_started",
+    "recommenders_invited",
+    "review_and_submit",
+    "submitted",
+  ]),
+  addedAt: zod.string().optional(),
+  university: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      shortName: zod.string().optional(),
+      province: zod.string(),
+      city: zod.string(),
+      type: zod.enum(["public", "private", "semi_government"]),
+      ranking: zod.number().optional(),
+      established: zod.number().optional(),
+      website: zod.string().optional(),
+      description: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+      programCount: zod.number().optional(),
+      applicationDeadline: zod.string().optional(),
+      deadlineType: zod
+        .enum(["early_action", "regular_decision", "rolling"])
+        .optional(),
+      applicationFeeRequired: zod.boolean().optional(),
+      essayRequired: zod.boolean().optional(),
+      acceptsTransfer: zod.boolean().optional(),
+      isFeatured: zod.boolean().optional(),
+      admissionOpen: zod.boolean().optional(),
+    })
+    .optional(),
+});
+export const ListMyCollegesResponse = zod.array(ListMyCollegesResponseItem);
+
+/**
+ * @summary Save a college to the student's list
+ */
+export const SaveCollegeBody = zod.object({
+  universityId: zod.number(),
+});
+
+/**
+ * @summary Remove a college from the student's list
+ */
+export const RemoveCollegeParams = zod.object({
+  universityId: zod.coerce.number(),
+});
+
+/**
+ * @summary Update progress status for a saved college
+ */
+export const UpdateCollegeStatusParams = zod.object({
+  universityId: zod.coerce.number(),
+});
+
+export const UpdateCollegeStatusBody = zod.object({
+  status: zod.enum([
+    "researching",
+    "questions_started",
+    "recommenders_invited",
+    "review_and_submit",
+    "submitted",
+  ]),
+});
+
+export const UpdateCollegeStatusResponse = zod.object({
+  id: zod.number(),
+  studentId: zod.string(),
+  universityId: zod.number(),
+  status: zod.enum([
+    "researching",
+    "questions_started",
+    "recommenders_invited",
+    "review_and_submit",
+    "submitted",
+  ]),
+  addedAt: zod.string().optional(),
+  university: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      shortName: zod.string().optional(),
+      province: zod.string(),
+      city: zod.string(),
+      type: zod.enum(["public", "private", "semi_government"]),
+      ranking: zod.number().optional(),
+      established: zod.number().optional(),
+      website: zod.string().optional(),
+      description: zod.string().optional(),
+      logoUrl: zod.string().optional(),
+      programCount: zod.number().optional(),
+      applicationDeadline: zod.string().optional(),
+      deadlineType: zod
+        .enum(["early_action", "regular_decision", "rolling"])
+        .optional(),
+      applicationFeeRequired: zod.boolean().optional(),
+      essayRequired: zod.boolean().optional(),
+      acceptsTransfer: zod.boolean().optional(),
+      isFeatured: zod.boolean().optional(),
+      admissionOpen: zod.boolean().optional(),
+    })
+    .optional(),
+});
+
+/**
  * @summary List all universities
  */
 export const ListUniversitiesQueryParams = zod.object({
   province: zod.coerce.string().optional(),
   type: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
+  deadlineType: zod.coerce.string().optional(),
+  noFee: zod.coerce.string().optional(),
+  noEssay: zod.coerce.string().optional(),
 });
 
 export const ListUniversitiesResponseItem = zod.object({
@@ -519,6 +635,12 @@ export const ListUniversitiesResponseItem = zod.object({
   logoUrl: zod.string().optional(),
   programCount: zod.number().optional(),
   applicationDeadline: zod.string().optional(),
+  deadlineType: zod
+    .enum(["early_action", "regular_decision", "rolling"])
+    .optional(),
+  applicationFeeRequired: zod.boolean().optional(),
+  essayRequired: zod.boolean().optional(),
+  acceptsTransfer: zod.boolean().optional(),
   isFeatured: zod.boolean().optional(),
   admissionOpen: zod.boolean().optional(),
 });
@@ -541,6 +663,12 @@ export const GetFeaturedUniversitiesResponseItem = zod.object({
   logoUrl: zod.string().optional(),
   programCount: zod.number().optional(),
   applicationDeadline: zod.string().optional(),
+  deadlineType: zod
+    .enum(["early_action", "regular_decision", "rolling"])
+    .optional(),
+  applicationFeeRequired: zod.boolean().optional(),
+  essayRequired: zod.boolean().optional(),
+  acceptsTransfer: zod.boolean().optional(),
   isFeatured: zod.boolean().optional(),
   admissionOpen: zod.boolean().optional(),
 });
@@ -589,6 +717,12 @@ export const GetUniversityResponse = zod.object({
   logoUrl: zod.string().optional(),
   programCount: zod.number().optional(),
   applicationDeadline: zod.string().optional(),
+  deadlineType: zod
+    .enum(["early_action", "regular_decision", "rolling"])
+    .optional(),
+  applicationFeeRequired: zod.boolean().optional(),
+  essayRequired: zod.boolean().optional(),
+  acceptsTransfer: zod.boolean().optional(),
   isFeatured: zod.boolean().optional(),
   admissionOpen: zod.boolean().optional(),
 });

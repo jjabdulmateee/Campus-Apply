@@ -9,6 +9,7 @@ import {
   applicationsTable,
   universitiesTable,
   programsTable,
+  userCollegesTable,
 } from "@workspace/db";
 import {
   UpdateMyProfileBody,
@@ -28,6 +29,10 @@ import {
   UpdateEssayBody,
   UpdateEssayParams,
   DeleteEssayParams,
+  SaveCollegeBody,
+  UpdateCollegeStatusBody,
+  RemoveCollegeParams,
+  UpdateCollegeStatusParams,
 } from "@workspace/api-zod";
 import { eq, and, desc } from "drizzle-orm";
 import { optionalJWT, getStudentId } from "../middleware/auth";
@@ -552,6 +557,80 @@ router.get("/me/dashboard", async (req, res) => {
     recentActivity,
     profileSections: sections,
   });
+});
+
+// ─── My Colleges ─────────────────────────────────────────────────────────────
+
+router.get("/me/colleges", async (req, res) => {
+  const sid = getStudentId(req);
+  const rows = await db
+    .select()
+    .from(userCollegesTable)
+    .where(eq(userCollegesTable.studentId, sid));
+
+  const withUniversity = await Promise.all(
+    rows.map(async (c) => {
+      const [uni] = await db
+        .select()
+        .from(universitiesTable)
+        .where(eq(universitiesTable.id, c.universityId))
+        .limit(1);
+      return { ...c, university: uni ?? null };
+    }),
+  );
+
+  res.json(withUniversity);
+});
+
+router.post("/me/colleges", async (req, res) => {
+  const sid = getStudentId(req);
+  const { universityId } = SaveCollegeBody.parse(req.body);
+
+  const [existing] = await db
+    .select()
+    .from(userCollegesTable)
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+    .limit(1);
+
+  if (existing) {
+    const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, universityId)).limit(1);
+    res.status(201).json({ ...existing, university: uni ?? null });
+    return;
+  }
+
+  const [entry] = await db
+    .insert(userCollegesTable)
+    .values({ studentId: sid, universityId })
+    .returning();
+
+  const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, universityId)).limit(1);
+  res.status(201).json({ ...entry, university: uni ?? null });
+});
+
+router.delete("/me/colleges/:universityId", async (req, res) => {
+  const sid = getStudentId(req);
+  const { universityId } = RemoveCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
+
+  await db
+    .delete(userCollegesTable)
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)));
+
+  res.status(204).end();
+});
+
+router.patch("/me/colleges/:universityId", async (req, res) => {
+  const sid = getStudentId(req);
+  const { universityId } = UpdateCollegeStatusParams.parse({ universityId: parseInt(req.params.universityId, 10) });
+  const { status } = UpdateCollegeStatusBody.parse(req.body);
+
+  const [updated] = await db
+    .update(userCollegesTable)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+    .returning();
+
+  const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, universityId)).limit(1);
+  res.json({ ...updated, university: uni ?? null });
 });
 
 export default router;
