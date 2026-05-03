@@ -10,7 +10,7 @@ import { getSupplementQuestions, type SupplementQuestion } from "@/lib/supplemen
 import {
   ArrowLeft, CheckCircle, XCircle, Send, Loader2,
   User, GraduationCap, ClipboardList, BookOpen, PenLine, MessageSquare,
-  Trophy, MapPin, Printer,
+  Trophy, MapPin, Printer, Pencil,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -312,7 +312,7 @@ export default function ReviewApplication() {
             {activeTab === "profile" && (
               <div className="space-y-6">
                 {/* Personal Info */}
-                <Section icon={User} title="Personal Information">
+                <Section icon={User} title="Personal Information" editHref="/profile">
                   {review.student ? (
                     <Grid>
                       <Field label="Full Name" value={`${review.student.firstName} ${review.student.lastName}`} />
@@ -329,7 +329,7 @@ export default function ReviewApplication() {
                 </Section>
 
                 {/* Education */}
-                <Section icon={GraduationCap} title={`Education (${review.academics.length})`}>
+                <Section icon={GraduationCap} title={`Education (${review.academics.length})`} editHref="/education">
                   {review.academics.length > 0 ? (
                     <div className="space-y-3">
                       {review.academics.map((a) => (
@@ -353,7 +353,7 @@ export default function ReviewApplication() {
                 </Section>
 
                 {/* Test Scores */}
-                <Section icon={ClipboardList} title={`Test Scores (${review.tests.length})`}>
+                <Section icon={ClipboardList} title={`Test Scores (${review.tests.length})`} editHref="/testing">
                   {review.tests.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
                       {review.tests.map((t) => (
@@ -369,7 +369,7 @@ export default function ReviewApplication() {
                 </Section>
 
                 {/* Activities */}
-                <Section icon={BookOpen} title={`Activities (${review.activities.length})`}>
+                <Section icon={BookOpen} title={`Activities (${review.activities.length})`} editHref="/activities">
                   {review.activities.length > 0 ? (
                     <div className="space-y-2">
                       {review.activities.map((a) => (
@@ -386,7 +386,7 @@ export default function ReviewApplication() {
                 </Section>
 
                 {/* Essays */}
-                <Section icon={PenLine} title={`Essays (${review.essays.length})`}>
+                <Section icon={PenLine} title={`Essays (${review.essays.length})`} editHref="/writing">
                   {review.essays.length > 0 ? (
                     <div className="space-y-3">
                       {review.essays.map((e) => (
@@ -636,12 +636,22 @@ function SubmittedConfirmation({ review }: { review: ReviewData }) {
   );
 }
 
-function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+function Section({ icon: Icon, title, children, editHref }: { icon: React.ElementType; title: string; children: React.ReactNode; editHref?: string }) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className="w-4 h-4 text-sky-600" />
-        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-sky-600" />
+          <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+        </div>
+        {editHref && (
+          <Link
+            href={editHref}
+            className="inline-flex items-center gap-1 text-xs font-medium text-sky-500 hover:text-sky-700 hover:underline"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </Link>
+        )}
       </div>
       {children}
     </div>

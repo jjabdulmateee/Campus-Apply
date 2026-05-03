@@ -1,0 +1,130 @@
+You are NOT fixing layout anymore.
+
+You are now implementing SYSTEM-LEVEL UI BEHAVIOR to match Common App.
+
+The previous step only fixed structure.
+Now you must fix INTERACTION, FLOW, and STATE.
+
+----------------------------------
+CRITICAL RULE
+----------------------------------
+You are NOT allowed to say “done” unless the UI BEHAVES like Common App.
+
+This is no longer about visuals only.
+This is about UX LOGIC.
+
+----------------------------------
+WHAT IS STILL WRONG
+----------------------------------
+The current app:
+- Shows steps but does NOT behave like a real step system
+- Lacks true progress tracking
+- Does NOT enforce structured application flow per college
+- Likely has weak or incorrect review page structure
+
+----------------------------------
+YOUR TASK
+----------------------------------
+
+Implement FULL Common App-style behavior for:
+
+1. PROFILE PROGRESS SYSTEM (CRITICAL)
+   - Each section must have completion logic
+   - Progress % must be calculated dynamically
+   - Progress bar updates in real-time
+   - Sections show:
+     • Not Started
+     • In Progress
+     • Completed
+
+2. TRUE MULTI-STEP ENGINE (NOT UI ONLY)
+   - Each step must:
+     • Save data before moving forward
+     • Block navigation if required fields are empty
+   - Navigation:
+     • Next → validates + saves
+     • Back → preserves state
+   - Data must persist (no reset on refresh)
+
+3. COLLEGE APPLICATION STEPPER (MOST IMPORTANT)
+   For EACH college:
+
+   You MUST implement a 5-stage system:
+   - Added
+   - Questions
+   - Recommenders
+   - Review
+   - Submitted
+
+   REQUIREMENTS:
+   - Each stage unlocks only when previous is complete
+   - Visual stepper must reflect real state
+   - Clicking a step navigates to correct section
+   - Status must persist in database
+
+4. REVIEW PAGE (STRICT STRUCTURE)
+   - Must NOT be raw JSON dump
+   - Must be grouped:
+     • Personal Info
+     • Education
+     • Testing
+     • Activities
+     • Writing
+   - Each section must have:
+     • Edit button
+     • Clean readable layout
+
+5. DASHBOARD BEHAVIOR
+   - Show REAL data:
+     • Number of applications
+     • Progress per application
+     • Deadlines
+   - NOT static cards
+
+----------------------------------
+STRICT UX RULES
+----------------------------------
+- No step should be clickable unless unlocked
+- No progress should be fake or hardcoded
+- No form should allow skipping required fields
+- No page should reload and lose data
+
+----------------------------------
+OUTPUT FORMAT
+----------------------------------
+
+1. WHAT YOU ARE BUILDING
+2. STATE LOGIC (how progress + steps work)
+3. FILE TREE
+4. FULL CODE
+5. BEHAVIOR VERIFICATION CHECKLIST
+
+----------------------------------
+VERIFICATION CHECKLIST (MANDATORY)
+----------------------------------
+
+You MUST confirm:
+
+[ ] Progress % updates based on real data
+[ ] Steps cannot be skipped
+[ ] Data persists across refresh
+[ ] College stepper enforces order
+[ ] Review page is structured (not raw data)
+[ ] Dashboard shows real dynamic data
+
+If ANY is false → YOU ARE NOT DONE
+
+----------------------------------
+CURRENT TASK
+----------------------------------
+
+TASK: Implement full behavior system for:
+- Profile progress tracking
+- Multi-step validation
+- College application stepper
+- Review page structure
+- Dashboard real data
+
+----------------------------------
+START NOW
+----------------------------------

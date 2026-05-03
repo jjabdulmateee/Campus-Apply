@@ -5,6 +5,7 @@ import {
   useListMyColleges,
   useRemoveCollege,
   useUpdateCollegeStatus,
+  useListMyApplications,
   getListMyCollegesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,14 +41,24 @@ const COLLEGE_STATUS_STEPS = [
 
 type CollegeStatus = (typeof COLLEGE_STATUS_STEPS)[number]["key"];
 
+const STAGE_ACTIONS: Record<CollegeStatus, { label: string; getHref: (appId?: number) => string | null }> = {
+  researching: { label: "Fill Application Questions", getHref: (id) => id ? `/applications/${id}/review` : "/applications" },
+  questions_started: { label: "Continue Questions", getHref: (id) => id ? `/applications/${id}/review` : "/applications" },
+  recommenders_invited: { label: "Manage Recommenders", getHref: () => "/recommenders" },
+  review_and_submit: { label: "Review & Submit →", getHref: (id) => id ? `/applications/${id}/review` : "/applications" },
+  submitted: { label: "", getHref: () => null },
+};
+
 function CollegeStepper({
   status,
   universityId,
+  applicationId,
   onAdvance,
   advancing,
 }: {
   status: CollegeStatus;
   universityId: number;
+  applicationId?: number;
   onAdvance: (universityId: number, nextStatus: CollegeStatus) => void;
   advancing: boolean;
 }) {
@@ -105,35 +116,48 @@ function CollegeStepper({
         })}
       </div>
 
-      {/* Advance button */}
-      {nextStep && status !== "submitted" && (
-        <div className="flex items-center gap-2">
+      {/* Stage action + advance */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {status !== "submitted" && (() => {
+          const action = STAGE_ACTIONS[status];
+          const href = action.getHref(applicationId);
+          return href ? (
+            <Link
+              href={href}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-800 hover:underline"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              {action.label}
+            </Link>
+          ) : null;
+        })()}
+        {nextStep && status !== "submitted" && (
           <Button
             size="sm"
             disabled={advancing}
             onClick={() => onAdvance(universityId, nextStep.key)}
-            className="bg-sky-600 hover:bg-sky-700 h-7 text-xs gap-1.5"
+            variant="outline"
+            className="h-7 text-xs gap-1.5 border-slate-200"
           >
             {advancing ? (
               <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <ArrowRight className="w-3 h-3" />
-            )}
-            Mark as: {nextStep.label}
+            ) : null}
+            Mark done →
           </Button>
-        </div>
-      )}
-      {status === "submitted" && (
-        <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
-          <CheckCircle2 className="w-4 h-4" /> Application complete
-        </div>
-      )}
+        )}
+        {status === "submitted" && (
+          <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+            <CheckCircle2 className="w-4 h-4" /> Application complete
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function CollegeCard({
   college,
+  applicationId,
   onRemove,
   removing,
   onAdvance,
@@ -162,6 +186,7 @@ function CollegeCard({
       description?: string | null;
     } | null;
   };
+  applicationId?: number;
   onRemove: (universityId: number) => void;
   removing: boolean;
   onAdvance: (universityId: number, status: CollegeStatus) => void;
@@ -240,6 +265,7 @@ function CollegeCard({
             <CollegeStepper
               status={college.status as CollegeStatus}
               universityId={college.universityId}
+              applicationId={applicationId}
               onAdvance={onAdvance}
               advancing={advancing}
             />
@@ -327,7 +353,10 @@ interface SubmitTarget {
 
 export default function MyColleges() {
   const { data: colleges, isLoading } = useListMyColleges();
+  const { data: applications } = useListMyApplications();
   const qc = useQueryClient();
+
+  const appByUniversity = new Map((applications ?? []).map((a) => [a.universityId, a.id]));
   const { toast } = useToast();
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [advancingId, setAdvancingId] = useState<number | null>(null);
@@ -429,6 +458,7 @@ export default function MyColleges() {
               <CollegeCard
                 key={college.id}
                 college={college}
+                applicationId={appByUniversity.get(college.universityId)}
                 onRemove={handleRemove}
                 removing={removingId === college.universityId}
                 onAdvance={handleAdvance}

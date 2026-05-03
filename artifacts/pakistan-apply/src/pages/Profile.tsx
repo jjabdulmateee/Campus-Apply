@@ -58,12 +58,49 @@ const MOBILE_STEPS = [
 
 type MobileStepKey = (typeof MOBILE_STEPS)[number]["key"];
 
+const STEP_REQUIRED: Record<MobileStepKey, { field: keyof FormData; label: string }[]> = {
+  legal_name: [
+    { field: "firstName", label: "First Name" },
+    { field: "lastName", label: "Last Name" },
+  ],
+  address: [
+    { field: "province", label: "Province" },
+    { field: "city", label: "City" },
+    { field: "address", label: "Street Address" },
+  ],
+  contact: [
+    { field: "phoneNumber", label: "Phone Number" },
+    { field: "preferredContact", label: "Preferred Contact Method" },
+  ],
+  demographics: [],
+  guardian: [],
+  documents: [],
+};
+
+type SectionStatus = "not_started" | "in_progress" | "complete";
+
+function classify(items: boolean[]): SectionStatus {
+  const done = items.filter(Boolean).length;
+  if (done === items.length && done > 0) return "complete";
+  if (done > 0) return "in_progress";
+  return "not_started";
+}
+
 function computeSectionComplete(data: Partial<FormData>) {
   return {
     legal_name: !!(data.firstName && data.lastName),
     address: !!(data.province && data.city && data.address),
     contact: !!(data.phoneNumber && data.preferredContact),
     guardian: !!(data.guardianName && data.guardianRelation),
+  };
+}
+
+function computeSectionStatus(data: Partial<FormData>): Record<string, SectionStatus> {
+  return {
+    legal_name: classify([!!data.firstName?.trim(), !!data.lastName?.trim()]),
+    address: classify([!!data.province, !!data.city?.trim(), !!data.address?.trim()]),
+    contact: classify([!!data.phoneNumber?.trim(), !!data.preferredContact]),
+    guardian: classify([!!data.guardianName?.trim(), !!data.guardianRelation]),
   };
 }
 
@@ -85,7 +122,7 @@ export default function Profile() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, trigger, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: profile
       ? {
@@ -140,13 +177,31 @@ export default function Profile() {
   const isLastStep = stepIndex === MOBILE_STEPS.length - 1;
   const isFirstStep = stepIndex === 0;
 
-  const stepComplete: Record<MobileStepKey, boolean> = {
-    legal_name: sectionComplete.legal_name,
-    address: sectionComplete.address,
-    contact: sectionComplete.contact,
-    demographics: false,
-    guardian: sectionComplete.guardian,
-    documents: docsComplete,
+  const sectionStatusMap = computeSectionStatus(formValues);
+
+  const stepStatus: Record<MobileStepKey, SectionStatus> = {
+    legal_name: sectionStatusMap.legal_name,
+    address: sectionStatusMap.address,
+    contact: sectionStatusMap.contact,
+    demographics: "not_started",
+    guardian: sectionStatusMap.guardian,
+    documents: docsComplete ? "complete" : "not_started",
+  };
+
+  const handleNext = () => {
+    const required = STEP_REQUIRED[mobileStep];
+    const values = watch();
+    const missing = required.filter(({ field }) => !values[field]);
+    if (missing.length > 0) {
+      toast({
+        title: "Required fields missing",
+        description: `Please complete: ${missing.map((f) => f.label).join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    update({ data: values });
+    setMobileStep(MOBILE_STEPS[stepIndex + 1].key);
   };
 
   return (
@@ -176,25 +231,31 @@ export default function Profile() {
         </div>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {COMPLETION_SECTIONS.map(({ key, label, icon: Icon }) => {
-            const done = key === "documents"
-              ? docsComplete
-              : sectionComplete[key as keyof typeof sectionComplete];
+            const st = key === "documents"
+              ? (docsComplete ? "complete" : "not_started")
+              : (sectionStatusMap[key] ?? "not_started");
             return (
               <div
                 key={key}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-medium border",
-                  done
+                  st === "complete"
                     ? "bg-green-50 border-green-200 text-green-700"
+                    : st === "in_progress"
+                    ? "bg-amber-50 border-amber-200 text-amber-700"
                     : "bg-slate-50 border-slate-200 text-slate-400",
                 )}
               >
-                {done ? (
+                {st === "complete" ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                ) : st === "in_progress" ? (
+                  <div className="w-3 h-3 rounded-full border-2 border-amber-500 flex-shrink-0" />
                 ) : (
                   <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
-                <span className="truncate">{label}</span>
+                <span className="truncate">
+                  {st === "complete" ? label : st === "in_progress" ? label : label}
+                </span>
               </div>
             );
           })}
@@ -220,7 +281,9 @@ export default function Profile() {
             {/* Step pills */}
             <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
               {MOBILE_STEPS.map((step, idx) => {
-                const done = stepComplete[step.key];
+                const st = stepStatus[step.key];
+                const done = st === "complete";
+                const inProgress = st === "in_progress";
                 const active = mobileStep === step.key;
                 return (
                   <button
@@ -232,11 +295,15 @@ export default function Profile() {
                         ? "bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200"
                         : done
                         ? "bg-green-50 border-green-200 text-green-700"
+                        : inProgress
+                        ? "bg-amber-50 border-amber-200 text-amber-700"
                         : "bg-white border-slate-200 text-slate-500",
                     )}
                   >
                     {done && !active ? (
                       <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                    ) : inProgress && !active ? (
+                      <div className="w-3 h-3 rounded-full border-2 border-amber-500 flex-shrink-0" />
                     ) : (
                       <span className={cn(
                         "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0",
@@ -437,7 +504,7 @@ export default function Profile() {
                       type="button"
                       variant="outline"
                       size="default"
-                      onClick={() => setMobileStep(MOBILE_STEPS[stepIndex + 1].key)}
+                      onClick={handleNext}
                       className="gap-1 h-10"
                     >
                       Next <ChevronRight className="w-4 h-4" />
