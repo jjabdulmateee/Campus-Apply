@@ -177,7 +177,21 @@ export default function Dashboard() {
   );
 }
 
+const FAQ_QUESTIONS = [
+  "How do I add a university to my list?",
+  "Can I change answers after submitting?",
+  "How many universities can I apply to?",
+  "When is my submission deadline?",
+  "How do I upload my documents?",
+  "What test scores are accepted?",
+  "Can I apply as a transfer student?",
+];
+
 function HelpPanel() {
+  const [faqSearch, setFaqSearch] = useState("");
+  const filtered = FAQ_QUESTIONS.filter((q) =>
+    q.toLowerCase().includes(faqSearch.toLowerCase()),
+  );
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-4 space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -185,14 +199,20 @@ function HelpPanel() {
         Help & Support
       </div>
       <div className="relative">
-        <Input placeholder="Search FAQs…" className="pr-10 h-9 text-sm" />
+        <Input
+          placeholder="Search FAQs…"
+          className="pr-10 h-9 text-sm"
+          value={faqSearch}
+          onChange={(e) => setFaqSearch(e.target.value)}
+        />
         <Search className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
       </div>
       <div className="space-y-2">
-        <FaqItem question="How do I add a university to my list?" />
-        <FaqItem question="Can I change answers after submitting?" />
-        <FaqItem question="How many universities can I apply to?" />
-        <FaqItem question="When is my submission deadline?" />
+        {filtered.length > 0 ? (
+          filtered.map((q) => <FaqItem key={q} question={q} />)
+        ) : (
+          <p className="text-xs text-slate-400 py-1">No FAQs match your search.</p>
+        )}
       </div>
       <Link
         href="/help"

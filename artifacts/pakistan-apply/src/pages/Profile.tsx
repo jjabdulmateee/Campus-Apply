@@ -1,5 +1,6 @@
 import AppLayout from "@/components/AppLayout";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -104,11 +105,21 @@ function computeSectionStatus(data: Partial<FormData>): Record<string, SectionSt
   };
 }
 
+function stepFromSearch(search: string): MobileStepKey {
+  const param = new URLSearchParams(search).get("step") as MobileStepKey | null;
+  return MOBILE_STEPS.find((s) => s.key === param) ? (param as MobileStepKey) : "legal_name";
+}
+
 export default function Profile() {
   const { data: profile, isLoading } = useGetMyProfile();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [mobileStep, setMobileStep] = useState<MobileStepKey>("legal_name");
+  const search = useSearch();
+  const [mobileStep, setMobileStep] = useState<MobileStepKey>(() => stepFromSearch(search));
+
+  useEffect(() => {
+    setMobileStep(stepFromSearch(search));
+  }, [search]);
 
   const { mutate: update, isPending } = useUpdateMyProfile({
     mutation: {

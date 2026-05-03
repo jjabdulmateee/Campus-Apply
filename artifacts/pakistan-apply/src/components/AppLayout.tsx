@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   LayoutDashboard,
   FileText,
@@ -18,7 +18,7 @@ import {
   LifeBuoy,
   ClipboardList,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
 import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
@@ -30,63 +30,50 @@ const sidebarTree = [
   {
     key: "profile",
     label: "Profile",
-    href: "/profile",
-    status: "complete" as const,
+    href: "/profile?step=legal_name",
     children: [
-      { label: "Personal Information", href: "/profile" },
-      { label: "Address", href: "/profile" },
-      { label: "Contact Details", href: "/profile" },
+      { label: "Personal Information", href: "/profile?step=legal_name" },
+      { label: "Address", href: "/profile?step=address" },
+      { label: "Contact Details", href: "/profile?step=contact" },
     ],
   },
   {
     key: "family",
     label: "Family",
-    href: "/profile",
-    status: "incomplete" as const,
+    href: "/profile?step=demographics",
     children: [
-      {
-        label: "Household",
-        href: "/profile",
-        children: [
-          { label: "Parent 1", href: "/profile" },
-          { label: "Parent 2", href: "/profile" },
-        ],
-      },
+      { label: "Background", href: "/profile?step=demographics" },
+      { label: "Guardian / Parent", href: "/profile?step=guardian" },
     ],
   },
   {
     key: "education",
     label: "Education",
     href: "/education",
-    status: "complete" as const,
     children: [{ label: "Academic History", href: "/education" }],
   },
   {
     key: "testing",
     label: "Testing",
     href: "/testing",
-    status: "incomplete" as const,
     children: [{ label: "Test Scores", href: "/testing" }],
   },
   {
     key: "activities",
     label: "Activities",
     href: "/activities",
-    status: "incomplete" as const,
     children: [{ label: "Activity List", href: "/activities" }],
   },
   {
     key: "writing",
     label: "Writing",
     href: "/writing",
-    status: "incomplete" as const,
     children: [{ label: "Essays", href: "/writing" }],
   },
   {
     key: "courses",
     label: "Courses & Grades",
     href: "/education",
-    status: "incomplete" as const,
     children: [{ label: "Courses", href: "/education" }, { label: "Grades", href: "/education" }],
   },
 ];
@@ -251,8 +238,26 @@ function SidebarAccordionItem({
   onClose?: () => void;
   level: number;
 }) {
-  const isActive = location === item.href || location.startsWith(item.href + "/");
+  const search = useSearch();
+  const fullLocation = `${location}${search ? `?${search}` : ""}`;
+
+  const descendantHrefs: string[] = [];
+  item.children?.forEach((c) => {
+    descendantHrefs.push(c.href);
+    c.children?.forEach((gc) => descendantHrefs.push(gc.href));
+  });
+
+  const isActive =
+    fullLocation === item.href ||
+    descendantHrefs.includes(fullLocation) ||
+    (!item.href.includes("?") && (location === item.href || location.startsWith(item.href + "/")));
+
   const [open, setOpen] = useState(isActive);
+
+  useEffect(() => {
+    if (isActive) setOpen(true);
+  }, [fullLocation]);
+
   const hasChildren = !!item.children?.length;
 
   return (
@@ -302,7 +307,11 @@ function SidebarSubItem({
   onClose?: () => void;
   level: number;
 }) {
-  const isActive = location === item.href || location.startsWith(item.href + "/");
+  const search = useSearch();
+  const fullLocation = `${location}${search ? `?${search}` : ""}`;
+  const isActive = item.href.includes("?")
+    ? fullLocation === item.href
+    : location === item.href || location.startsWith(item.href + "/");
   const [open, setOpen] = useState(isActive);
   const hasChildren = !!item.children?.length;
 
