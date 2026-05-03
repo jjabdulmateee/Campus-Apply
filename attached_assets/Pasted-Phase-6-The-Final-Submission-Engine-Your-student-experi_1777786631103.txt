@@ -1,0 +1,40 @@
+Phase 6: The Final Submission Engine
+Your student experience is almost 100% complete. They can make an account, fill out their profile, upload documents, log their test scores, write their essay, find colleges, and invite recommenders.
+
+The next logical step is The Submission. The student needs a way to bundle all of this information together, electronically sign it, and officially send it to a university.
+
+Copy and paste this exact prompt into Replit:
+
+"Act as a Senior Full-Stack Developer. We are moving to Phase 6 of our Common App architecture: The Final Submission Engine. We need to allow students to officially submit their completed profiles to the universities in their 'My Colleges' list.
+
+Task 1: Pre-Submission Validation Logic
+
+Create a validation utility that checks if a student is 'Eligible to Submit'.
+
+To be eligible, the student must have: 100% Profile Completion, uploaded Verification Documents, at least one Test Score, and a completed Personal Essay (word count > 250).
+
+Task 2: The 'Review & Submit' Flow
+
+On the 'My Colleges' page, when a student clicks 'Mark as: Review and Submit' for a specific university, open a full-screen modal or a new page.
+
+Step 1 of Modal (Review): Show a read-only summary of the data that will be sent (Profile summary, Essay title, Test scores).
+
+Step 2 of Modal (Payment/Fee): If the selected university has applicationFeeRequired: true, show a mock payment screen (e.g., 'Pay Application Fee via Kuickpay / Debit Card' with a 'Simulate Payment' button). If false, skip this step.
+
+Step 3 of Modal (Signature): A final FERPA/Integrity agreement where the user must type their full legal name as a digital signature.
+
+Task 3: The Application Snapshot (Backend)
+
+Create a new applications table in the database.
+
+When the student completes the final step, send a POST request to /api/applications.
+
+This endpoint must take a 'snapshot' of the student's current profile, essay, and tests (save as JSON in a payload column) so that if the student changes their profile later, the submitted application to this specific university does not change.
+
+Update the user_colleges status for that university to 'submitted'.
+
+Technical Requirements:
+
+On success, show a celebratory 'Confetti' success screen.
+
+Ensure the UI remains clean and consistent with the established design system."
