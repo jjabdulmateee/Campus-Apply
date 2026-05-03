@@ -53,6 +53,13 @@ export const academicRecordsTable = pgTable("academic_records", {
   percentage: numeric("percentage"),
   gradeOrGpa: text("grade_or_gpa"),
   subjects: text("subjects"),
+  classSize: integer("class_size"),
+  classRank: integer("class_rank"),
+  classRankType: text("class_rank_type"),
+  gpaScale: text("gpa_scale"),
+  honors: text("honors"),
+  coursesJson: text("courses_json"),
+  transcriptDocUrl: text("transcript_doc_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

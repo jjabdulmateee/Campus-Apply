@@ -1429,6 +1429,24 @@ components:
           type: string
         subjects:
           type: string
+        classSize:
+          type: integer
+        classRank:
+          type: integer
+        classRankType:
+          type: string
+          enum: [none, exact]
+        gpaScale:
+          type: string
+          enum: [percentage, marks_1100, marks_1050, gpa_4, gpa_5]
+        honors:
+          type: string
+          description: JSON array of up to 5 academic honors
+        coursesJson:
+          type: string
+          description: JSON array of self-reported courses and grades
+        transcriptDocUrl:
+          type: string
       required:
         - id
         - institution
@@ -1456,6 +1474,24 @@ components:
         gradeOrGpa:
           type: string
         subjects:
+          type: string
+        classSize:
+          type: integer
+        classRank:
+          type: integer
+        classRankType:
+          type: string
+          enum: [none, exact]
+        gpaScale:
+          type: string
+          enum: [percentage, marks_1100, marks_1050, gpa_4, gpa_5]
+        honors:
+          type: string
+          description: JSON array of up to 5 academic honors
+        coursesJson:
+          type: string
+          description: JSON array of self-reported courses and grades
+        transcriptDocUrl:
           type: string
       required:
         - institution

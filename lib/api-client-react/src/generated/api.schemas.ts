@@ -134,6 +134,25 @@ export const AcademicRecordLevel = {
   other: "other",
 } as const;
 
+export type AcademicRecordClassRankType =
+  (typeof AcademicRecordClassRankType)[keyof typeof AcademicRecordClassRankType];
+
+export const AcademicRecordClassRankType = {
+  none: "none",
+  exact: "exact",
+} as const;
+
+export type AcademicRecordGpaScale =
+  (typeof AcademicRecordGpaScale)[keyof typeof AcademicRecordGpaScale];
+
+export const AcademicRecordGpaScale = {
+  percentage: "percentage",
+  marks_1100: "marks_1100",
+  marks_1050: "marks_1050",
+  gpa_4: "gpa_4",
+  gpa_5: "gpa_5",
+} as const;
+
 export interface AcademicRecord {
   id: number;
   institution: string;
@@ -145,6 +164,15 @@ export interface AcademicRecord {
   percentage?: number;
   gradeOrGpa?: string;
   subjects?: string;
+  classSize?: number;
+  classRank?: number;
+  classRankType?: AcademicRecordClassRankType;
+  gpaScale?: AcademicRecordGpaScale;
+  /** JSON array of up to 5 academic honors */
+  honors?: string;
+  /** JSON array of self-reported courses and grades */
+  coursesJson?: string;
+  transcriptDocUrl?: string;
 }
 
 export type CreateAcademicRecordBodyLevel =
@@ -159,6 +187,25 @@ export const CreateAcademicRecordBodyLevel = {
   other: "other",
 } as const;
 
+export type CreateAcademicRecordBodyClassRankType =
+  (typeof CreateAcademicRecordBodyClassRankType)[keyof typeof CreateAcademicRecordBodyClassRankType];
+
+export const CreateAcademicRecordBodyClassRankType = {
+  none: "none",
+  exact: "exact",
+} as const;
+
+export type CreateAcademicRecordBodyGpaScale =
+  (typeof CreateAcademicRecordBodyGpaScale)[keyof typeof CreateAcademicRecordBodyGpaScale];
+
+export const CreateAcademicRecordBodyGpaScale = {
+  percentage: "percentage",
+  marks_1100: "marks_1100",
+  marks_1050: "marks_1050",
+  gpa_4: "gpa_4",
+  gpa_5: "gpa_5",
+} as const;
+
 export interface CreateAcademicRecordBody {
   institution: string;
   level: CreateAcademicRecordBodyLevel;
@@ -169,6 +216,15 @@ export interface CreateAcademicRecordBody {
   percentage?: number;
   gradeOrGpa?: string;
   subjects?: string;
+  classSize?: number;
+  classRank?: number;
+  classRankType?: CreateAcademicRecordBodyClassRankType;
+  gpaScale?: CreateAcademicRecordBodyGpaScale;
+  /** JSON array of up to 5 academic honors */
+  honors?: string;
+  /** JSON array of self-reported courses and grades */
+  coursesJson?: string;
+  transcriptDocUrl?: string;
 }
 
 export type TestScoreTestName =

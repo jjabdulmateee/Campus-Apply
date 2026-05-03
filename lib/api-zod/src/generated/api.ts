@@ -132,6 +132,21 @@ export const GetMyAcademicsResponseItem = zod.object({
   percentage: zod.number().optional(),
   gradeOrGpa: zod.string().optional(),
   subjects: zod.string().optional(),
+  classSize: zod.number().optional(),
+  classRank: zod.number().optional(),
+  classRankType: zod.enum(["none", "exact"]).optional(),
+  gpaScale: zod
+    .enum(["percentage", "marks_1100", "marks_1050", "gpa_4", "gpa_5"])
+    .optional(),
+  honors: zod
+    .string()
+    .optional()
+    .describe("JSON array of up to 5 academic honors"),
+  coursesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of self-reported courses and grades"),
+  transcriptDocUrl: zod.string().optional(),
 });
 export const GetMyAcademicsResponse = zod.array(GetMyAcademicsResponseItem);
 
@@ -155,6 +170,21 @@ export const AddAcademicRecordBody = zod.object({
   percentage: zod.number().optional(),
   gradeOrGpa: zod.string().optional(),
   subjects: zod.string().optional(),
+  classSize: zod.number().optional(),
+  classRank: zod.number().optional(),
+  classRankType: zod.enum(["none", "exact"]).optional(),
+  gpaScale: zod
+    .enum(["percentage", "marks_1100", "marks_1050", "gpa_4", "gpa_5"])
+    .optional(),
+  honors: zod
+    .string()
+    .optional()
+    .describe("JSON array of up to 5 academic honors"),
+  coursesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of self-reported courses and grades"),
+  transcriptDocUrl: zod.string().optional(),
 });
 
 /**
@@ -181,6 +211,21 @@ export const UpdateAcademicRecordBody = zod.object({
   percentage: zod.number().optional(),
   gradeOrGpa: zod.string().optional(),
   subjects: zod.string().optional(),
+  classSize: zod.number().optional(),
+  classRank: zod.number().optional(),
+  classRankType: zod.enum(["none", "exact"]).optional(),
+  gpaScale: zod
+    .enum(["percentage", "marks_1100", "marks_1050", "gpa_4", "gpa_5"])
+    .optional(),
+  honors: zod
+    .string()
+    .optional()
+    .describe("JSON array of up to 5 academic honors"),
+  coursesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of self-reported courses and grades"),
+  transcriptDocUrl: zod.string().optional(),
 });
 
 export const UpdateAcademicRecordResponse = zod.object({
@@ -201,6 +246,21 @@ export const UpdateAcademicRecordResponse = zod.object({
   percentage: zod.number().optional(),
   gradeOrGpa: zod.string().optional(),
   subjects: zod.string().optional(),
+  classSize: zod.number().optional(),
+  classRank: zod.number().optional(),
+  classRankType: zod.enum(["none", "exact"]).optional(),
+  gpaScale: zod
+    .enum(["percentage", "marks_1100", "marks_1050", "gpa_4", "gpa_5"])
+    .optional(),
+  honors: zod
+    .string()
+    .optional()
+    .describe("JSON array of up to 5 academic honors"),
+  coursesJson: zod
+    .string()
+    .optional()
+    .describe("JSON array of self-reported courses and grades"),
+  transcriptDocUrl: zod.string().optional(),
 });
 
 /**
