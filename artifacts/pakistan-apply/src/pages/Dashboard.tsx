@@ -276,7 +276,7 @@ const SECTION_MAP: Record<string, { href: string; label: string }> = {
   testing:      { href: "/testing",      label: "Testing" },
   activities:   { href: "/activities",   label: "Activities" },
   writing:      { href: "/writing",      label: "Writing" },
-  courses:      { href: "/education",    label: "Courses" },
+  courses:      { href: "/education/courses?tab=courses",    label: "Courses & Grades" },
   documents:    { href: "/documents",    label: "Documents" },
   recommenders: { href: "/recommenders", label: "Recommenders" },
 };

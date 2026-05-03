@@ -125,11 +125,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
 
         <div className="border-t border-slate-200">
-          <MyApplicationGroup
-            dashboard={dashboard}
-            location={location}
-            onClose={onClose}
-          />
+          <MyApplicationGroup dashboard={dashboard} location={location} onClose={onClose} />
         </div>
 
         <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">
@@ -142,8 +138,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-2 py-1.5">Explore</div>
           <SidebarFlatLink href="/universities" icon={Search} label="College Search" location={location} onClose={onClose} />
           <SidebarFlatLink href="/documents" icon={FolderOpen} label="Documents" location={location} onClose={onClose} />
-          <SidebarFlatLink href="/help" icon={LifeBuoy} label="Help & Support" location={location} onClose={onClose} />
         </div>
+
+        <HelpSupportSidebar location={location} onClose={onClose} />
       </nav>
 
       {/* Bottom — user card */}
@@ -213,6 +210,11 @@ const SLUG_MAP: Record<string, string[]> = {
   courses: ["course", "grade"],
 };
 
+const COURSE_CHILDREN = [
+  { label: "Courses", href: "/education/courses?tab=courses" },
+  { label: "Grades", href: "/education/courses?tab=grades" },
+];
+
 function MyApplicationGroup({
   dashboard,
   location,
@@ -227,10 +229,7 @@ function MyApplicationGroup({
   const fullLocation = `${location_}${search ? `?${search}` : ""}`;
 
   // Collect all hrefs across the tree (top-level + first-level children)
-  const allChildHrefs = sidebarTree.flatMap((item) => [
-    item.href,
-    ...(item.children?.map((c) => c.href) ?? []),
-  ]);
+  const allChildHrefs = sidebarTree.flatMap((item) => [item.href, ...(item.children?.map((c) => c.href) ?? [])]);
   const isAnyChildActive = allChildHrefs.some((href) =>
     href.includes("?") ? fullLocation === href : location_ === href || location_.startsWith(href + "/"),
   );
@@ -280,10 +279,12 @@ function MyApplicationGroup({
             const isComplete = profileSections.some(
               (s) => targets.some((t) => s.slug.includes(t)) && s.isComplete,
             );
+            const itemWithChildren =
+              item.key === "courses" ? { ...item, children: COURSE_CHILDREN } : item;
             return (
               <SidebarAccordionItem
                 key={item.key}
-                item={{ ...item, status: isComplete ? "complete" : "incomplete" }}
+                item={{ ...itemWithChildren, status: isComplete ? "complete" : "incomplete" }}
                 location={location}
                 onClose={onClose}
                 level={1}
@@ -330,7 +331,7 @@ function SidebarAccordionItem({
 
   useEffect(() => {
     if (isActive) setOpen(true);
-  }, [fullLocation]);
+  }, [fullLocation, isActive]);
 
   const hasChildren = !!item.children?.length;
 
@@ -415,6 +416,21 @@ function SidebarSubItem({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function HelpSupportSidebar({
+  location,
+  onClose,
+}: {
+  location: string;
+  onClose?: () => void;
+}) {
+  return (
+    <div className="border-t border-slate-200 px-3 pt-2.5 pb-1">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-2 py-1.5">Help & Support</div>
+      <SidebarFlatLink href="/help?tab=faq" icon={LifeBuoy} label="Help & Support" location={location} onClose={onClose} />
     </div>
   );
 }

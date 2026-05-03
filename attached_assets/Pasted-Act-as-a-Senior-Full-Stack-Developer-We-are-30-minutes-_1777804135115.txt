@@ -1,0 +1,43 @@
+Act as a Senior Full-Stack Developer. We are 30 minutes from launch. You must perform these 3 surgical tasks without interfering with any other features, buttons, or database schemas.
+
+Task 1: Relocate Help & Support (Left Sidebar Integration)
+
+Move: Completely remove the 'Help & Support' panel from the Right Sidebar.
+
+Placement: Add a new 'Help & Support' section at the bottom of the Left Sidebar Column (below the 'My Application' group).
+
+Components: This section must include:
+
+A search box for FAQs.
+
+A context-aware FAQ list.
+
+Context Logic: Implement logic that detects the current URL route. If the student is on /activities, show FAQs about activities. If they are on /testing, show testing FAQs.
+
+Task 2: Dashboard Deep-Link Correction
+
+The Problem: Both 'Education' and 'Courses & Grades' icons on the dashboard are currently leading to a shared page.
+
+The Fix:
+
+Map the Dashboard 'Education' icon strictly to the /education route (which targets the school history).
+
+Map the Dashboard 'Courses & Grades' icon strictly to a specific sub-route or tab for /education/courses (or however the specific Courses & Grades component is indexed).
+
+Ensure clicking these from the Dashboard automatically expands the 'My Application' sidebar group and highlights the correct sub-item.  
+
+Task 3: Build the 'Courses & Grades' Feature Content
+
+Requirement: The 'Courses & Grades' section within the 'My Application' group is currently empty or lacks detail.
+
+Implementation: Populate this section with a functional 'Self-Report' interface matching Common App standards:
+
+A subject selection dropdown (Math, Science, etc.).
+
+A 'Course Level' dropdown (e.g., HSSC-I, HSSC-II, O-Level, A-Level).
+
+Fields for 'Grade/Marks' and 'Credits/Weight'.
+
+Interactivity: Ensure the 'Add Course' button is clickable and saves data to the courses_json field in the database we recently established.  
+
+Constraint: Do not touch the university search, the submission logic, or the profile photo persistence. Confirm when these 3 specific items are functional.

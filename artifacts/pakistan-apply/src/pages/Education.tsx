@@ -251,6 +251,7 @@ export default function Education() {
   const totalMarks = watch("totalMarks");
   const classRankType = watch("classRankType");
   const transcriptDocUrl = watch("transcriptDocUrl");
+  const courseField = watch("subjects");
 
   const isMatricOrFsc = selectedLevel === "matric" || selectedLevel === "intermediate";
   const isOALevel = selectedLevel === "o_levels" || selectedLevel === "a_levels";
@@ -270,7 +271,7 @@ export default function Education() {
 
   const openAdd = () => {
     setEditingId(null);
-    reset({ passingYear: new Date().getFullYear() });
+    reset({ passingYear: new Date().getFullYear(), classRankType: "none" });
     setHonors([]);
     setCourses([]);
     setOpen(true);
@@ -301,10 +302,16 @@ export default function Education() {
   };
 
   const onSubmit = (data: FormData) => {
+    const normalizedCourses = courses.map((course) => ({
+      subject: course.subject,
+      courseLevel: course.courseLevel,
+      grade: course.grade,
+      credits: (course as CourseEntry & { credits?: string }).credits ?? "",
+    }));
     const payload = {
       ...data,
       honors: honors.length > 0 ? JSON.stringify(honors) : undefined,
-      coursesJson: courses.length > 0 ? JSON.stringify(courses) : undefined,
+      coursesJson: normalizedCourses.length > 0 ? JSON.stringify(normalizedCourses) : undefined,
     };
     if (editingId !== null) {
       updateRecord({ recordId: editingId, data: payload });
@@ -706,7 +713,8 @@ export default function Education() {
                         <tr>
                           <th className="text-left px-3 py-2 font-semibold text-indigo-700 w-[38%]">Subject</th>
                           <th className="text-left px-3 py-2 font-semibold text-indigo-700 w-[32%]">Course Level</th>
-                          <th className="text-left px-3 py-2 font-semibold text-indigo-700">Grade</th>
+                          <th className="text-left px-3 py-2 font-semibold text-indigo-700">Grade/Marks</th>
+                          <th className="text-left px-3 py-2 font-semibold text-indigo-700">Credits/Weight</th>
                           <th className="w-8" />
                         </tr>
                       </thead>
@@ -728,6 +736,14 @@ export default function Education() {
                             <td className="px-2 py-1.5">
                               <Input value={c.grade} onChange={(e) => updateCourse(i, "grade", e.target.value)}
                                 placeholder="A / 95% / A*" className="border-sky-100 h-8 text-xs" />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                value={(c as CourseEntry & { credits?: string }).credits ?? ""}
+                                onChange={(e) => updateCourse(i, "credits" as never, e.target.value)}
+                                placeholder="1.0"
+                                className="border-sky-100 h-8 text-xs"
+                              />
                             </td>
                             <td className="px-2 py-1.5 text-center">
                               <button type="button" onClick={() => removeCourse(i)} className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
