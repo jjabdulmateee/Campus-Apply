@@ -1,45 +1,44 @@
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
-  User,
-  GraduationCap,
-  ClipboardList,
-  BookOpen,
-  PenLine,
-  Search,
   FileText,
-  FolderLock,
+  GraduationCap,
+  Search,
+  Landmark,
+  DollarSign,
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Settings,
-  LifeBuoy,
-  Bookmark,
-  Users,
   FlaskConical,
+  User,
 } from "lucide-react";
 import { useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
 import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { SettingsModal } from "@/components/SettingsModal";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/profile", label: "My Profile", icon: User },
-  { href: "/education", label: "Education", icon: GraduationCap },
-  { href: "/testing", label: "Test Scores", icon: ClipboardList },
-  { href: "/activities", label: "Activities", icon: BookOpen },
-  { href: "/writing", label: "Essays", icon: PenLine },
-  { href: "/recommenders", label: "Recommenders", icon: Users },
-  { href: "/universities", label: "University Search", icon: Search },
-  { href: "/my-colleges", label: "My Colleges", icon: Bookmark },
-  { href: "/applications", label: "My Applications", icon: FileText },
-  { href: "/documents", label: "Document Locker", icon: FolderLock },
-  { href: "/help", label: "Help & Support", icon: LifeBuoy },
+const navSections = [
+  {
+    title: "APPLY",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/my-application", label: "My Common Application", icon: FileText, expandable: true },
+      { href: "/my-colleges", label: "My Colleges", icon: GraduationCap, expandable: true },
+    ],
+  },
+  {
+    title: "EXPLORE",
+    items: [
+      { href: "/universities", label: "College search", icon: Search },
+      { href: "/direct-admissions", label: "Direct admissions", icon: Landmark },
+      { href: "/financial-aid", label: "Financial aid", icon: DollarSign },
+    ],
+  },
 ];
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -72,41 +71,32 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      {/* Profile Completion */}
-      {dashboard && (
-        <div className="px-4 py-4 border-b border-sky-50">
-          <div className="bg-sky-50 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-sky-700">Profile Complete</span>
-              <span className="text-xs font-bold text-sky-600">{dashboard.profileCompletionPercent}%</span>
+      <nav className="flex-1 overflow-y-auto px-2 py-2">
+        {navSections.map((section) => (
+          <div key={section.title} className="mb-3">
+            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{section.title}</div>
+            <div className="space-y-1">
+              {section.items.map(({ href, label, icon: Icon, expandable }) => {
+                const isActive = location === href || location.startsWith(href + "/");
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive ? "bg-[#D1D5DB] text-slate-800" : "text-slate-700 hover:bg-slate-100",
+                    )}
+                    onClick={onClose}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">{label}</span>
+                    {expandable ? <ChevronDown className="h-3.5 w-3.5 opacity-70" /> : isActive && <ChevronRight className="h-3 w-3 opacity-60" />}
+                  </Link>
+                );
+              })}
             </div>
-            <Progress value={dashboard.profileCompletionPercent} className="h-1.5 bg-sky-100" />
           </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = location === href || location.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-sky-600 text-white shadow-md shadow-sky-600/20"
-                  : "text-slate-600 hover:bg-sky-50 hover:text-sky-700",
-              )}
-              onClick={onClose}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{label}</span>
-              {isActive && <ChevronRight className="w-3 h-3 ml-auto opacity-60" />}
-            </Link>
-          );
-        })}
+        ))}
       </nav>
 
       {/* Bottom — user card */}
