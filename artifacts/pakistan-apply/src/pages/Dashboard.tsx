@@ -75,23 +75,26 @@ export default function Dashboard() {
                   <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${dashboard?.profileCompletionPercent ?? 0}%` }} />
                 </div>
                 <div className="flex flex-wrap gap-4">
-                  {dashboard?.profileSections.slice(0, 7).map((step) => (
-                    <Link
-                      key={step.slug}
-                      href={sectionHref(step.slug)}
-                      className="flex min-w-[72px] flex-col items-center gap-1 text-center"
-                    >
-                      <div
-                        className={cn(
-                          "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
-                          step.isComplete ? "border-[#166534] text-[#166534]" : "border-[#3B82F6] border-dashed text-[#3B82F6]",
-                        )}
+                  {dashboard?.profileSections.slice(0, 7).map((step) => {
+                    const href = sectionHref(step.slug);
+                    return (
+                      <Link
+                        key={step.slug}
+                        href={href}
+                        className="flex min-w-[72px] flex-col items-center gap-1 text-center"
                       >
-                        {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
-                      </div>
-                      <div className="text-xs text-[#4B5563]">{sectionLabel(step.slug, step.name)}</div>
-                    </Link>
-                  ))}
+                        <div
+                          className={cn(
+                            "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
+                            step.isComplete ? "border-[#166534] text-[#166534]" : "border-[#3B82F6] border-dashed text-[#3B82F6]",
+                          )}
+                        >
+                          {step.isComplete ? <div className="h-4 w-4 rounded-full bg-[#166534]" /> : <div className="h-2.5 w-2.5 rounded-full border-2 border-[#3B82F6]" />}
+                        </div>
+                        <div className="text-xs text-[#4B5563]">{sectionLabel(step.slug, step.name)}</div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
