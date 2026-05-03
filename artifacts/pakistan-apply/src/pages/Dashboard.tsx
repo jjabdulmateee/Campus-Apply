@@ -37,10 +37,10 @@ export default function Dashboard() {
   const newlySubmitted = (recommenders ?? []).filter((r) => r.status === "submitted");
 
   return (
-    <div className="grid min-h-screen grid-cols-[260px_1fr_300px] bg-[#F9FAFB]">
+    <div className="grid min-h-screen bg-[#F9FAFB] lg:grid-cols-[260px_minmax(0,1fr)_300px]">
       <LeftSidebar user={user} activePath={activePath} />
 
-      <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-[#F9FAFB] px-4 py-4 md:px-6 lg:px-8">
+      <main className="min-w-0 overflow-y-auto border-x border-slate-200 bg-white px-4 py-4 md:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between lg:hidden">
           <button className="rounded-md border border-slate-200 bg-white p-2">
             <Menu className="h-5 w-5 text-slate-700" />
@@ -55,18 +55,18 @@ export default function Dashboard() {
           <h1 className="text-3xl font-semibold text-slate-800">Dashboard</h1>
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-[#E0F2FE] p-4">
+        <div className="rounded-md border border-slate-200 bg-[#D9F0FA] p-4">
           <div className="flex items-center gap-4">
             <img src="@assets/image_1777791042006.png" alt="" className="hidden h-16 w-24 object-contain md:block" />
             <div>
-              <div className="text-2xl font-semibold text-[#1E3A8A]">Good morning, {firstName}!</div>
+              <div className="text-2xl font-semibold text-[#1E3A8A]">Good afternoon, {firstName}!</div>
               <div className="text-sm text-[#4B5563]">Finish your application and stay on top of deadlines.</div>
             </div>
           </div>
         </div>
 
         <div className="mt-5 space-y-4">
-          <CollapsibleCard title="My Application" subtitle={`${dashboard?.profileCompletionPercent ?? 0}/7 sections complete`} open>
+          <CollapsibleCard title="My Common Application" subtitle={`${dashboard?.profileCompletionPercent ?? 0}/7 sections complete`} open>
             {isLoading ? (
               <Skeleton className="h-36 rounded-md" />
             ) : (
@@ -74,15 +74,11 @@ export default function Dashboard() {
                 <div className="h-4 rounded-full bg-[#F3F4F6]">
                   <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${dashboard?.profileCompletionPercent ?? 0}%` }} />
                 </div>
-                <div className="flex flex-wrap gap-4">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-7">
                   {dashboard?.profileSections.slice(0, 7).map((step) => {
                     const href = sectionHref(step.slug);
                     return (
-                      <Link
-                        key={step.slug}
-                        href={href}
-                        className="flex min-w-[72px] flex-col items-center gap-1 text-center"
-                      >
+                      <Link key={step.slug} href={href} className="flex flex-col items-center gap-1 text-center">
                         <div
                           className={cn(
                             "flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white",
@@ -100,7 +96,7 @@ export default function Dashboard() {
             )}
           </CollapsibleCard>
 
-          <CollapsibleCard title="My Universities" subtitle={`${applications?.length ?? 0} universities on my list`}>
+          <CollapsibleCard title="My Colleges" subtitle={`${applications?.length ?? 0} colleges on my list`}>
             <div className="space-y-4">
               <div className="h-4 rounded-full bg-[#F3F4F6]">
                 <div className="h-4 rounded-full bg-[#166534]" style={{ width: `${Math.min((applications?.length ?? 0) * 10, 100)}%` }} />
@@ -135,6 +131,7 @@ export default function Dashboard() {
 
                 <MiniCalendar />
               </div>
+
               <div className="rounded-md border border-slate-200 bg-white p-4">
                 <div className="mb-3 text-sm font-medium text-slate-700">Search Universities</div>
                 <Link href="/universities" className="inline-flex items-center justify-center rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white">
