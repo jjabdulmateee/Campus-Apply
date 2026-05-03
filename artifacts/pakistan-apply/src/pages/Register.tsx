@@ -65,7 +65,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-white px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-sky-50 px-4 py-8 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-sky-100/60 blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-100/40 blur-3xl -z-10" />
 
@@ -95,8 +95,8 @@ export default function Register() {
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
-                  { id: "first_year", label: "First-Year Student", sub: "Finished Intermediate / A-Levels", icon: BookOpen, color: "sky" },
-                  { id: "transfer", label: "Transfer Student", sub: "Moving from another institution", icon: RefreshCw, color: "violet" },
+                  { id: "first_year", label: "Fresh student account", sub: "Finished Intermediate / A-Levels", icon: BookOpen, color: "sky" },
+                  { id: "transfer", label: "Transfer student account", sub: "Moving from another institution", icon: RefreshCw, color: "violet" },
                 ] as const
               ).map(({ id, label, sub, icon: Icon, color }) => {
                 const active = studentType === id;
