@@ -3,10 +3,10 @@ import { db } from "@workspace/db";
 import { documentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import { optionalJWT, getStudentId } from "../middleware/auth";
+import { verifyJWT, getStudentId } from "../middleware/auth";
 
 const router = Router();
-router.use(optionalJWT);
+router.use(verifyJWT);
 
 const DocumentCategoryEnum = z.enum([
   "cnic_front",

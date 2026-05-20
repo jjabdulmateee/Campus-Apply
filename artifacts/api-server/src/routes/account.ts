@@ -16,12 +16,16 @@ import {
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { verifyJWT } from "../middleware/auth";
+import {
+  isLocalStorageBackend,
+  prepareLocalUpload,
+} from "../lib/localDiskStorage";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const router = Router();
 router.use(verifyJWT);
 
-const objectStorageService = new ObjectStorageService();
+const gcsStorage = new ObjectStorageService();
 
 /** GET /api/account/me — full account info including avatar + prefs */
 router.get("/me", async (req, res) => {
@@ -144,8 +148,17 @@ router.post("/avatar/request-url", async (req, res) => {
       return;
     }
 
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+    let uploadURL: string;
+    let objectPath: string;
+
+    if (isLocalStorageBackend()) {
+      const prepared = await prepareLocalUpload();
+      uploadURL = prepared.uploadURL;
+      objectPath = prepared.objectPath;
+    } else {
+      uploadURL = await gcsStorage.getObjectEntityUploadURL();
+      objectPath = gcsStorage.normalizeObjectEntityPath(uploadURL);
+    }
 
     res.json({ uploadURL, objectPath });
   } catch (err) {

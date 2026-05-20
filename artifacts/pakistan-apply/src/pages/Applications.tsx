@@ -25,6 +25,7 @@ import {
   FolderLock,
 } from "lucide-react";
 import { useState } from "react";
+import WithdrawApplicationDialog from "@/components/WithdrawApplicationDialog";
 
 type AppStatus =
   | "draft"
@@ -123,6 +124,8 @@ function StatusTimeline({ status, hasDocs }: { status: AppStatus; hasDocs: boole
   );
 }
 
+const WITHDRAWABLE_STATUSES: AppStatus[] = ["submitted", "under_review", "waitlisted"];
+
 export default function Applications() {
   const { data: applications, isLoading } = useListMyApplications();
   const { data: summary } = useGetApplicationsSummary();
@@ -130,6 +133,10 @@ export default function Applications() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
+  const [withdrawTarget, setWithdrawTarget] = useState<{
+    id: number;
+    universityName: string;
+  } | null>(null);
 
   const hasDocs = documents.length > 0;
 
@@ -144,9 +151,13 @@ export default function Applications() {
       onSuccess: () => {
         invalidate();
         setWithdrawingId(null);
+        setWithdrawTarget(null);
         toast({ title: "Application withdrawn" });
       },
-      onError: () => toast({ title: "Withdraw failed", variant: "destructive" }),
+      onError: () => {
+        setWithdrawingId(null);
+        toast({ title: "Withdraw failed", variant: "destructive" });
+      },
     },
   });
 
@@ -267,23 +278,21 @@ export default function Applications() {
                           Review &amp; Submit
                         </Link>
                       )}
-                      {app.status !== "withdrawn" && app.status !== "rejected" && (
+                      {WITHDRAWABLE_STATUSES.includes(app.status as AppStatus) && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setWithdrawingId(app.id);
-                            withdraw({ applicationId: app.id });
-                          }}
+                          onClick={() =>
+                            setWithdrawTarget({
+                              id: app.id,
+                              universityName: app.universityName,
+                            })
+                          }
                           disabled={withdrawing && withdrawingId === app.id}
                           className="text-xs border-red-100 text-red-500 hover:bg-red-50 gap-1.5"
                         >
-                          {withdrawing && withdrawingId === app.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
-                          )}
-                          Withdraw
+                          <Trash2 className="w-3 h-3" />
+                          Withdraw Application
                         </Button>
                       )}
                       <Link
@@ -325,6 +334,20 @@ export default function Applications() {
           </div>
         )}
       </div>
+
+      <WithdrawApplicationDialog
+        open={withdrawTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setWithdrawTarget(null);
+        }}
+        universityName={withdrawTarget?.universityName ?? "this university"}
+        isPending={withdrawing}
+        onConfirm={() => {
+          if (!withdrawTarget) return;
+          setWithdrawingId(withdrawTarget.id);
+          withdraw({ applicationId: withdrawTarget.id });
+        }}
+      />
     </AppLayout>
   );
 }

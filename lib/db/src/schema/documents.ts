@@ -17,6 +17,7 @@ export const documentCategoryEnum = pgEnum("document_category", [
   "a_level_transcript",
   "o_level_transcript",
   "passport_photo",
+  "school_report",
   "other",
 ]);
 

@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDemoUser } from "./lib/seed-demo";
+import { isProduction } from "./lib/env";
 
 const rawPort = process.env["PORT"];
 
@@ -23,5 +24,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  seedDemoUser();
+  if (!isProduction()) {
+    seedDemoUser();
+  } else {
+    logger.info("Demo account seeding skipped (production mode)");
+  }
 });

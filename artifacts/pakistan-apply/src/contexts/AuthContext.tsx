@@ -6,26 +6,26 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export interface AuthUser {
   id: number;
   email: string;
   fullName: string;
-  studentId: string;
-  role: "student" | "admin";
+  studentId: string | null;
+  role: "student" | "admin" | "counselor";
+  universityId?: number | null;
   avatarUrl?: string | null;
 }
 
 interface AuthState {
   user: AuthUser | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  isCounselor: boolean;
+  login: (email: string, password: string) => Promise<AuthUser>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUserAvatar: (avatarUrl: string) => void;
 }
@@ -38,16 +38,14 @@ interface RegisterData {
 }
 
 interface AuthResponse {
-  token: string;
   user: AuthUser;
 }
 
-const TOKEN_KEY = "pakapp_token";
-
 const AuthContext = createContext<AuthState | null>(null);
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, {
+    credentials: "include",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -59,104 +57,71 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
+async function loadSessionUser(): Promise<AuthUser | null> {
+  try {
+    const u = await apiFetch<AuthUser>("/api/auth/me");
+    const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me").catch(
+      () => ({ avatarUrl: null }),
+    );
+    return { ...u, avatarUrl: accountData.avatarUrl };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const applyToken = useCallback((t: string | null) => {
-    setToken(t);
-    setAuthTokenGetter(t ? () => t : null);
+  useEffect(() => {
+    loadSessionUser()
+      .then((sessionUser) => setUser(sessionUser))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const loadUserWithToken = useCallback(
-    async (stored: string) => {
-      const u = await apiFetch<AuthUser>("/api/auth/me", {
-        headers: { Authorization: `Bearer ${stored}` },
-      });
-      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
-        headers: { Authorization: `Bearer ${stored}` },
-      }).catch(() => ({ avatarUrl: null }));
-      setUser({ ...u, avatarUrl: accountData.avatarUrl });
-      applyToken(stored);
-    },
-    [applyToken],
-  );
-
-  useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (stored) {
-      loadUserWithToken(stored)
-        .catch(() => localStorage.removeItem(TOKEN_KEY))
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, [loadUserWithToken]);
-
   const refreshUser = useCallback(async () => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (!stored) return;
-    try {
-      const u = await apiFetch<AuthUser>("/api/auth/me", {
-        headers: { Authorization: `Bearer ${stored}` },
-      });
-      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
-        headers: { Authorization: `Bearer ${stored}` },
-      }).catch(() => ({ avatarUrl: null }));
-      setUser({ ...u, avatarUrl: accountData.avatarUrl });
-    } catch {
-      // silently fail refresh
-    }
+    const sessionUser = await loadSessionUser();
+    if (sessionUser) setUser(sessionUser);
   }, []);
 
   const setUserAvatar = useCallback((avatarUrl: string) => {
     setUser((prev) => (prev ? { ...prev, avatarUrl } : prev));
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const { token: t, user: u } = await apiFetch<AuthResponse>(
-        "/api/auth/login",
-        { method: "POST", body: JSON.stringify({ email, password }) },
-      );
-      localStorage.setItem(TOKEN_KEY, t);
-      applyToken(t);
-      const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me", {
-        headers: { Authorization: `Bearer ${t}` },
-      }).catch(() => ({ avatarUrl: null }));
-      setUser({ ...u, avatarUrl: accountData.avatarUrl });
-    },
-    [applyToken],
-  );
+  const login = useCallback(async (email: string, password: string) => {
+    const { user: u } = await apiFetch<AuthResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    const accountData = await apiFetch<{ avatarUrl: string | null }>("/api/account/me").catch(
+      () => ({ avatarUrl: null }),
+    );
+    const fullUser = { ...u, avatarUrl: accountData.avatarUrl };
+    setUser(fullUser);
+    return fullUser;
+  }, []);
 
-  const register = useCallback(
-    async (data: RegisterData) => {
-      const { token: t, user: u } = await apiFetch<AuthResponse>(
-        "/api/auth/register",
-        { method: "POST", body: JSON.stringify(data) },
-      );
-      localStorage.setItem(TOKEN_KEY, t);
-      applyToken(t);
-      setUser({ ...u, avatarUrl: null });
-    },
-    [applyToken],
-  );
+  const register = useCallback(async (data: RegisterData) => {
+    const { user: u } = await apiFetch<AuthResponse>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    setUser({ ...u, avatarUrl: null });
+  }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    applyToken(null);
+  const logout = useCallback(async () => {
+    await apiFetch<{ ok: boolean }>("/api/auth/logout", { method: "POST" }).catch(() => {});
     setUser(null);
-  }, [applyToken]);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
         isLoading,
         isAuthenticated: !!user,
         isAdmin: user?.role === "admin",
+        isCounselor: user?.role === "counselor",
         login,
         register,
         logout,
@@ -171,6 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  if (!ctx) throw new Error("useAuth must use AuthProvider");
   return ctx;
 }

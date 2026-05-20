@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
+import { cn, storageObjectUrl } from "@/lib/utils";
 import {
   Lock, Mail, Camera, Bell, Trash2, ChevronRight,
   Loader2, Eye, EyeOff, AlertTriangle, CheckCircle,
@@ -97,9 +97,8 @@ function AvatarTab({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
-  const avatarSrc = preview ?? (user?.avatarUrl ? `/api/storage/objects/${user.avatarUrl}` : null);
+  const avatarSrc = preview ?? storageObjectUrl(user?.avatarUrl);
 
   const handleFile = (file: File) => {
     if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
@@ -119,7 +118,8 @@ function AvatarTab({ onClose }: { onClose: () => void }) {
     try {
       const urlRes = await fetch("/api/account/avatar/request-url", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ size: file.size, contentType: file.type }),
       });
       if (!urlRes.ok) throw new Error((await urlRes.json()).error ?? "Upload URL failed");
@@ -130,7 +130,8 @@ function AvatarTab({ onClose }: { onClose: () => void }) {
 
       const saveRes = await fetch("/api/account/avatar", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objectPath }),
       });
       if (!saveRes.ok) throw new Error((await saveRes.json()).error ?? "Save failed");
@@ -207,7 +208,6 @@ function PasswordTab({ onClose }: { onClose: () => void }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(pwSchema),
@@ -218,13 +218,14 @@ function PasswordTab({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch("/api/account/change-password", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: data.currentPassword, newPassword: data.newPassword }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
       toast({ title: "Password changed", description: "Please sign in again with your new password." });
-      logout();
+      await logout();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "Failed", variant: "destructive" });
@@ -281,7 +282,6 @@ function EmailTab({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(emailSchema),
@@ -292,13 +292,14 @@ function EmailTab({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch("/api/account/change-email", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
       toast({ title: "Email updated", description: "Please sign in again with your new email." });
-      logout();
+      await logout();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "Failed", variant: "destructive" });
@@ -341,15 +342,14 @@ function NotificationsTab() {
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   useEffect(() => {
-    fetch("/api/account/preferences", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/account/preferences", { credentials: "include" })
       .then((r) => r.json())
       .then((data: Prefs) => setPrefs(data))
       .catch(() => {/* silently ignore */})
       .finally(() => setLoading(false));
-  }, [token]);
+  }, []);
 
   const toggle = async (key: keyof Prefs) => {
     if (!prefs) return;
@@ -360,7 +360,8 @@ function NotificationsTab() {
     try {
       const res = await fetch("/api/account/preferences", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [key]: updated[key] }),
       });
       if (!res.ok) throw new Error();
@@ -429,7 +430,6 @@ function DeleteTab({ onClose }: { onClose: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
   const [password, setPassword] = useState("");
   const [isPending, setIsPending] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   const handleDelete = async () => {
     if (!password) { toast({ title: "Enter your password to confirm", variant: "destructive" }); return; }
@@ -437,13 +437,14 @@ function DeleteTab({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch("/api/account", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Deletion failed");
       toast({ title: "Account deleted", description: "Your account and all data have been permanently removed." });
-      logout();
+      await logout();
       onClose();
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "Deletion failed", variant: "destructive" });

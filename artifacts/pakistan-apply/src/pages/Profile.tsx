@@ -25,6 +25,17 @@ const schema = z.object({
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Required"),
   fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  motherOccupation: z.string().optional(),
+  motherEducationLevel: z.string().optional(),
+  householdIncomeTier: z.string().optional(),
+  siblingCount: z.preprocess(
+    (val) =>
+      val === "" || val === null || (typeof val === "number" && Number.isNaN(val))
+        ? undefined
+        : val,
+    z.number().int().min(0).optional(),
+  ),
   email: z.string().email("Valid email required"),
   phoneNumber: z.string().optional(),
   preferredContact: z.enum(["email", "sms", "phone"]).optional(),
@@ -48,6 +59,25 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const INCOME_TIERS = [
+  "Under PKR 50,000 / month",
+  "PKR 50,000 – 100,000 / month",
+  "PKR 100,000 – 250,000 / month",
+  "PKR 250,000 – 500,000 / month",
+  "Above PKR 500,000 / month",
+  "Prefer not to say",
+] as const;
+
+const EDUCATION_LEVELS = [
+  "No formal education",
+  "Primary / Middle",
+  "Matric / O-Levels",
+  "Intermediate / A-Levels",
+  "Bachelor's degree",
+  "Master's degree",
+  "Doctorate / Professional",
+] as const;
+
 const COMPLETION_SECTIONS = [
   { key: "legal_name", label: "Legal Name", icon: User, color: "sky" },
   { key: "address", label: "Address", icon: MapPin, color: "violet" },
@@ -64,6 +94,7 @@ const MOBILE_STEPS = [
   { key: "language",     label: "Language",    shortLabel: "Lang",     icon: Languages },
   { key: "geography",    label: "Geography",   shortLabel: "Geo",      icon: Globe },
   { key: "fee_waiver",   label: "Fee Waiver",  shortLabel: "Fee",      icon: BadgeDollarSign },
+  { key: "family",       label: "Family",      shortLabel: "Family",   icon: Users },
   { key: "guardian",     label: "Guardian",    shortLabel: "Guardian", icon: Users },
   { key: "documents",    label: "Documents",   shortLabel: "Docs",     icon: ShieldCheck },
 ] as const;
@@ -78,6 +109,7 @@ const STEP_REQUIRED: Record<MobileStepKey, { field: keyof FormData; label: strin
   language:     [],
   geography:    [],
   fee_waiver:   [],
+  family:       [{ field: "motherName", label: "Mother's Name" }, { field: "motherOccupation", label: "Mother's Occupation" }],
   guardian:     [],
   documents:    [],
 };
@@ -104,6 +136,15 @@ function computeSectionComplete(data: Partial<FormData>) {
     language:    langs.length > 0,
     geography:   !!data.birthCountry?.trim(),
     fee_waiver:  data.feeWaiverEligible !== undefined,
+    family:      !!(
+      data.motherName?.trim() &&
+      data.motherOccupation?.trim() &&
+      data.motherEducationLevel?.trim() &&
+      data.householdIncomeTier?.trim() &&
+      data.siblingCount !== undefined &&
+      data.siblingCount !== null &&
+      !Number.isNaN(data.siblingCount)
+    ),
     guardian:    !!(data.guardianName && data.guardianRelation),
   };
 }
@@ -118,6 +159,13 @@ function computeSectionStatus(data: Partial<FormData>): Record<string, SectionSt
     language:     langs.length > 0 ? "complete" : "not_started",
     geography:    classify([!!data.birthCountry?.trim()]),
     fee_waiver:   data.feeWaiverEligible !== undefined ? "complete" : "not_started",
+    family:       classify([
+      !!data.motherName?.trim(),
+      !!data.motherOccupation?.trim(),
+      !!data.motherEducationLevel?.trim(),
+      !!data.householdIncomeTier?.trim(),
+      data.siblingCount !== undefined && data.siblingCount !== null && !Number.isNaN(data.siblingCount),
+    ]),
     guardian:     classify([!!data.guardianName?.trim(), !!data.guardianRelation]),
   };
 }
@@ -229,6 +277,11 @@ export default function Profile() {
     birthCountry?: string;
     languagesJson?: string;
     feeWaiverEligible?: boolean;
+    motherName?: string;
+    motherOccupation?: string;
+    motherEducationLevel?: string;
+    householdIncomeTier?: string;
+    siblingCount?: number;
   };
   const p = profile as ProfileAny | undefined;
 
@@ -240,6 +293,11 @@ export default function Profile() {
           middleName:       p.middleName ?? "",
           lastName:         p.lastName ?? "",
           fatherName:       p.fatherName ?? "",
+          motherName:       p.motherName ?? "",
+          motherOccupation: p.motherOccupation ?? "",
+          motherEducationLevel: p.motherEducationLevel ?? "",
+          householdIncomeTier: p.householdIncomeTier ?? "",
+          siblingCount:     p.siblingCount ?? undefined,
           email:            p.email ?? "",
           phoneNumber:      p.phoneNumber ?? "",
           preferredContact: (p.preferredContact as FormData["preferredContact"]) ?? undefined,
@@ -301,6 +359,7 @@ export default function Profile() {
     language:     sectionStatusMap.language,
     geography:    sectionStatusMap.geography,
     fee_waiver:   sectionStatusMap.fee_waiver,
+    family:       sectionStatusMap.family,
     guardian:     sectionStatusMap.guardian,
     documents:    docsComplete ? "complete" : "not_started",
   };
@@ -629,6 +688,59 @@ export default function Profile() {
                       Your fee waiver eligibility will be noted on your applications. Universities may contact you for supporting documentation.
                     </div>
                   )}
+                </div>
+              </Section>
+            </div>
+
+            {/* ── Family / Household ── */}
+            <div className={cn(mobileStep !== "family" && "hidden")}>
+              <Section title="Family & Household" icon={Users} iconColor="text-violet-600" iconBg="bg-violet-50" complete={sectionComplete.family}>
+                <p className="text-xs text-slate-400 mb-4">
+                  Tell us about your household. This information helps universities understand your family background for admissions and financial aid.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Mother's Full Name" required>
+                    <Input {...register("motherName")} placeholder="Fatima Khan" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                  <Field label="Mother's Occupation" required>
+                    <Input {...register("motherOccupation")} placeholder="Teacher, Homemaker, Engineer…" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
+                  <Field label="Mother's Education Level" required>
+                    <Select value={watch("motherEducationLevel") ?? ""} onValueChange={(v) => setValue("motherEducationLevel", v)}>
+                      <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                        <SelectValue placeholder="Select education level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EDUCATION_LEVELS.map((level) => (
+                          <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Household Income Tier" required>
+                    <Select value={watch("householdIncomeTier") ?? ""} onValueChange={(v) => setValue("householdIncomeTier", v)}>
+                      <SelectTrigger className="border-slate-200 focus:border-sky-400">
+                        <SelectValue placeholder="Select income range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INCOME_TIERS.map((tier) => (
+                          <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Number of Siblings" required>
+                    <Input
+                      type="number"
+                      min={0}
+                      {...register("siblingCount", { valueAsNumber: true })}
+                      placeholder="0"
+                      className="border-slate-200 focus:border-sky-400"
+                    />
+                  </Field>
+                  <Field label="Father's Name (optional)">
+                    <Input {...register("fatherName")} placeholder="Mohammad Khan" className="border-slate-200 focus:border-sky-400" />
+                  </Field>
                 </div>
               </Section>
             </div>

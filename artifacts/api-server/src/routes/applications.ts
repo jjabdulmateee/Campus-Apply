@@ -10,6 +10,8 @@ import {
   activitiesTable,
   essaysTable,
   applicationAnswersTable,
+  userCollegesTable,
+  usersTable,
 } from "@workspace/db";
 import {
   CreateApplicationBody,
@@ -21,10 +23,14 @@ import {
 } from "@workspace/api-zod";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { optionalJWT, getStudentId } from "../middleware/auth";
+import { verifyJWT, getStudentId } from "../middleware/auth";
+import { sendApplicationSubmissionEmail } from "../utils/email";
+import {
+  syncUserCollegeSubmitted,
+} from "../lib/applicationSync";
 
 const router = Router();
-router.use(optionalJWT);
+router.use(verifyJWT);
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
 router.get("/summary", async (req, res) => {
@@ -327,6 +333,31 @@ router.put("/:applicationId", async (req, res) => {
 router.delete("/:applicationId", async (req, res) => {
   const sid = getStudentId(req);
   const { applicationId } = WithdrawApplicationParams.parse(req.params);
+
+  const [app] = await db
+    .select()
+    .from(applicationsTable)
+    .where(
+      and(
+        eq(applicationsTable.id, applicationId),
+        eq(applicationsTable.studentId, sid),
+      ),
+    )
+    .limit(1);
+
+  if (!app) {
+    res.status(404).json({ error: "Application not found" });
+    return;
+  }
+
+  const withdrawable = ["submitted", "under_review", "waitlisted"];
+  if (!withdrawable.includes(app.status)) {
+    res.status(400).json({
+      error: "Only submitted applications can be withdrawn",
+    });
+    return;
+  }
+
   await db
     .update(applicationsTable)
     .set({ status: "withdrawn", updatedAt: new Date() })
@@ -336,6 +367,17 @@ router.delete("/:applicationId", async (req, res) => {
         eq(applicationsTable.studentId, sid),
       ),
     );
+
+  await db
+    .update(userCollegesTable)
+    .set({ status: "withdrawn", updatedAt: new Date() })
+    .where(
+      and(
+        eq(userCollegesTable.studentId, sid),
+        eq(userCollegesTable.universityId, app.universityId),
+      ),
+    );
+
   res.status(204).send();
 });
 
@@ -378,12 +420,32 @@ router.post("/:applicationId/submit", async (req, res) => {
     )
     .returning();
 
+  await syncUserCollegeSubmitted({
+    studentId: sid,
+    universityId: updated.universityId,
+    submittedAt: updated.submittedAt ?? new Date(),
+  });
+
   const uni = await db.query.universitiesTable.findFirst({
     where: eq(universitiesTable.id, updated.universityId),
   });
   const prog = await db.query.programsTable.findFirst({
     where: eq(programsTable.id, updated.programId),
   });
+
+  const studentUser = await db.query.usersTable.findFirst({
+    where: eq(usersTable.studentId, sid),
+  });
+  if (studentUser?.email) {
+    sendApplicationSubmissionEmail({
+      to: studentUser.email,
+      fullName: profile
+        ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || studentUser.fullName
+        : studentUser.fullName,
+      universityName: uni?.name ?? "University",
+      programName: prog?.name ?? "Program",
+    }).catch(() => {});
+  }
 
   res.json({
     ...updated,

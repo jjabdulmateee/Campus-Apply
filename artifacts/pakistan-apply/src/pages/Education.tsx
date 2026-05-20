@@ -96,6 +96,8 @@ const schema = z.object({
   passingYear: z.number().int().min(1990).max(2030),
   totalMarks: z.number().optional(),
   obtainedMarks: z.number().optional(),
+  fscPart1Marks: z.number().optional(),
+  fscPart2Marks: z.number().optional(),
   percentage: z.number().optional(),
   gradeOrGpa: z.string().optional(),
   subjects: z.string().optional(),
@@ -252,6 +254,8 @@ export default function Education() {
   const institution = watch("institution") ?? "";
   const obtainedMarks = watch("obtainedMarks");
   const totalMarks = watch("totalMarks");
+  const fscPart1Marks = watch("fscPart1Marks");
+  const fscPart2Marks = watch("fscPart2Marks");
   const classRankType = watch("classRankType");
   const transcriptDocUrl = watch("transcriptDocUrl");
   const courseField = watch("subjects");
@@ -264,11 +268,22 @@ export default function Education() {
   const suggestions = isBachelors ? COLLEGE_SUGGESTIONS : (isMatricOrFsc || isOALevel) ? SCHOOL_SUGGESTIONS : [...SCHOOL_SUGGESTIONS, ...COLLEGE_SUGGESTIONS];
 
   useEffect(() => {
+    if (selectedLevel === "intermediate") {
+      const p1 = Number(fscPart1Marks) || 0;
+      const p2 = Number(fscPart2Marks) || 0;
+      const obtained = p1 + p2;
+      setValue("totalMarks", 1100);
+      setValue("obtainedMarks", obtained > 0 ? obtained : undefined);
+      if (obtained > 0) {
+        setValue("percentage", parseFloat(((obtained / 1100) * 100).toFixed(2)));
+      }
+      return;
+    }
     if (obtainedMarks && totalMarks && totalMarks > 0) {
       const pct = parseFloat(((obtainedMarks / totalMarks) * 100).toFixed(2));
       setValue("percentage", pct);
     }
-  }, [obtainedMarks, totalMarks, setValue]);
+  }, [selectedLevel, fscPart1Marks, fscPart2Marks, obtainedMarks, totalMarks, setValue]);
 
   const levelLabel = (val: string) => ACADEMIC_LEVELS.find((l) => l.value === val)?.label ?? val;
 
@@ -290,6 +305,8 @@ export default function Education() {
       passingYear: rec.passingYear,
       totalMarks: rec.totalMarks ?? undefined,
       obtainedMarks: rec.obtainedMarks ?? undefined,
+      fscPart1Marks: rec.fscPart1Marks ?? undefined,
+      fscPart2Marks: rec.fscPart2Marks ?? undefined,
       percentage: rec.percentage != null ? Number(rec.percentage) : undefined,
       gradeOrGpa: rec.gradeOrGpa ?? undefined,
       subjects: rec.subjects ?? undefined,
@@ -311,11 +328,24 @@ export default function Education() {
       grade: course.grade,
       credits: (course as CourseEntry & { credits?: string }).credits ?? "",
     }));
-    const payload = {
+    let payload = {
       ...data,
       honors: honors.length > 0 ? JSON.stringify(honors) : undefined,
       coursesJson: normalizedCourses.length > 0 ? JSON.stringify(normalizedCourses) : undefined,
     };
+    if (data.level === "intermediate") {
+      const p1 = Number(data.fscPart1Marks) || 0;
+      const p2 = Number(data.fscPart2Marks) || 0;
+      payload = {
+        ...payload,
+        totalMarks: 1100,
+        obtainedMarks: p1 + p2,
+        fscPart1Marks: p1 || undefined,
+        fscPart2Marks: p2 || undefined,
+        percentage: p1 + p2 > 0 ? parseFloat((((p1 + p2) / 1100) * 100).toFixed(2)) : undefined,
+        gpaScale: payload.gpaScale ?? "marks_1100",
+      };
+    }
     if (editingId !== null) {
       updateRecord({ recordId: editingId, data: payload });
     } else {
@@ -472,6 +502,9 @@ export default function Education() {
                         {rec.percentage && <Chip label={rec.level === "o_levels" || rec.level === "a_levels" ? "IBCC Equiv." : "Percentage"} value={`${rec.percentage}%`} />}
                         {rec.gradeOrGpa && <Chip label="Grade/GPA" value={rec.gradeOrGpa} />}
                         {rec.obtainedMarks && rec.totalMarks && <Chip label="Marks" value={`${rec.obtainedMarks}/${rec.totalMarks}`} />}
+                        {rec.level === "intermediate" && rec.fscPart1Marks != null && rec.fscPart2Marks != null && (
+                          <Chip label="FSc Parts" value={`${rec.fscPart1Marks} + ${rec.fscPart2Marks}`} />
+                        )}
                         {rec.subjects && <Chip label="Group/Subjects" value={rec.subjects} />}
                         {rec.classRank && rec.classRankType === "exact" && <Chip label="Class Rank" value={`#${rec.classRank}${rec.classSize ? ` / ${rec.classSize}` : ""}`} />}
                         {rec.gpaScale && <Chip label="Scale" value={gpaScaleLabel(rec.gpaScale)} />}
@@ -610,7 +643,46 @@ export default function Education() {
               </div>
 
               {/* Marks / GPA */}
-              {isMatricOrFsc ? (
+              {selectedLevel === "intermediate" ? (
+                <>
+                  <div className="bg-sky-50 rounded-xl p-3 flex gap-2">
+                    <Info className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-sky-700">
+                      Enter your <strong>FSc Part-I</strong> and <strong>Part-II</strong> obtained marks. Total and percentage are calculated automatically (out of 1100).
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">FSc Part-I Marks</Label>
+                      <Input type="number" {...register("fscPart1Marks", { valueAsNumber: true })} placeholder="e.g. 480" className="border-sky-100" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">FSc Part-II Marks</Label>
+                      <Input type="number" {...register("fscPart2Marks", { valueAsNumber: true })} placeholder="e.g. 490" className="border-sky-100" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Total Marks</Label>
+                      <Input type="number" value={1100} readOnly className="border-sky-100 bg-slate-50" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Percentage</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...register("percentage", { valueAsNumber: true })}
+                        readOnly
+                        className="border-sky-100 bg-sky-50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1.5 block">Grade</Label>
+                    <Input {...register("gradeOrGpa")} placeholder="e.g. A+" className="border-sky-100" />
+                  </div>
+                </>
+              ) : isMatricOrFsc ? (
                 <>
                   <div className="grid grid-cols-3 gap-3">
                     <div>

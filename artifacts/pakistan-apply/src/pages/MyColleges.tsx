@@ -6,13 +6,17 @@ import {
   useRemoveCollege,
   useUpdateCollegeStatus,
   useListMyApplications,
+  useWithdrawApplication,
   getListMyCollegesQueryKey,
+  getListMyApplicationsQueryKey,
+  getGetMyDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import SubmitModal from "@/components/SubmitModal";
+import WithdrawApplicationDialog from "@/components/WithdrawApplicationDialog";
 import {
   Building2,
   MapPin,
@@ -29,6 +33,7 @@ import {
   RefreshCw,
   CheckCircle2,
   Circle,
+  Ban,
 } from "lucide-react";
 
 const COLLEGE_STATUS_STEPS = [
@@ -53,14 +58,20 @@ function CollegeStepper({
   status,
   universityId,
   applicationId,
+  applicationStatus,
   onAdvance,
   advancing,
+  onWithdraw,
+  withdrawing,
 }: {
   status: CollegeStatus;
   universityId: number;
   applicationId?: number;
+  applicationStatus?: string;
   onAdvance: (universityId: number, nextStatus: CollegeStatus) => void;
   advancing: boolean;
+  onWithdraw?: () => void;
+  withdrawing?: boolean;
 }) {
   const currentIdx = COLLEGE_STATUS_STEPS.findIndex((s) => s.key === status);
   const nextStep = COLLEGE_STATUS_STEPS[currentIdx + 1];
@@ -146,8 +157,24 @@ function CollegeStepper({
           </Button>
         )}
         {status === "submitted" && (
-          <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
-            <CheckCircle2 className="w-4 h-4" /> Application complete
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+              <CheckCircle2 className="w-4 h-4" /> Application complete
+            </div>
+            {applicationStatus === "withdrawn" ? (
+              <span className="text-xs text-slate-400 font-medium">Withdrawn</span>
+            ) : applicationId && onWithdraw ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={withdrawing}
+                onClick={onWithdraw}
+                className="h-7 text-xs gap-1.5 border-red-100 text-red-500 hover:bg-red-50"
+              >
+                {withdrawing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3 h-3" />}
+                Withdraw Application
+              </Button>
+            ) : null}
           </div>
         )}
       </div>
@@ -158,10 +185,13 @@ function CollegeStepper({
 function CollegeCard({
   college,
   applicationId,
+  applicationStatus,
   onRemove,
   removing,
   onAdvance,
   advancing,
+  onWithdraw,
+  withdrawing,
 }: {
   college: {
     id: number;
@@ -187,10 +217,13 @@ function CollegeCard({
     } | null;
   };
   applicationId?: number;
+  applicationStatus?: string;
   onRemove: (universityId: number) => void;
   removing: boolean;
   onAdvance: (universityId: number, status: CollegeStatus) => void;
   advancing: boolean;
+  onWithdraw?: () => void;
+  withdrawing?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const u = college.university;
@@ -266,8 +299,11 @@ function CollegeCard({
               status={college.status as CollegeStatus}
               universityId={college.universityId}
               applicationId={applicationId}
+              applicationStatus={applicationStatus}
               onAdvance={onAdvance}
               advancing={advancing}
+              onWithdraw={onWithdraw}
+              withdrawing={withdrawing}
             />
           </div>
         </div>
@@ -349,6 +385,7 @@ interface SubmitTarget {
   universityId: number;
   universityName: string;
   feeRequired: boolean | null | undefined;
+  programId?: number;
 }
 
 export default function MyColleges() {
@@ -356,13 +393,24 @@ export default function MyColleges() {
   const { data: applications } = useListMyApplications();
   const qc = useQueryClient();
 
-  const appByUniversity = new Map((applications ?? []).map((a) => [a.universityId, a.id]));
+  const appByUniversity = new Map(
+    (applications ?? []).map((a) => [a.universityId, a]),
+  );
   const { toast } = useToast();
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [advancingId, setAdvancingId] = useState<number | null>(null);
   const [submitTarget, setSubmitTarget] = useState<SubmitTarget | null>(null);
+  const [withdrawTarget, setWithdrawTarget] = useState<{
+    applicationId: number;
+    universityName: string;
+  } | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListMyCollegesQueryKey() });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: getListMyCollegesQueryKey() });
+    qc.invalidateQueries({ queryKey: getListMyApplicationsQueryKey() });
+    qc.invalidateQueries({ queryKey: getGetMyDashboardQueryKey() });
+  };
 
   const { mutate: remove } = useRemoveCollege({
     mutation: {
@@ -386,6 +434,21 @@ export default function MyColleges() {
     },
   });
 
+  const { mutate: withdrawApp, isPending: withdrawing } = useWithdrawApplication({
+    mutation: {
+      onSuccess: () => {
+        invalidate();
+        setWithdrawingId(null);
+        setWithdrawTarget(null);
+        toast({ title: "Application withdrawn" });
+      },
+      onError: () => {
+        setWithdrawingId(null);
+        toast({ title: "Withdraw failed", variant: "destructive" });
+      },
+    },
+  });
+
   const handleRemove = (universityId: number) => {
     setRemovingId(universityId);
     remove({ universityId });
@@ -394,10 +457,12 @@ export default function MyColleges() {
   const handleAdvance = (universityId: number, status: CollegeStatus) => {
     if (status === "submitted") {
       const college = colleges?.find((c) => c.universityId === universityId);
+      const linkedApp = appByUniversity.get(universityId);
       setSubmitTarget({
         universityId,
         universityName: college?.university?.name ?? "University",
         feeRequired: college?.university?.applicationFeeRequired,
+        programId: linkedApp?.programId,
       });
       return;
     }
@@ -454,17 +519,31 @@ export default function MyColleges() {
           </div>
         ) : colleges && colleges.length > 0 ? (
           <div className="space-y-3">
-            {colleges.map((college) => (
+            {colleges.map((college) => {
+              const app = appByUniversity.get(college.universityId);
+              return (
               <CollegeCard
                 key={college.id}
                 college={college}
-                applicationId={appByUniversity.get(college.universityId)}
+                applicationId={app?.id}
+                applicationStatus={app?.status}
                 onRemove={handleRemove}
                 removing={removingId === college.universityId}
                 onAdvance={handleAdvance}
                 advancing={advancingId === college.universityId}
+                withdrawing={withdrawing && withdrawingId === app?.id}
+                onWithdraw={
+                  app &&
+                  ["submitted", "under_review", "waitlisted"].includes(app.status)
+                    ? () =>
+                        setWithdrawTarget({
+                          applicationId: app.id,
+                          universityName: college.university?.name ?? "University",
+                        })
+                    : undefined
+                }
               />
-            ))}
+            );})}
           </div>
         ) : (
           // Empty state
@@ -491,6 +570,7 @@ export default function MyColleges() {
           universityId={submitTarget.universityId}
           universityName={submitTarget.universityName}
           feeRequired={submitTarget.feeRequired}
+          programId={submitTarget.programId}
           onClose={() => setSubmitTarget(null)}
           onSuccess={() => {
             invalidate();
@@ -498,6 +578,20 @@ export default function MyColleges() {
           }}
         />
       )}
+
+      <WithdrawApplicationDialog
+        open={withdrawTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setWithdrawTarget(null);
+        }}
+        universityName={withdrawTarget?.universityName ?? "this university"}
+        isPending={withdrawing}
+        onConfirm={() => {
+          if (!withdrawTarget) return;
+          setWithdrawingId(withdrawTarget.applicationId);
+          withdrawApp({ applicationId: withdrawTarget.applicationId });
+        }}
+      />
     </AppLayout>
   );
 }

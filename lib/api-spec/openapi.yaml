@@ -1289,6 +1289,16 @@ components:
           type: string
         fatherName:
           type: string
+        motherName:
+          type: string
+        motherOccupation:
+          type: string
+        motherEducationLevel:
+          type: string
+        householdIncomeTier:
+          type: string
+        siblingCount:
+          type: integer
         dateOfBirth:
           type: string
         gender:
@@ -1366,6 +1376,16 @@ components:
           type: string
         fatherName:
           type: string
+        motherName:
+          type: string
+        motherOccupation:
+          type: string
+        motherEducationLevel:
+          type: string
+        householdIncomeTier:
+          type: string
+        siblingCount:
+          type: integer
         dateOfBirth:
           type: string
         gender:
@@ -1441,6 +1461,12 @@ components:
           type: integer
         obtainedMarks:
           type: integer
+        fscPart1Marks:
+          type: integer
+          description: FSc Part-I obtained marks (Pakistani intermediate)
+        fscPart2Marks:
+          type: integer
+          description: FSc Part-II obtained marks (Pakistani intermediate)
         percentage:
           type: number
         gradeOrGpa:
@@ -1487,6 +1513,12 @@ components:
           type: integer
         obtainedMarks:
           type: integer
+        fscPart1Marks:
+          type: integer
+          description: FSc Part-I obtained marks (Pakistani intermediate)
+        fscPart2Marks:
+          type: integer
+          description: FSc Part-II obtained marks (Pakistani intermediate)
         percentage:
           type: number
         gradeOrGpa:

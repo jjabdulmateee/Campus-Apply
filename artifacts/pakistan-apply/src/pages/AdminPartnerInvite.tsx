@@ -11,7 +11,6 @@ import {
   Loader2,
   UserPlus,
   Mail,
-  KeyRound,
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,8 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 interface InviteResult {
   email: string;
   fullName: string;
-  tempPassword: string;
   loginUrl: string;
+  universityId?: number | null;
+  message?: string;
 }
 
 export default function AdminPartnerInvite() {
@@ -30,7 +30,7 @@ export default function AdminPartnerInvite() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<InviteResult | null>(null);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState<"pass" | "link" | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -43,12 +43,11 @@ export default function AdminPartnerInvite() {
     setError("");
     setLoading(true);
     try {
-      const token = localStorage.getItem("pakapp_token");
       const res = await fetch("/api/admin/partners/invite", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ fullName: form.fullName.trim(), email: form.email.trim().toLowerCase() }),
       });
@@ -63,17 +62,17 @@ export default function AdminPartnerInvite() {
     }
   };
 
-  const copyToClipboard = async (text: string, field: "pass" | "link") => {
-    await navigator.clipboard.writeText(text);
-    setCopied(field);
-    toast({ title: "Copied to clipboard!" });
-    setTimeout(() => setCopied(null), 2000);
+  const copyLoginLink = async () => {
+    if (!result?.loginUrl) return;
+    await navigator.clipboard.writeText(result.loginUrl);
+    setCopied(true);
+    toast({ title: "Login link copied" });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
       <div className="max-w-lg mx-auto">
-        {/* Back */}
         <div className="mb-6">
           <Link href="/admin/dashboard">
             <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-slate-800">
@@ -83,7 +82,6 @@ export default function AdminPartnerInvite() {
           </Link>
         </div>
 
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-12 h-12 rounded-2xl bg-sky-600 flex items-center justify-center shadow-lg shadow-sky-600/30">
             <ShieldCheck className="w-6 h-6 text-white" />
@@ -94,16 +92,14 @@ export default function AdminPartnerInvite() {
           </div>
         </div>
 
-        {/* Info box */}
         <div className="flex items-start gap-3 bg-sky-950/60 border border-sky-800 rounded-2xl p-4 mb-6">
           <AlertCircle className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-sky-300 leading-relaxed">
-            This tool creates an <span className="font-semibold text-sky-200">admin-level</span> account for a new University Partner. 
-            The generated credentials give full access to the admin portal — share them securely with the University official only.
+            This creates an <span className="font-semibold text-sky-200">admin-level</span> account for a university partner.
+            Temporary credentials are generated server-side and logged to the API terminal in development — they are never returned in HTTP responses.
           </p>
         </div>
 
-        {/* Result card */}
         {result && (
           <div className="bg-slate-900 border border-green-700/50 rounded-2xl p-6 mb-6 space-y-4">
             <div className="flex items-center gap-3">
@@ -111,59 +107,41 @@ export default function AdminPartnerInvite() {
                 <CheckCircle2 className="w-5 h-5 text-green-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-green-400">Partner account created!</p>
+                <p className="text-sm font-bold text-green-400">Partner account created</p>
                 <p className="text-xs text-slate-400">{result.fullName} · {result.email}</p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-slate-400 mb-1.5 block flex items-center gap-1.5">
-                  <KeyRound className="w-3 h-3" />
-                  Temporary Password
-                </Label>
-                <div className="flex items-center gap-2 bg-slate-800 rounded-xl px-4 py-2.5">
-                  <code className="flex-1 text-sm font-mono text-amber-400 tracking-wide">
-                    {result.tempPassword}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(result.tempPassword, "pass")}
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      copied === "pass" ? "text-green-400" : "text-slate-400 hover:text-white",
-                    )}
-                  >
-                    {copied === "pass" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+            {result.message && (
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 rounded-xl p-3">
+                {result.message}
+              </p>
+            )}
 
-              <div>
-                <Label className="text-xs text-slate-400 mb-1.5 block flex items-center gap-1.5">
-                  <Mail className="w-3 h-3" />
-                  Login Link to Share
-                </Label>
-                <div className="flex items-center gap-2 bg-slate-800 rounded-xl px-4 py-2.5">
-                  <code className="flex-1 text-xs font-mono text-sky-300 truncate">
-                    {result.loginUrl}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(result.loginUrl, "link")}
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors flex-shrink-0",
-                      copied === "link" ? "text-green-400" : "text-slate-400 hover:text-white",
-                    )}
-                  >
-                    {copied === "link" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
+            <div>
+              <Label className="text-xs text-slate-400 mb-1.5 block flex items-center gap-1.5">
+                <Mail className="w-3 h-3" />
+                Login URL to share
+              </Label>
+              <div className="flex items-center gap-2 bg-slate-800 rounded-xl px-4 py-2.5">
+                <code className="flex-1 text-xs font-mono text-sky-300 truncate">
+                  {result.loginUrl}
+                </code>
+                <button
+                  onClick={copyLoginLink}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors flex-shrink-0",
+                    copied ? "text-green-400" : "text-slate-400 hover:text-white",
+                  )}
+                >
+                  {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <div className="bg-amber-950/40 border border-amber-800/50 rounded-xl p-3">
               <p className="text-xs text-amber-300 leading-relaxed">
-                <span className="font-semibold">Important:</span> Share these credentials securely (e.g., via encrypted email or secure messaging). 
-                The partner should change their password after first login.
+                Check the API server terminal for the invite log entry. In production, wire transactional email so credentials are never exposed in logs or responses.
               </p>
             </div>
 
@@ -179,7 +157,6 @@ export default function AdminPartnerInvite() {
           </div>
         )}
 
-        {/* Form */}
         {!result && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             {error && (
@@ -233,7 +210,7 @@ export default function AdminPartnerInvite() {
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Generate Partner Credentials
+                    Create Partner Account
                   </>
                 )}
               </Button>

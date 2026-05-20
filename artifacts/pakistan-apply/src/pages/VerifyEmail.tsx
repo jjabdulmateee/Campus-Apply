@@ -23,7 +23,7 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -49,14 +49,13 @@ export default function VerifyEmail() {
   const handleResend = async () => {
     setResending(true);
     try {
-      const authToken = localStorage.getItem("pakapp_token");
-      if (!authToken) {
+      if (!isAuthenticated) {
         toast({ title: "Please log in first to resend a verification email.", variant: "destructive" });
         return;
       }
       const res = await fetch(`${getApiBase()}/auth/send-verification`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${authToken}` },
+        credentials: "include",
       });
       if (res.ok) {
         setResent(true);
@@ -164,7 +163,7 @@ export default function VerifyEmail() {
               <div className="mt-6 flex flex-col gap-3">
                 <Button
                   onClick={handleResend}
-                  disabled={resending || resent || !localStorage.getItem("pakapp_token")}
+                  disabled={resending || resent || !isAuthenticated}
                   className="bg-sky-600 hover:bg-sky-700 w-full h-10 rounded-xl font-semibold gap-2"
                 >
                   {resending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}

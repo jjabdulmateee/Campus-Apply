@@ -3,14 +3,22 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "node ./scripts/ensure-pnpm.mjs",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "dev:api": "pnpm --filter @workspace/api-server run dev",
+    "dev:web": "pnpm --filter @workspace/pakistan-apply run dev",
+    "dev": "concurrently --names \"api,web\" --prefix-colors \"blue,magenta\" \"pnpm run dev:api\" \"pnpm run dev:web\"",
+    "db:push": "node ./scripts/db-push.mjs",
+    "db:generate": "node ./scripts/db-generate.mjs",
+    "db:migrate": "node ./scripts/db-migrate.mjs"
   },
   "private": true,
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2"
   }
 }

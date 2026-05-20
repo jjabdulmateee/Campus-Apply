@@ -43,6 +43,11 @@ export interface StudentProfile {
   middleName?: string;
   lastName: string;
   fatherName?: string;
+  motherName?: string;
+  motherOccupation?: string;
+  motherEducationLevel?: string;
+  householdIncomeTier?: string;
+  siblingCount?: number;
   dateOfBirth?: string;
   gender?: StudentProfileGender;
   cnicNumber?: string;
@@ -105,6 +110,11 @@ export interface UpsertStudentProfileBody {
   middleName?: string;
   lastName: string;
   fatherName?: string;
+  motherName?: string;
+  motherOccupation?: string;
+  motherEducationLevel?: string;
+  householdIncomeTier?: string;
+  siblingCount?: number;
   dateOfBirth?: string;
   gender?: UpsertStudentProfileBodyGender;
   cnicNumber?: string;
@@ -171,6 +181,8 @@ export interface AcademicRecord {
   passingYear: number;
   totalMarks?: number;
   obtainedMarks?: number;
+  fscPart1Marks?: number;
+  fscPart2Marks?: number;
   percentage?: number;
   gradeOrGpa?: string;
   subjects?: string;
@@ -223,6 +235,8 @@ export interface CreateAcademicRecordBody {
   passingYear: number;
   totalMarks?: number;
   obtainedMarks?: number;
+  fscPart1Marks?: number;
+  fscPart2Marks?: number;
   percentage?: number;
   gradeOrGpa?: string;
   subjects?: string;
@@ -720,6 +734,7 @@ export interface AdminApplicationRow {
   programName: string;
   studentName: string;
   aggregateScore: number;
+  fscPercentage?: string;
 }
 
 export type AdminApplicationsResponseStats = {

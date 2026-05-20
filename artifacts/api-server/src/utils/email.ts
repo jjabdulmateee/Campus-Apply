@@ -77,7 +77,106 @@ function getAppUrl(): string {
     const domain = process.env.REPLIT_DOMAINS.split(",")[0].trim();
     return `https://${domain}`;
   }
-  return "http://localhost:80";
+  return "http://localhost:3000";
+}
+
+/** Dev simulation: logs submission confirmation to the API terminal. */
+export async function sendApplicationSubmissionEmail({
+  to,
+  fullName,
+  universityName,
+  programName,
+}: {
+  to: string;
+  fullName: string;
+  universityName: string;
+  programName: string;
+}) {
+  const appUrl = getAppUrl();
+  const subject = `Application submitted — ${universityName}`;
+  const body = `Hi ${fullName},\n\nYour application to ${universityName} for ${programName} has been successfully submitted.\n\nTrack your status anytime at ${appUrl}/applications.\n\n— Campus Apply`;
+
+  console.log("\n========== APPLICATION SUBMISSION EMAIL ==========");
+  console.log(`To:      ${to}`);
+  console.log(`Subject: ${subject}`);
+  console.log("---");
+  console.log(body);
+  console.log("==================================================\n");
+
+  const hasSmtp =
+    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+  if (!hasSmtp) return;
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? "587"),
+    secure: Number(process.env.SMTP_PORT ?? "587") === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
+  await transporter.sendMail({
+    from: `Campus Apply <${from}>`,
+    to,
+    subject,
+    text: body,
+  });
+}
+
+/** Dev simulation: logs admission decision notification to the API terminal. */
+export async function sendApplicationDecisionEmail({
+  to,
+  fullName,
+  universityName,
+  programName,
+  status,
+  decisionReason,
+}: {
+  to: string;
+  fullName: string;
+  universityName: string;
+  programName: string;
+  status: "accepted" | "rejected" | "waitlisted" | "under_review";
+  decisionReason?: string | null;
+}) {
+  const appUrl = getAppUrl();
+  const statusLabels: Record<string, string> = {
+    accepted: "Accepted",
+    rejected: "Rejected",
+    waitlisted: "Waitlisted",
+    under_review: "Under Review",
+  };
+  const label = statusLabels[status] ?? status;
+  const subject =
+    status === "accepted"
+      ? `Congratulations! You've been accepted to ${universityName}`
+      : `Application decision — ${universityName}`;
+  const reasonLine = decisionReason ? `\nReason: ${decisionReason}` : "";
+  const body = `Hi ${fullName},\n\n${universityName} has updated your application for ${programName}.\n\nDecision: ${label}${reasonLine}\n\nView details at ${appUrl}/applications.\n\n— Campus Apply Admissions`;
+
+  console.log("\n========== APPLICATION DECISION EMAIL ==========");
+  console.log(`To:      ${to}`);
+  console.log(`Subject: ${subject}`);
+  console.log("---");
+  console.log(body);
+  console.log("=================================================\n");
+
+  const hasSmtp =
+    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+  if (!hasSmtp) return;
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? "587"),
+    secure: Number(process.env.SMTP_PORT ?? "587") === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
+  await transporter.sendMail({
+    from: `Campus Apply <${from}>`,
+    to,
+    subject,
+    text: body,
+  });
 }
 
 export async function sendRecommendationInvite({

@@ -20,8 +20,10 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      setLocation("/dashboard");
+      const u = await login(email, password);
+      if (u.role === "admin") setLocation("/admin/dashboard");
+      else if (u.role === "counselor") setLocation("/counselor");
+      else setLocation("/dashboard");
     } catch (err) {
       setError((err as Error).message || "Login failed");
     } finally {
@@ -66,7 +68,12 @@ export default function Login() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password</Label>
+                <Link href="/forgot-password" className="text-xs text-sky-600 hover:text-sky-700 font-medium">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <Input
                   id="password"

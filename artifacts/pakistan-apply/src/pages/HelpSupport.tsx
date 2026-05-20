@@ -312,7 +312,6 @@ function ContactTab({ onSubmitted }: { onSubmitted: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
@@ -326,7 +325,8 @@ function ContactTab({ onSubmitted }: { onSubmitted: () => void }) {
     try {
       const res = await fetch("/api/support/tickets", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       const json = await res.json();

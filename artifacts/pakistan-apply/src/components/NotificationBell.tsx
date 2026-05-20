@@ -22,27 +22,24 @@ interface NotificationsResponse {
 }
 
 async function fetchNotifications(): Promise<NotificationsResponse> {
-  const token = localStorage.getItem("pakapp_token");
   const res = await fetch("/api/notifications", {
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch notifications");
   return res.json();
 }
 
 async function markAllRead(): Promise<void> {
-  const token = localStorage.getItem("pakapp_token");
   await fetch("/api/notifications/read-all", {
     method: "PUT",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 }
 
 async function markOneRead(id: number): Promise<void> {
-  const token = localStorage.getItem("pakapp_token");
   await fetch(`/api/notifications/${id}/read`, {
     method: "PUT",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 }
 

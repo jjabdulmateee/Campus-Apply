@@ -11,7 +11,13 @@ import {
   universitiesTable,
   programsTable,
   userCollegesTable,
+  usersTable,
 } from "@workspace/db";
+import { sendApplicationSubmissionEmail } from "../utils/email";
+import {
+  submitApplicationBundle,
+  ApplicationSyncError,
+} from "../lib/applicationSync";
 import {
   UpdateMyProfileBody,
   AddAcademicRecordBody,
@@ -37,6 +43,7 @@ import {
 } from "@workspace/api-zod";
 import { eq, and, desc } from "drizzle-orm";
 import { verifyJWT, getStudentId } from "../middleware/auth";
+import { assertApplicationSectionsEditable } from "../middleware/lockSubmitted";
 
 const router = Router();
 router.use(verifyJWT);
@@ -122,8 +129,27 @@ function computeSections(
     {
       name: "Family",
       slug: "family",
-      isComplete: !!profile?.fatherName,
-      completionPercent: profile?.fatherName ? 100 : 0,
+      isComplete: !!(
+        profile?.motherName?.trim() &&
+        profile?.motherOccupation?.trim() &&
+        profile?.motherEducationLevel?.trim() &&
+        profile?.householdIncomeTier?.trim() &&
+        profile?.siblingCount !== null &&
+        profile?.siblingCount !== undefined
+      ),
+      completionPercent: (() => {
+        const fields = [
+          profile?.motherName,
+          profile?.motherOccupation,
+          profile?.motherEducationLevel,
+          profile?.householdIncomeTier,
+          profile?.siblingCount !== null && profile?.siblingCount !== undefined
+            ? String(profile.siblingCount)
+            : null,
+        ];
+        const filled = fields.filter((f) => f && String(f).trim()).length;
+        return Math.round((filled / fields.length) * 100);
+      })(),
     },
     {
       name: "Education",
@@ -209,7 +235,7 @@ router.get("/me/profile", async (req, res) => {
   res.json({ ...profile, profileCompletionPercent: completion });
 });
 
-router.put("/me/profile", async (req, res) => {
+router.put("/me/profile", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const body = UpdateMyProfileBody.parse(req.body);
   const existing = await db.query.studentProfilesTable.findFirst({
@@ -266,7 +292,7 @@ router.get("/me/academics", async (req, res) => {
   res.json(records);
 });
 
-router.post("/me/academics", async (req, res) => {
+router.post("/me/academics", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const body = AddAcademicRecordBody.parse(req.body);
   const { percentage, ...rest } = body;
@@ -277,7 +303,7 @@ router.post("/me/academics", async (req, res) => {
   res.status(201).json(record);
 });
 
-router.put("/me/academics/:recordId", async (req, res) => {
+router.put("/me/academics/:recordId", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const { recordId } = UpdateAcademicRecordParams.parse(req.params);
   const body = UpdateAcademicRecordBody.parse(req.body);
@@ -295,7 +321,7 @@ router.put("/me/academics/:recordId", async (req, res) => {
   res.json(updated);
 });
 
-router.delete("/me/academics/:recordId", async (req, res) => {
+router.delete("/me/academics/:recordId", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const { recordId } = DeleteAcademicRecordParams.parse(req.params);
   await db
@@ -427,7 +453,7 @@ router.get("/me/essays", async (req, res) => {
   res.json(withWordCount);
 });
 
-router.post("/me/essays", async (req, res) => {
+router.post("/me/essays", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const body = CreateEssayBody.parse(req.body);
   const [essay] = await db
@@ -437,7 +463,7 @@ router.post("/me/essays", async (req, res) => {
   res.status(201).json(essay);
 });
 
-router.put("/me/essays/:essayId", async (req, res) => {
+router.put("/me/essays/:essayId", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const { essayId } = UpdateEssayParams.parse(req.params);
   const body = UpdateEssayBody.parse(req.body);
@@ -451,7 +477,7 @@ router.put("/me/essays/:essayId", async (req, res) => {
   res.json(updated);
 });
 
-router.delete("/me/essays/:essayId", async (req, res) => {
+router.delete("/me/essays/:essayId", assertApplicationSectionsEditable, async (req, res) => {
   const sid = getStudentId(req);
   const { essayId } = DeleteEssayParams.parse(req.params);
   await db
@@ -680,6 +706,7 @@ router.patch("/me/colleges/:universityId", async (req, res) => {
 const SubmitCollegeParams = z.object({ universityId: z.coerce.number() });
 const CollegeSubmitBodySchema = z.object({
   signature: z.string().min(2),
+  programId: z.number().int().positive().optional(),
   paymentSimulated: z.boolean().optional(),
 });
 
@@ -739,7 +766,7 @@ router.get("/me/colleges/:universityId/validate", async (req, res) => {
 router.post("/me/colleges/:universityId/submit", async (req, res) => {
   const sid = getStudentId(req);
   const { universityId } = SubmitCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
-  const { signature } = CollegeSubmitBodySchema.parse(req.body);
+  const { signature, programId } = CollegeSubmitBodySchema.parse(req.body);
 
   const [college] = await db
     .select()
@@ -768,6 +795,7 @@ router.post("/me/colleges/:universityId/submit", async (req, res) => {
     return;
   }
 
+  const submittedAt = new Date();
   const payload = JSON.stringify({
     profile,
     tests,
@@ -775,14 +803,32 @@ router.post("/me/colleges/:universityId/submit", async (req, res) => {
       ...e,
       wordCount: e.content ? e.content.trim().split(/\s+/).filter(Boolean).length : 0,
     })),
-    snapshotAt: new Date().toISOString(),
+    snapshotAt: submittedAt.toISOString(),
   });
 
+  let syncResult: { applicationId: number; programId: number };
+  try {
+    syncResult = await submitApplicationBundle({
+      studentId: sid,
+      universityId,
+      programId,
+      submittedAt,
+      collegePayload: payload,
+      collegeSignature: signature,
+    });
+  } catch (err) {
+    if (err instanceof ApplicationSyncError && err.code === "NO_PROGRAM") {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+
   const [updated] = await db
-    .update(userCollegesTable)
-    .set({ status: "submitted", payload, signature, submittedAt: new Date(), updatedAt: new Date() })
+    .select()
+    .from(userCollegesTable)
     .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
-    .returning();
+    .limit(1);
 
   const [uni] = await db
     .select()
@@ -790,7 +836,30 @@ router.post("/me/colleges/:universityId/submit", async (req, res) => {
     .where(eq(universitiesTable.id, universityId))
     .limit(1);
 
-  res.json({ ...updated, university: uni ?? null });
+  const [prog] = await db
+    .select({ name: programsTable.name })
+    .from(programsTable)
+    .where(eq(programsTable.id, syncResult.programId))
+    .limit(1);
+
+  const studentUser = await db.query.usersTable.findFirst({
+    where: eq(usersTable.studentId, sid),
+  });
+  if (studentUser?.email && profile) {
+    sendApplicationSubmissionEmail({
+      to: studentUser.email,
+      fullName: [profile.firstName, profile.lastName].filter(Boolean).join(" ") || studentUser.fullName,
+      universityName: uni?.name ?? "University",
+      programName: prog?.name ?? "Program",
+    }).catch(() => {});
+  }
+
+  res.json({
+    ...(updated ?? college),
+    applicationId: syncResult.applicationId,
+    programId: syncResult.programId,
+    university: uni ?? null,
+  });
 });
 
 export default router;

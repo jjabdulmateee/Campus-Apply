@@ -9,7 +9,7 @@ export const ticketCategoryEnum = pgEnum("ticket_category", [
   "other",
 ]);
 
-export const userRoleEnum = pgEnum("user_role", ["student", "admin"]);
+export const userRoleEnum = pgEnum("user_role", ["student", "admin", "counselor"]);
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -19,10 +19,14 @@ export const usersTable = pgTable("users", {
   mobileNumber: text("mobile_number"),
   studentId: text("student_id").unique(),
   role: userRoleEnum("role").notNull().default("student"),
+  /** When set on an admin account, limits the queue to this university only. */
+  universityId: integer("university_id"),
   avatarUrl: text("avatar_url"),
   emailVerified: boolean("email_verified").notNull().default(false),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetTokenExpiry: timestamp("password_reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -120,3 +124,14 @@ export const notificationsTable = pgTable("notifications", {
 
 export type Notification = typeof notificationsTable.$inferSelect;
 export type InsertNotification = typeof notificationsTable.$inferInsert;
+
+/** Students who assigned a high-school counselor to their application. */
+export const counselorAssignmentsTable = pgTable("counselor_assignments", {
+  id: serial("id").primaryKey(),
+  counselorUserId: integer("counselor_user_id").notNull(),
+  studentId: text("student_id").notNull(),
+  schoolReportObjectPath: text("school_report_object_path"),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+export type CounselorAssignment = typeof counselorAssignmentsTable.$inferSelect;

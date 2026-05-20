@@ -26,6 +26,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         setProgress(10);
         const urlRes = await fetch("/api/storage/uploads/request-url", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: file.name,

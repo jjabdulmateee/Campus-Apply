@@ -26,6 +26,7 @@ import {
   TrendingUp,
   BadgeCheck,
   UserPlus,
+  Download,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { downloadApplicationsCsv } from "@/lib/exportCsv";
 
 type AdminTab = "applications" | "tickets";
 
@@ -74,6 +76,7 @@ function fmtDateShort(iso: string | null | undefined) {
 }
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<AdminTab>("applications");
 
   // Applications state
@@ -112,6 +115,18 @@ export default function AdminDashboard() {
     acc[a.status] = (acc[a.status] ?? 0) + 1;
     return acc;
   }, {});
+
+  const handleExportCsv = () => {
+    if (applications.length === 0) {
+      toast({ title: "No applications to export", variant: "destructive" });
+      return;
+    }
+    const prefix = selectedUni
+      ? `applications-${selectedUni.name.replace(/\s+/g, "-").toLowerCase()}`
+      : "applications-all";
+    downloadApplicationsCsv(applications, prefix);
+    toast({ title: `Exported ${applications.length} application${applications.length === 1 ? "" : "s"} to CSV` });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -277,6 +292,17 @@ export default function AdminDashboard() {
                     Clear filters
                   </Button>
                 )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCsv}
+                  disabled={isLoading || applications.length === 0}
+                  className="h-9 text-sm gap-1.5 ml-auto border-slate-200"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export to CSV
+                </Button>
               </div>
 
               {/* Quick status filter pills */}
@@ -550,7 +576,6 @@ function TicketRow({
     (ticket.status as "open" | "in_progress" | "resolved") ?? "resolved",
   );
   const [saving, setSaving] = useState(false);
-  const token = localStorage.getItem("pakapp_token");
 
   const handleReply = async () => {
     if (!reply.trim()) { toast({ title: "Reply cannot be empty", variant: "destructive" }); return; }
@@ -558,7 +583,8 @@ function TicketRow({
     try {
       const res = await fetch(`/api/admin/support/tickets/${ticket.id}/reply`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reply, status: replyStatus }),
       });
       const json = await res.json();

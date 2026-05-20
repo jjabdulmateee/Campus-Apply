@@ -2,11 +2,14 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
-import { usersTable, studentProfilesTable, universitiesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { usersTable, studentProfilesTable, universitiesTable, counselorAssignmentsTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { JWT_SECRET, verifyJWT } from "../middleware/auth";
+import { authRateLimiter } from "../middleware/rateLimit";
+import { setAuthCookie, clearAuthCookie } from "../lib/sessionCookie";
 import { sendVerificationEmail } from "../utils/email";
+import { isProduction } from "../lib/env";
 
 const router = Router();
 
@@ -27,7 +30,8 @@ function makeToken(user: {
   studentId: string | null;
   email: string;
   fullName: string;
-  role: "student" | "admin";
+  role: "student" | "admin" | "counselor";
+  universityId?: number | null;
 }) {
   return jwt.sign(
     {
@@ -36,6 +40,7 @@ function makeToken(user: {
       email: user.email,
       fullName: user.fullName,
       role: user.role,
+      universityId: user.universityId ?? null,
     },
     JWT_SECRET,
     { expiresIn: "30d" },
@@ -46,6 +51,8 @@ function makeToken(user: {
 async function seedDemoAccounts() {
   const DEMO_STUDENT_EMAIL = "student@pakmail.pk";
   const DEMO_ADMIN_EMAIL = "admin@pakmail.pk";
+  const DEMO_COUNSELOR_EMAIL = "counselor@pakmail.pk";
+  const DEMO_LUMS_ADMIN_EMAIL = "lumsadmin@pakmail.pk";
 
   let existingStudent = await db.query.usersTable.findFirst({
     where: eq(usersTable.email, DEMO_STUDENT_EMAIL),
@@ -107,6 +114,58 @@ async function seedDemoAccounts() {
       .where(eq(usersTable.email, DEMO_ADMIN_EMAIL));
   }
 
+  const lums = await db.query.universitiesTable.findFirst({
+    where: eq(universitiesTable.shortName, "LUMS"),
+  });
+
+  const existingLumsAdmin = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, DEMO_LUMS_ADMIN_EMAIL),
+  });
+  if (!existingLumsAdmin) {
+    const hash = await bcrypt.hash("lumsadmin123", 12);
+    await db.insert(usersTable).values({
+      email: DEMO_LUMS_ADMIN_EMAIL,
+      passwordHash: hash,
+      fullName: "LUMS Admissions Admin",
+      studentId: null,
+      role: "admin",
+      universityId: lums?.id ?? null,
+    });
+  }
+
+  let existingCounselor = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, DEMO_COUNSELOR_EMAIL),
+  });
+  if (!existingCounselor) {
+    const hash = await bcrypt.hash("counselor123", 12);
+    const [counselor] = await db
+      .insert(usersTable)
+      .values({
+        email: DEMO_COUNSELOR_EMAIL,
+        passwordHash: hash,
+        fullName: "Demo Counselor",
+        studentId: null,
+        role: "counselor",
+      })
+      .returning();
+    existingCounselor = counselor;
+  }
+
+  if (existingStudent?.studentId && existingCounselor) {
+    const assignment = await db.query.counselorAssignmentsTable.findFirst({
+      where: and(
+        eq(counselorAssignmentsTable.counselorUserId, existingCounselor.id),
+        eq(counselorAssignmentsTable.studentId, existingStudent.studentId),
+      ),
+    });
+    if (!assignment) {
+      await db.insert(counselorAssignmentsTable).values({
+        counselorUserId: existingCounselor.id,
+        studentId: existingStudent.studentId,
+      });
+    }
+  }
+
 }
 
 /** Update university filter metadata (runs once on startup) */
@@ -149,13 +208,15 @@ let seeded = false;
 router.use(async (_req, _res, next) => {
   if (!seeded) {
     seeded = true;
-    await seedDemoAccounts().catch(() => {});
+    if (!isProduction()) {
+      await seedDemoAccounts().catch(() => {});
+    }
     await ensureUniversityMetadata().catch(() => {});
   }
   next();
 });
 
-router.post("/register", async (req, res) => {
+router.post("/register", authRateLimiter, async (req, res) => {
   try {
     const { fullName, email, mobileNumber, password } = RegisterBody.parse(req.body);
     const normalizedEmail = email.toLowerCase().trim();
@@ -196,7 +257,8 @@ router.post("/register", async (req, res) => {
       phoneNumber: mobileNumber ?? null,
     });
 
-    const token = makeToken({ ...user, studentId, role: "student" });
+    const sessionToken = makeToken({ ...user, studentId, role: "student" });
+    setAuthCookie(res, sessionToken);
 
     const verifyToken = crypto.randomUUID();
     const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -208,7 +270,6 @@ router.post("/register", async (req, res) => {
     sendVerificationEmail({ to: normalizedEmail, fullName, token: verifyToken }).catch(() => {});
 
     return res.status(201).json({
-      token,
       user: { id: user.id, email: normalizedEmail, fullName, studentId, role: "student" },
     });
   } catch (err) {
@@ -219,7 +280,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", authRateLimiter, async (req, res) => {
   try {
     const { email, password } = LoginBody.parse(req.body);
     const normalizedEmail = email.toLowerCase().trim();
@@ -236,16 +297,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = makeToken(user);
+    const sessionToken = makeToken(user);
+    setAuthCookie(res, sessionToken);
 
     return res.json({
-      token,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
         studentId: user.studentId,
         role: user.role,
+        universityId: user.universityId ?? null,
       },
     });
   } catch (err) {
@@ -256,8 +318,110 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/me", verifyJWT, (req, res) => {
-  res.json(req.user);
+router.get("/me", verifyJWT, async (req, res) => {
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.id, req.user!.userId),
+  });
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  return res.json({
+    id: user.id,
+    userId: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    studentId: user.studentId,
+    role: user.role,
+    universityId: user.universityId ?? null,
+  });
+});
+
+const ForgotPasswordBody = z.object({
+  email: z.string().email("Valid email required"),
+});
+
+const ResetPasswordBody = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+/** POST /api/auth/logout — clear the HttpOnly session cookie */
+router.post("/logout", (_req, res) => {
+  clearAuthCookie(res);
+  return res.json({ ok: true });
+});
+
+/** POST /api/auth/forgot-password — generate reset token (logged to console in dev) */
+router.post("/forgot-password", authRateLimiter, async (req, res) => {
+  try {
+    const { email } = ForgotPasswordBody.parse(req.body);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.email, normalizedEmail),
+    });
+
+    if (user) {
+      const resetToken = crypto.randomUUID();
+      const expiry = new Date(Date.now() + 60 * 60 * 1000);
+      await db
+        .update(usersTable)
+        .set({ passwordResetToken: resetToken, passwordResetTokenExpiry: expiry })
+        .where(eq(usersTable.id, user.id));
+
+      const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+      const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
+      console.log("\n========== PASSWORD RESET LINK ==========");
+      console.log(resetLink);
+      console.log("=========================================\n");
+    }
+
+    return res.json({
+      ok: true,
+      message: "If an account exists for that email, a reset link has been sent.",
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: err.errors[0].message });
+    }
+    throw err;
+  }
+});
+
+/** POST /api/auth/reset-password — set new password using reset token */
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = ResetPasswordBody.parse(req.body);
+
+    const user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.passwordResetToken, token),
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    if (user.passwordResetTokenExpiry && user.passwordResetTokenExpiry < new Date()) {
+      return res.status(410).json({ error: "Reset link has expired. Please request a new one." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await db
+      .update(usersTable)
+      .set({
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpiry: null,
+      })
+      .where(eq(usersTable.id, user.id));
+
+    return res.json({ ok: true, message: "Password updated successfully" });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: err.errors[0].message });
+    }
+    throw err;
+  }
 });
 
 /** POST /api/auth/send-verification — send (or resend) verification email to the logged-in user */

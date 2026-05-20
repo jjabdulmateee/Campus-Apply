@@ -25,6 +25,7 @@ interface SubmitModalProps {
   universityId: number;
   universityName: string;
   feeRequired: boolean | null | undefined;
+  programId?: number;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -92,6 +93,7 @@ export default function SubmitModal({
   universityId,
   universityName,
   feeRequired,
+  programId,
   onClose,
   onSuccess,
 }: SubmitModalProps) {
@@ -137,7 +139,14 @@ export default function SubmitModal({
       toast({ title: "Please type your full name to sign", variant: "destructive" });
       return;
     }
-    submit({ universityId, data: { signature: signature.trim(), paymentSimulated: paymentDone } });
+    submit({
+      universityId,
+      data: {
+        signature: signature.trim(),
+        paymentSimulated: paymentDone,
+        ...(programId ? { programId } : {}),
+      },
+    });
   }
 
   if (submitted) {

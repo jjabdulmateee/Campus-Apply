@@ -28,6 +28,9 @@ import AdminApplicationDetail from "@/pages/AdminApplicationDetail";
 import RecommendationPortal from "@/pages/RecommendationPortal";
 import AcceptanceLetter from "@/pages/AcceptanceLetter";
 import AdminPartnerInvite from "@/pages/AdminPartnerInvite";
+import CounselorDashboard from "@/pages/CounselorDashboard";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
@@ -87,11 +90,36 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   return <Component />;
 }
 
+function CounselorRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isCounselor, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated) setLocation("/login");
+      else if (!isCounselor) setLocation("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, isCounselor, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-emerald-50">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !isCounselor) return null;
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/register" component={Register} />
       <Route path="/role-selection" component={RoleSelection} />
       <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
@@ -115,6 +143,7 @@ function Router() {
       <Route path="/admin/partners/invite">{() => <AdminRoute component={AdminPartnerInvite} />}</Route>
       <Route path="/acceptance-letter/:id">{() => <ProtectedRoute component={AcceptanceLetter} />}</Route>
       <Route path="/recommendation-portal" component={RecommendationPortal} />
+      <Route path="/counselor">{() => <CounselorRoute component={CounselorDashboard} />}</Route>
       <Route path="/verify-email" component={VerifyEmail} />
       <Route component={NotFound} />
     </Switch>

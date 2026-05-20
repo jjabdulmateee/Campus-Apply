@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
-import { cn } from "@/lib/utils";
+import { cn, storageObjectUrl } from "@/lib/utils";
 import { useGetMyDashboard, type DashboardSummary } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -45,9 +45,9 @@ const sidebarTree = [
   {
     key: "family",
     label: "Family",
-    href: "/profile?step=demographics",
+    href: "/profile?step=family",
     children: [
-      { label: "Background", href: "/profile?step=demographics" },
+      { label: "Household", href: "/profile?step=family" },
       { label: "Guardian / Parent", href: "/profile?step=guardian" },
     ],
   },
@@ -90,8 +90,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const [, setLocation] = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setLocation("/login");
   };
 
@@ -157,7 +157,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             <div className="w-10 h-10 rounded-full bg-sky-200 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-white shadow-sm">
               {user?.avatarUrl ? (
                 <img
-                  src={`/api/storage/objects/${user.avatarUrl}`}
+                  src={storageObjectUrl(user.avatarUrl) ?? undefined}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
@@ -210,10 +210,10 @@ const SLUG_MAP: Record<string, string[]> = {
   profile: ["profile"],
   family: ["family"],
   education: ["education"],
-  testing: ["test"],
-  activities: ["activity"],
-  writing: ["essay"],
-  courses: ["course", "grade"],
+  testing: ["testing", "test"],
+  activities: ["activities", "activity"],
+  writing: ["writing", "essay"],
+  courses: ["courses", "course", "grade"],
 };
 
 const COURSE_CHILDREN = [
