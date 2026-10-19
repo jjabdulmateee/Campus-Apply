@@ -38,6 +38,7 @@ export default function ForgotPassword() {
           <Link href="/login" className="inline-flex items-center gap-1 text-sm text-sky-600 hover:text-sky-700 mb-4">
             <ArrowLeft className="w-4 h-4" /> Back to sign in
           </Link>
+          <div className="text-2xl font-bold text-sky-700 tracking-tight mb-3">Campus Apply</div>
           <h1 className="text-2xl font-bold text-slate-900">Forgot password</h1>
           <p className="mt-1 text-sm text-slate-500">
             Enter your email and we&apos;ll send a reset link (logged to the API terminal in dev).

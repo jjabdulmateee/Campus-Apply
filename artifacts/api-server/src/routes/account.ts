@@ -21,6 +21,11 @@ import {
   prepareLocalUpload,
 } from "../lib/localDiskStorage";
 import { ObjectStorageService } from "../lib/objectStorage";
+import {
+  registerUpload,
+  assertUploadOwnedBy,
+  UploadOwnershipError,
+} from "../lib/uploadRegistry";
 
 const router = Router();
 router.use(verifyJWT);
@@ -152,13 +157,21 @@ router.post("/avatar/request-url", async (req, res) => {
     let objectPath: string;
 
     if (isLocalStorageBackend()) {
-      const prepared = await prepareLocalUpload();
+      const prepared = await prepareLocalUpload(req.user!.userId);
       uploadURL = prepared.uploadURL;
       objectPath = prepared.objectPath;
     } else {
       uploadURL = await gcsStorage.getObjectEntityUploadURL();
       objectPath = gcsStorage.normalizeObjectEntityPath(uploadURL);
     }
+
+    await registerUpload({
+      objectPath,
+      uploaderUserId: req.user!.userId,
+      purpose: "avatar",
+      contentType,
+      sizeBytes: size,
+    });
 
     res.json({ uploadURL, objectPath });
   } catch (err) {
@@ -175,11 +188,14 @@ router.put("/avatar", async (req, res) => {
     const { objectPath } = schema.parse(req.body);
     const userId = req.user!.userId;
 
+    await assertUploadOwnedBy(objectPath, userId);
+
     await db.update(usersTable).set({ avatarUrl: objectPath }).where(eq(usersTable.id, userId));
 
     res.json({ avatarUrl: objectPath });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
+    if (err instanceof UploadOwnershipError) { res.status(err.status).json({ error: err.message }); return; }
     req.log.error({ err }, "avatar save error");
     res.status(500).json({ error: "Internal server error" });
   }

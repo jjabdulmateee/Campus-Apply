@@ -37,17 +37,17 @@ export async function sendVerificationEmail({
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
 
   await transporter.sendMail({
-    from: `PakApply <${from}>`,
+    from: `Campus Apply <${from}>`,
     to,
-    subject: "Verify your PakApply email address",
+    subject: "Verify your Campus Apply email address",
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f0f9ff;border-radius:12px;">
         <div style="background:#fff;border-radius:12px;padding:32px;">
-          <h1 style="color:#0284c7;margin:0 0 8px;">PakApply</h1>
+          <h1 style="color:#0284c7;margin:0 0 8px;">Campus Apply</h1>
           <p style="color:#64748b;font-size:13px;margin:0 0 24px;">Pakistan's College Application Portal</p>
           <p style="color:#1e293b;">Hi ${fullName},</p>
           <p style="color:#334155;line-height:1.6;">
-            Welcome to PakApply! Please verify your email address to activate your account.
+            Welcome to Campus Apply! Please verify your email address to activate your account.
             This link will expire in <strong>24 hours</strong>.
           </p>
           <div style="text-align:center;margin:32px 0;">
@@ -59,7 +59,7 @@ export async function sendVerificationEmail({
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:24px;">
             <p style="color:#92400e;font-size:13px;margin:0;">
-              If you did not create a PakApply account, you can safely ignore this email.
+              If you did not create a Campus Apply account, you can safely ignore this email.
             </p>
           </div>
           <p style="color:#94a3b8;font-size:12px;">
@@ -216,18 +216,18 @@ export async function sendRecommendationInvite({
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
 
   await transporter.sendMail({
-    from: `PakApply <${from}>`,
+    from: `Campus Apply <${from}>`,
     to,
-    subject: `${studentName} has invited you to submit a recommendation on PakApply`,
+    subject: `${studentName} has invited you to submit a recommendation on Campus Apply`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f0f9ff;border-radius:12px;">
         <div style="background:#fff;border-radius:12px;padding:32px;">
-          <h1 style="color:#0284c7;margin:0 0 8px;">PakApply</h1>
+          <h1 style="color:#0284c7;margin:0 0 8px;">Campus Apply</h1>
           <p style="color:#64748b;font-size:13px;margin:0 0 24px;">Pakistan's College Application Portal</p>
           <p style="color:#1e293b;">Dear ${teacherName},</p>
           <p style="color:#334155;line-height:1.6;">
             <strong>${studentName}</strong> has requested a letter of recommendation from you
-            through PakApply. This takes only a few minutes to complete.
+            through Campus Apply. This takes only a few minutes to complete.
           </p>
           <div style="text-align:center;margin:32px 0;">
             <a href="${portalUrl}"

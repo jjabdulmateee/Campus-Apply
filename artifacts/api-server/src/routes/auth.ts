@@ -9,7 +9,7 @@ import { JWT_SECRET, verifyJWT } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearAuthCookie } from "../lib/sessionCookie";
 import { sendVerificationEmail } from "../utils/email";
-import { isProduction } from "../lib/env";
+import { isDemoSeedingEnabled } from "../lib/env";
 
 const router = Router();
 
@@ -47,7 +47,10 @@ function makeToken(user: {
   );
 }
 
-/** Seed the demo student and admin accounts on first call. */
+/**
+ * Seed the demo student / admin / counselor accounts.
+ * Only runs when SEED_DEMO_ACCOUNTS=true outside production — see lib/env.ts.
+ */
 async function seedDemoAccounts() {
   const DEMO_STUDENT_EMAIL = "student@pakmail.pk";
   const DEMO_ADMIN_EMAIL = "admin@pakmail.pk";
@@ -208,7 +211,7 @@ let seeded = false;
 router.use(async (_req, _res, next) => {
   if (!seeded) {
     seeded = true;
-    if (!isProduction()) {
+    if (isDemoSeedingEnabled()) {
       await seedDemoAccounts().catch(() => {});
     }
     await ensureUniversityMetadata().catch(() => {});

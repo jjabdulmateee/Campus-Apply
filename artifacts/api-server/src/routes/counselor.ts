@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { verifyJWT } from "../middleware/auth";
+import { assertUploadOwnedBy, UploadOwnershipError } from "../lib/uploadRegistry";
 
 const router = Router();
 
@@ -94,6 +95,16 @@ router.post("/students/:studentId/school-report", async (req, res) => {
   }
 
   const { objectPath, fileName, fileSize, mimeType } = body.data;
+
+  try {
+    await assertUploadOwnedBy(objectPath, counselorUserId);
+  } catch (err) {
+    if (err instanceof UploadOwnershipError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
 
   await db.insert(documentsTable).values({
     studentId,

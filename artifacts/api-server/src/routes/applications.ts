@@ -4,18 +4,11 @@ import {
   applicationsTable,
   universitiesTable,
   programsTable,
-  studentProfilesTable,
-  academicRecordsTable,
-  testScoresTable,
-  activitiesTable,
-  essaysTable,
   applicationAnswersTable,
   userCollegesTable,
-  usersTable,
 } from "@workspace/db";
 import {
   CreateApplicationBody,
-  UpdateApplicationBody,
   UpdateApplicationParams,
   GetApplicationParams,
   WithdrawApplicationParams,
@@ -23,14 +16,16 @@ import {
 } from "@workspace/api-zod";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { verifyJWT, getStudentId } from "../middleware/auth";
-import { sendApplicationSubmissionEmail } from "../utils/email";
+import { requireStudent, getStudentId } from "../middleware/auth";
 import {
-  syncUserCollegeSubmitted,
-} from "../lib/applicationSync";
+  getOwnedApplication,
+  validateApplication,
+  submitApplication,
+  SubmissionError,
+} from "../lib/submission";
 
 const router = Router();
-router.use(verifyJWT);
+router.use(requireStudent);
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
 router.get("/summary", async (req, res) => {
@@ -79,13 +74,32 @@ router.get("/", async (req, res) => {
 });
 
 // ─── Create ───────────────────────────────────────────────────────────────────
+/**
+ * Idempotent: if the student already has a live application for this
+ * university + program it is returned instead of creating a duplicate, so a
+ * single canonical row reaches the admin queue.
+ */
 router.post("/", async (req, res) => {
   const sid = getStudentId(req);
   const body = CreateApplicationBody.parse(req.body);
-  const [app] = await db
-    .insert(applicationsTable)
-    .values({ ...body, studentId: sid, status: "draft" })
-    .returning();
+
+  const existing = await db.query.applicationsTable.findFirst({
+    where: and(
+      eq(applicationsTable.studentId, sid),
+      eq(applicationsTable.universityId, body.universityId),
+      eq(applicationsTable.programId, body.programId),
+    ),
+  });
+
+  let app = existing;
+  let created = false;
+  if (!app || app.status === "withdrawn") {
+    [app] = await db
+      .insert(applicationsTable)
+      .values({ ...body, studentId: sid, status: "draft" })
+      .returning();
+    created = true;
+  }
 
   const uni = await db.query.universitiesTable.findFirst({
     where: eq(universitiesTable.id, body.universityId),
@@ -94,7 +108,7 @@ router.post("/", async (req, res) => {
     where: eq(programsTable.id, body.programId),
   });
 
-  res.status(201).json({
+  res.status(created ? 201 : 200).json({
     ...app,
     universityName: uni?.name ?? "Unknown University",
     programName: prog?.name ?? "Unknown Program",
@@ -106,75 +120,35 @@ router.get("/:applicationId/review", async (req, res) => {
   const sid = getStudentId(req);
   const { applicationId } = GetApplicationParams.parse(req.params);
 
-  const app = await db.query.applicationsTable.findFirst({
-    where: and(
-      eq(applicationsTable.id, applicationId),
-      eq(applicationsTable.studentId, sid),
-    ),
-  });
-  if (!app) {
-    res.status(404).json({ error: "Application not found" });
-    return;
+  let app;
+  try {
+    app = await getOwnedApplication(sid, applicationId);
+  } catch (err) {
+    if (err instanceof SubmissionError) {
+      res.status(err.httpStatus).json({ error: err.message });
+      return;
+    }
+    throw err;
   }
 
-  const [uni, prog, student, academics, tests, activities, essays, answers] =
-    await Promise.all([
-      db.query.universitiesTable.findFirst({
-        where: eq(universitiesTable.id, app.universityId),
-      }),
-      db.query.programsTable.findFirst({
-        where: eq(programsTable.id, app.programId),
-      }),
-      db.query.studentProfilesTable.findFirst({
-        where: eq(studentProfilesTable.studentId, sid),
-      }),
-      db.select().from(academicRecordsTable).where(eq(academicRecordsTable.studentId, sid)),
-      db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
-      db.select().from(activitiesTable).where(eq(activitiesTable.studentId, sid)),
-      db.select().from(essaysTable).where(eq(essaysTable.studentId, sid)),
-      db.select().from(applicationAnswersTable).where(
-        and(
-          eq(applicationAnswersTable.applicationId, applicationId),
-          eq(applicationAnswersTable.studentId, sid),
-        ),
-      ),
-    ]);
-
-  const psEssay = essays.find((e) => e.type === "personal_statement");
-  const psWords = psEssay?.content
-    ? psEssay.content.trim().split(/\s+/).filter(Boolean).length
-    : 0;
-
-  const missing: string[] = [];
-  if (!student?.firstName || !student?.lastName)
-    missing.push("Complete your personal profile (name required)");
-  if (academics.length === 0)
-    missing.push("Add at least one education record");
-  if (tests.length === 0)
-    missing.push("Add at least one test score");
-  if (psWords < 100)
-    missing.push("Write a personal statement (at least 100 words)");
+  const { validation, packet, university, program } = await validateApplication(sid, app);
 
   res.json({
     application: {
       ...app,
-      universityName: uni?.name ?? "Unknown",
-      programName: prog?.name ?? "Unknown",
+      universityName: university?.name ?? "Unknown",
+      programName: program?.name ?? "Unknown",
     },
-    university: uni ?? null,
-    program: prog ?? null,
-    student: student ?? null,
-    academics,
-    tests,
-    activities,
-    essays: essays.map((e) => ({
-      ...e,
-      wordCount: e.content
-        ? e.content.trim().split(/\s+/).filter(Boolean).length
-        : 0,
-    })),
-    answers,
-    validation: { canSubmit: missing.length === 0, missing },
+    university,
+    program,
+    student: packet.profile,
+    academics: packet.academics,
+    tests: packet.tests,
+    activities: packet.activities,
+    essays: packet.essays,
+    answers: packet.answers,
+    documents: packet.documents,
+    validation,
   });
 });
 
@@ -300,13 +274,34 @@ router.get("/:applicationId", async (req, res) => {
 });
 
 // ─── Update ───────────────────────────────────────────────────────────────────
+/**
+ * Students may only edit free-text notes here. Status transitions are owned by
+ * the submit/withdraw endpoints (student) and /api/admin/.../decision (admin).
+ */
+const StudentUpdateApplicationBody = z.object({
+  notes: z.string().optional(),
+});
+
 router.put("/:applicationId", async (req, res) => {
   const sid = getStudentId(req);
   const { applicationId } = UpdateApplicationParams.parse(req.params);
-  const body = UpdateApplicationBody.parse(req.body);
+
+  if (req.body && typeof req.body === "object" && "status" in req.body) {
+    res.status(403).json({
+      error: "Application status cannot be changed through this endpoint",
+    });
+    return;
+  }
+
+  const parsed = StudentUpdateApplicationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid application data" });
+    return;
+  }
+
   const [updated] = await db
     .update(applicationsTable)
-    .set({ ...body, updatedAt: new Date() })
+    .set({ notes: parsed.data.notes, updatedAt: new Date() })
     .where(
       and(
         eq(applicationsTable.id, applicationId),
@@ -314,6 +309,11 @@ router.put("/:applicationId", async (req, res) => {
       ),
     )
     .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Application not found" });
+    return;
+  }
 
   const uni = await db.query.universitiesTable.findFirst({
     where: eq(universitiesTable.id, updated.universityId),
@@ -385,73 +385,34 @@ router.delete("/:applicationId", async (req, res) => {
 router.post("/:applicationId/submit", async (req, res) => {
   const sid = getStudentId(req);
   const { applicationId } = SubmitApplicationParams.parse(req.params);
+  const signature =
+    typeof req.body?.signature === "string" ? req.body.signature.trim() : undefined;
 
-  // ── Server-side pre-flight validation ──────────────────────────────────────
-  const [profile, academics, tests] = await Promise.all([
-    db.query.studentProfilesTable.findFirst({
-      where: eq(studentProfilesTable.studentId, sid),
-    }),
-    db.select().from(academicRecordsTable).where(eq(academicRecordsTable.studentId, sid)),
-    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
-  ]);
-
-  const missing: string[] = [];
-  if (!profile?.firstName || !profile?.lastName)
-    missing.push("Personal profile (first and last name) must be completed");
-  if (academics.length === 0)
-    missing.push("At least one education record is required");
-  if (tests.length === 0)
-    missing.push("At least one test score is required");
-
-  if (missing.length > 0) {
-    res.status(400).json({ error: "Application incomplete", missing });
-    return;
+  try {
+    const application = await getOwnedApplication(sid, applicationId);
+    const result = await submitApplication({
+      studentId: sid,
+      application,
+      signature,
+      paymentSimulated: req.body?.paymentSimulated === true,
+    });
+    res.json({
+      ...result.application,
+      universityName: result.universityName,
+      programName: result.programName,
+      paymentTransactionRef: result.paymentTransactionRef,
+      paymentAmountPkr: result.paymentAmountPkr,
+    });
+  } catch (err) {
+    if (err instanceof SubmissionError) {
+      res.status(err.httpStatus).json({
+        error: err.message,
+        ...(err.missing.length > 0 ? { missing: err.missing } : {}),
+      });
+      return;
+    }
+    throw err;
   }
-  // ───────────────────────────────────────────────────────────────────────────
-
-  const [updated] = await db
-    .update(applicationsTable)
-    .set({ status: "submitted", submittedAt: new Date(), updatedAt: new Date() })
-    .where(
-      and(
-        eq(applicationsTable.id, applicationId),
-        eq(applicationsTable.studentId, sid),
-      ),
-    )
-    .returning();
-
-  await syncUserCollegeSubmitted({
-    studentId: sid,
-    universityId: updated.universityId,
-    submittedAt: updated.submittedAt ?? new Date(),
-  });
-
-  const uni = await db.query.universitiesTable.findFirst({
-    where: eq(universitiesTable.id, updated.universityId),
-  });
-  const prog = await db.query.programsTable.findFirst({
-    where: eq(programsTable.id, updated.programId),
-  });
-
-  const studentUser = await db.query.usersTable.findFirst({
-    where: eq(usersTable.studentId, sid),
-  });
-  if (studentUser?.email) {
-    sendApplicationSubmissionEmail({
-      to: studentUser.email,
-      fullName: profile
-        ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || studentUser.fullName
-        : studentUser.fullName,
-      universityName: uni?.name ?? "University",
-      programName: prog?.name ?? "Program",
-    }).catch(() => {});
-  }
-
-  res.json({
-    ...updated,
-    universityName: uni?.name ?? "Unknown",
-    programName: prog?.name ?? "Unknown",
-  });
 });
 
 export default router;

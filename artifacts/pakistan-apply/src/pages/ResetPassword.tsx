@@ -61,6 +61,7 @@ export default function ResetPassword() {
     <div className="min-h-screen w-full flex items-center justify-center bg-sky-50/50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
+          <div className="text-2xl font-bold text-sky-700 tracking-tight mb-3">Campus Apply</div>
           <h1 className="text-2xl font-bold text-slate-900">Set new password</h1>
           <p className="mt-1 text-sm text-slate-500">Choose a strong password with at least 8 characters.</p>
         </div>

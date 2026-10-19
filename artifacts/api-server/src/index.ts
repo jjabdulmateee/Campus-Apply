@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDemoUser } from "./lib/seed-demo";
-import { isProduction } from "./lib/env";
+import { isDemoSeedingEnabled } from "./lib/env";
 
 const rawPort = process.env["PORT"];
 
@@ -24,9 +24,11 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  if (!isProduction()) {
+  if (isDemoSeedingEnabled()) {
     seedDemoUser();
   } else {
-    logger.info("Demo account seeding skipped (production mode)");
+    logger.info(
+      "Demo account seeding disabled (set SEED_DEMO_ACCOUNTS=true in development to enable)",
+    );
   }
 });

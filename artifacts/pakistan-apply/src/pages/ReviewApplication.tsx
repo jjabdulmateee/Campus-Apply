@@ -154,12 +154,9 @@ export default function ReviewApplication() {
     },
   });
 
-  // Supplement validation: required questions answered
-  const missingSupplements = questions
-    .filter((q) => q.required && !answers[q.key]?.trim())
-    .map((q) => `Answer the supplement question: "${q.question.slice(0, 60)}…"`);
-
-  const allMissing = [...(review?.validation.missing ?? []), ...missingSupplements];
+  // The server validator already covers required supplements (same rule set
+  // used at submit time), so the list it returns is authoritative.
+  const allMissing = review?.validation.missing ?? [];
   const canSubmit = allMissing.length === 0 && review?.application.status === "draft";
 
   if (submitted && review) {

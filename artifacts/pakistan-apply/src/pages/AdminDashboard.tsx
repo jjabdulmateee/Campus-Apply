@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
   useGetAdminStats,
@@ -6,6 +6,7 @@ import {
   useListUniversities,
   useListAdminSupportTickets,
 } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -27,6 +28,9 @@ import {
   BadgeCheck,
   UserPlus,
   Download,
+  Globe2,
+  GraduationCap,
+  Banknote,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -75,8 +79,28 @@ function fmtDateShort(iso: string | null | undefined) {
   return new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short" });
 }
 
+interface PlatformOverview {
+  students: number;
+  universities: number;
+  programs: number;
+  applications: {
+    draft: number;
+    submitted: number;
+    under_review: number;
+    accepted: number;
+    rejected: number;
+    waitlisted: number;
+    withdrawn: number;
+    total: number;
+  };
+  simulatedFeeRevenuePkr: number;
+}
+
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  /** Global admins have no universityId; institution staff are locked to theirs. */
+  const isSuperAdmin = user?.role === "admin" && (user.universityId == null);
   const [activeTab, setActiveTab] = useState<AdminTab>("applications");
 
   // Applications state
@@ -84,6 +108,34 @@ export default function AdminDashboard() {
   const [universityId, setUniversityId] = useState<string>("");
   const [status, setStatus]           = useState<string>("");
   const [sort, setSort]               = useState<string>("");
+  const [platform, setPlatform]       = useState<PlatformOverview | null>(null);
+  const [platformLoading, setPlatformLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      setPlatform(null);
+      return;
+    }
+    let cancelled = false;
+    setPlatformLoading(true);
+    fetch("/api/admin/platform/overview", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Failed to load platform metrics");
+        return res.json() as Promise<PlatformOverview>;
+      })
+      .then((data) => {
+        if (!cancelled) setPlatform(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPlatform(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPlatformLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdmin]);
 
   const { data: stats }      = useGetAdminStats();
   const { data: listData, isLoading } = useListAdminApplications({
@@ -139,17 +191,23 @@ export default function AdminDashboard() {
           <div>
             <div className="text-sm font-bold tracking-tight">Campus Apply — Admissions Portal</div>
             <div className="text-xs text-slate-400">
-              {selectedUni ? `Viewing: ${selectedUni.name}` : "All Universities"}
+              {isSuperAdmin
+                ? selectedUni
+                  ? `Viewing: ${selectedUni.name}`
+                  : "Super-Admin · All Universities"
+                : "Institution-scoped admissions"}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/admin/partners/invite">
-            <button className="flex items-center gap-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white transition-colors px-3 py-1.5 rounded-lg font-semibold">
-              <UserPlus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Invite Partner</span>
-            </button>
-          </Link>
+          {isSuperAdmin && (
+            <Link href="/admin/partners/invite">
+              <button className="flex items-center gap-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white transition-colors px-3 py-1.5 rounded-lg font-semibold">
+                <UserPlus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Invite Partner</span>
+              </button>
+            </Link>
+          )}
           <Link href="/dashboard">
             <button className="text-xs text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
               ← Student View
@@ -176,6 +234,48 @@ export default function AdminDashboard() {
       )}
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Super-Admin platform metrics — live PostgreSQL counts only */}
+        {isSuperAdmin && (
+          <div className="mb-6 rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe2 className="w-4 h-4 text-sky-600" />
+              <h2 className="text-sm font-bold text-slate-800">Platform Overview</h2>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 bg-sky-100 px-2 py-0.5 rounded-full">
+                Super-Admin
+              </span>
+            </div>
+            {platformLoading && !platform ? (
+              <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading live metrics…
+              </div>
+            ) : platform ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+                <MiniMetric icon={<Users className="w-4 h-4 text-sky-600" />} label="Students" value={platform.students} />
+                <MiniMetric icon={<Building2 className="w-4 h-4 text-indigo-600" />} label="Universities" value={platform.universities} />
+                <MiniMetric icon={<GraduationCap className="w-4 h-4 text-violet-600" />} label="Programs" value={platform.programs} />
+                <MiniMetric icon={<ClipboardList className="w-4 h-4 text-slate-600" />} label="Apps total" value={platform.applications.total} />
+                <MiniMetric icon={<Clock className="w-4 h-4 text-amber-600" />} label="Draft" value={platform.applications.draft} />
+                <MiniMetric icon={<Send className="w-4 h-4 text-blue-600" />} label="Submitted" value={platform.applications.submitted} />
+                <MiniMetric icon={<CheckCircle2 className="w-4 h-4 text-green-600" />} label="Accepted" value={platform.applications.accepted} />
+                <MiniMetric
+                  icon={<Banknote className="w-4 h-4 text-emerald-600" />}
+                  label="Sim. fees (PKR)"
+                  value={platform.simulatedFeeRevenuePkr}
+                  format
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">Platform metrics unavailable.</p>
+            )}
+            {platform && (
+              <p className="mt-3 text-[11px] text-slate-400">
+                Under review {platform.applications.under_review} · Rejected {platform.applications.rejected} ·
+                Waitlisted {platform.applications.waitlisted} · Withdrawn {platform.applications.withdrawn}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard
@@ -243,18 +343,25 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <Select value={universityId} onValueChange={setUniversityId}>
-                  <SelectTrigger className={cn("w-48 h-9 text-sm", universityId && "border-sky-400 text-sky-700 bg-sky-50")}>
-                    <Filter className="w-3.5 h-3.5 mr-1.5 text-slate-400 flex-shrink-0" />
-                    <SelectValue placeholder="All Universities" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Universities</SelectItem>
-                    {(universities ?? []).map((u: { id: number; name: string }) => (
-                      <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isSuperAdmin ? (
+                  <Select value={universityId} onValueChange={setUniversityId}>
+                    <SelectTrigger className={cn("w-48 h-9 text-sm", universityId && "border-sky-400 text-sky-700 bg-sky-50")}>
+                      <Filter className="w-3.5 h-3.5 mr-1.5 text-slate-400 flex-shrink-0" />
+                      <SelectValue placeholder="All Universities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Universities</SelectItem>
+                      {(universities ?? []).map((u: { id: number; name: string }) => (
+                        <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="h-9 px-3 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-600 flex items-center gap-1.5 max-w-48 truncate">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    Your institution only
+                  </div>
+                )}
 
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger className={cn("w-40 h-9 text-sm", status && "border-sky-400 text-sky-700 bg-sky-50")}>
@@ -733,6 +840,24 @@ function StatCard({
         <div className="text-2xl font-black text-slate-800 leading-none">{value}</div>
         <div className="text-xs font-semibold text-slate-600 mt-0.5">{label}</div>
         {sub && <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function MiniMetric({
+  icon, label, value, format,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  format?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-sky-100 bg-white px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">{icon}<span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span></div>
+      <div className="text-lg font-black text-slate-800 tabular-nums">
+        {format ? value.toLocaleString("en-PK") : value}
       </div>
     </div>
   );

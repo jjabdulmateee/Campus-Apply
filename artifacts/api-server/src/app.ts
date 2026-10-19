@@ -3,10 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
-import path from "node:path";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { isLocalStorageBackend, getLocalUploadRoot } from "./lib/localDiskStorage";
 import { getCorsOrigins } from "./lib/corsOrigins";
 
 const app: Express = express();
@@ -44,20 +42,9 @@ app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// Local disk uploads: serve blobs under /api/storage/objects/… (avatars, docs).
-if (isLocalStorageBackend()) {
-  app.use(
-    "/api/storage/objects",
-    express.static(path.join(getLocalUploadRoot(), "uploads"), {
-      fallthrough: true,
-      setHeaders(res, filePath) {
-        if (filePath.endsWith(".pdf")) {
-          res.setHeader("Content-Type", "application/pdf");
-        }
-      },
-    }),
-  );
-}
+// NOTE: uploaded blobs are deliberately NOT served via express.static here.
+// All reads go through the authenticated, ACL-checked
+// `GET /api/storage/objects/*` route in routes/storage.ts.
 
 app.use("/api", router);
 

@@ -11,13 +11,15 @@ import {
   universitiesTable,
   programsTable,
   userCollegesTable,
-  usersTable,
 } from "@workspace/db";
-import { sendApplicationSubmissionEmail } from "../utils/email";
 import {
-  submitApplicationBundle,
-  ApplicationSyncError,
-} from "../lib/applicationSync";
+  ensureDraftApplication,
+  validateApplication,
+  submitApplication,
+  SubmissionError,
+} from "../lib/submission";
+import { assertChangedPathsOwnedBy, UploadOwnershipError } from "../lib/uploadRegistry";
+import { syncProfileDocumentsToLocker, upsertLockerDocument } from "../lib/documentLocker";
 import {
   UpdateMyProfileBody,
   AddAcademicRecordBody,
@@ -42,11 +44,11 @@ import {
   UpdateCollegeStatusParams,
 } from "@workspace/api-zod";
 import { eq, and, desc } from "drizzle-orm";
-import { verifyJWT, getStudentId } from "../middleware/auth";
+import { requireStudent, getStudentId } from "../middleware/auth";
 import { assertApplicationSectionsEditable } from "../middleware/lockSubmitted";
 
 const router = Router();
-router.use(verifyJWT);
+router.use(requireStudent);
 
 // ─── Shared completion helpers ─────────────────────────────────────────────────
 
@@ -242,6 +244,29 @@ router.put("/me/profile", assertApplicationSectionsEditable, async (req, res) =>
     where: eq(studentProfilesTable.studentId, sid),
   });
 
+  // A student may only bind objects they uploaded themselves.
+  try {
+    await assertChangedPathsOwnedBy(
+      req.user!.userId,
+      {
+        cnicDocumentUrl: body.cnicDocumentUrl,
+        transcriptUrl: body.transcriptUrl,
+        photoUrl: body.photoUrl,
+      },
+      {
+        cnicDocumentUrl: existing?.cnicDocumentUrl,
+        transcriptUrl: existing?.transcriptUrl,
+        photoUrl: existing?.photoUrl,
+      },
+    );
+  } catch (err) {
+    if (err instanceof UploadOwnershipError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+
   let profile: ProfileRow;
   if (existing) {
     const [updated] = await db
@@ -257,6 +282,8 @@ router.put("/me/profile", assertApplicationSectionsEditable, async (req, res) =>
       .returning();
     profile = created;
   }
+
+  await syncProfileDocumentsToLocker(sid);
 
   const [academics, tests, activities, essays] = await Promise.all([
     db.select().from(academicRecordsTable).where(eq(academicRecordsTable.studentId, sid)),
@@ -296,10 +323,40 @@ router.post("/me/academics", assertApplicationSectionsEditable, async (req, res)
   const sid = getStudentId(req);
   const body = AddAcademicRecordBody.parse(req.body);
   const { percentage, ...rest } = body;
+
+  try {
+    await assertChangedPathsOwnedBy(
+      req.user!.userId,
+      { transcriptDocUrl: rest.transcriptDocUrl },
+      {},
+    );
+  } catch (err) {
+    if (err instanceof UploadOwnershipError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+
   const [record] = await db
     .insert(academicRecordsTable)
     .values({ ...rest, studentId: sid, percentage: percentage?.toString() ?? null })
     .returning();
+  if (record.transcriptDocUrl) {
+    await upsertLockerDocument({
+      studentId: sid,
+      category:
+        record.level === "matric"
+          ? "matric_marksheet"
+          : record.level === "o_levels"
+            ? "o_level_transcript"
+            : record.level === "a_levels"
+              ? "a_level_transcript"
+              : "fsc_transcript",
+      objectPath: record.transcriptDocUrl,
+      fileName: `${record.institution} transcript`,
+    });
+  }
   res.status(201).json(record);
 });
 
@@ -308,6 +365,33 @@ router.put("/me/academics/:recordId", assertApplicationSectionsEditable, async (
   const { recordId } = UpdateAcademicRecordParams.parse(req.params);
   const body = UpdateAcademicRecordBody.parse(req.body);
   const { percentage, ...rest } = body;
+
+  const current = await db.query.academicRecordsTable.findFirst({
+    where: and(
+      eq(academicRecordsTable.id, recordId),
+      eq(academicRecordsTable.studentId, sid),
+    ),
+    columns: { transcriptDocUrl: true },
+  });
+  if (!current) {
+    res.status(404).json({ error: "Education record not found" });
+    return;
+  }
+
+  try {
+    await assertChangedPathsOwnedBy(
+      req.user!.userId,
+      { transcriptDocUrl: rest.transcriptDocUrl },
+      { transcriptDocUrl: current.transcriptDocUrl },
+    );
+  } catch (err) {
+    if (err instanceof UploadOwnershipError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+
   const [updated] = await db
     .update(academicRecordsTable)
     .set({ ...rest, percentage: percentage?.toString() ?? null })
@@ -318,6 +402,21 @@ router.put("/me/academics/:recordId", assertApplicationSectionsEditable, async (
       ),
     )
     .returning();
+  if (updated?.transcriptDocUrl) {
+    await upsertLockerDocument({
+      studentId: sid,
+      category:
+        updated.level === "matric"
+          ? "matric_marksheet"
+          : updated.level === "o_levels"
+            ? "o_level_transcript"
+            : updated.level === "a_levels"
+              ? "a_level_transcript"
+              : "fsc_transcript",
+      objectPath: updated.transcriptDocUrl,
+      fileName: `${updated.institution} transcript`,
+    });
+  }
   res.json(updated);
 });
 
@@ -691,6 +790,30 @@ router.patch("/me/colleges/:universityId", async (req, res) => {
   const { universityId } = UpdateCollegeStatusParams.parse({ universityId: parseInt(req.params.universityId, 10) });
   const { status } = UpdateCollegeStatusBody.parse(req.body);
 
+  // "submitted" is reached only via POST /me/colleges/:universityId/submit,
+  // which runs validation, snapshots the payload and syncs the application row.
+  if (status === "submitted") {
+    res.status(403).json({
+      error: "Use the submit endpoint to submit an application",
+    });
+    return;
+  }
+
+  const [current] = await db
+    .select({ status: userCollegesTable.status })
+    .from(userCollegesTable)
+    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+    .limit(1);
+
+  if (!current) {
+    res.status(404).json({ error: "College not in your list" });
+    return;
+  }
+  if (current.status === "submitted") {
+    res.status(409).json({ error: "A submitted application cannot be moved back to an earlier stage" });
+    return;
+  }
+
   const [updated] = await db
     .update(userCollegesTable)
     .set({ status, updatedAt: new Date() })
@@ -710,63 +833,72 @@ const CollegeSubmitBodySchema = z.object({
   paymentSimulated: z.boolean().optional(),
 });
 
+/**
+ * Pre-flight for the "My Colleges" submit modal. Runs the same validator the
+ * submit endpoint enforces. Ensures a draft application exists for the
+ * university so the student has somewhere to answer program supplements —
+ * the returned `applicationId` links to `/applications/:id/review`.
+ */
 router.get("/me/colleges/:universityId/validate", async (req, res) => {
   const sid = getStudentId(req);
   const { universityId } = SubmitCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
+  const programIdRaw = req.query.programId;
+  const programId =
+    typeof programIdRaw === "string" && /^\d+$/.test(programIdRaw)
+      ? parseInt(programIdRaw, 10)
+      : undefined;
 
-  const [profile, tests, essays] = await Promise.all([
-    db.query.studentProfilesTable.findFirst({ where: eq(studentProfilesTable.studentId, sid) }),
-    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
-    db.select().from(essaysTable).where(eq(essaysTable.studentId, sid)),
-  ]);
+  try {
+    const application = await ensureDraftApplication({ studentId: sid, universityId, programId });
+    const { validation, packet } = await validateApplication(sid, application);
+    const profile = packet.profile;
 
-  const profileFields = [
-    profile?.firstName, profile?.lastName, profile?.dateOfBirth,
-    profile?.gender, profile?.phoneNumber, profile?.province, profile?.city,
-  ];
-  const profileCompletionPercent = Math.round(
-    (profileFields.filter(Boolean).length / profileFields.length) * 100,
-  );
-
-  const missing: string[] = [];
-  if (!profile?.firstName || !profile?.lastName)
-    missing.push("Complete your personal profile — first and last name are required");
-  if (profileCompletionPercent < 60)
-    missing.push(`Your profile is only ${profileCompletionPercent}% complete — fill in more details`);
-  if (!profile?.cnicDocumentUrl && !profile?.transcriptUrl)
-    missing.push("Upload at least one verification document (CNIC or transcript) in Document Locker");
-  if (tests.length === 0)
-    missing.push("Add at least one test score (ECAT, MDCAT, SAT, IELTS, etc.)");
-
-  const psEssay = essays.find((e) => e.type === "personal_statement");
-  const psWords = psEssay?.content
-    ? psEssay.content.trim().split(/\s+/).filter(Boolean).length
-    : 0;
-  if (psWords < 250)
-    missing.push(
-      `Write a Personal Statement of at least 250 words — currently ${psWords} word${psWords === 1 ? "" : "s"}`,
+    const profileFields = [
+      profile?.firstName, profile?.lastName, profile?.dateOfBirth,
+      profile?.gender, profile?.phoneNumber, profile?.province, profile?.city,
+    ];
+    const profileCompletionPercent = Math.round(
+      (profileFields.filter(Boolean).length / profileFields.length) * 100,
     );
 
-  res.json({
-    canSubmit: missing.length === 0,
-    missing,
-    profileCompletionPercent,
-    profile: profile ?? null,
-    tests: tests.map((t) => ({ id: t.id, testName: t.testName, score: t.score, maxScore: t.maxScore, testDate: t.testDate, notes: t.notes })),
-    essays: essays.map((e) => ({
-      id: e.id,
-      type: e.type,
-      prompt: e.prompt,
-      content: e.content,
-      wordCount: e.content ? e.content.trim().split(/\s+/).filter(Boolean).length : 0,
-    })),
-  });
+    res.json({
+      canSubmit: validation.canSubmit && application.status === "draft",
+      missing:
+        application.status === "draft"
+          ? validation.missing
+          : [`This application has already been ${application.status}`],
+      profileCompletionPercent,
+      profile,
+      tests: packet.tests.map((t) => ({ id: t.id, testName: t.testName, score: t.score, maxScore: t.maxScore, testDate: t.testDate, notes: t.notes })),
+      essays: packet.essays.map((e) => ({
+        id: e.id,
+        type: e.type,
+        prompt: e.prompt,
+        content: e.content,
+        wordCount: e.wordCount,
+      })),
+      applicationId: application.id,
+      programId: application.programId,
+      applicationStatus: application.status,
+    });
+  } catch (err) {
+    if (err instanceof SubmissionError) {
+      res.status(err.httpStatus).json({ error: err.message, missing: err.missing });
+      return;
+    }
+    throw err;
+  }
 });
 
+/**
+ * Canonical "My Colleges" submission. Resolves (or creates) the student's
+ * program-specific application and submits THAT record, so the watchlist and
+ * the admin admissions queue share a single source of truth.
+ */
 router.post("/me/colleges/:universityId/submit", async (req, res) => {
   const sid = getStudentId(req);
   const { universityId } = SubmitCollegeParams.parse({ universityId: parseInt(req.params.universityId, 10) });
-  const { signature, programId } = CollegeSubmitBodySchema.parse(req.body);
+  const { signature, programId, paymentSimulated } = CollegeSubmitBodySchema.parse(req.body);
 
   const [college] = await db
     .select()
@@ -775,91 +907,47 @@ router.post("/me/colleges/:universityId/submit", async (req, res) => {
     .limit(1);
 
   if (!college) { res.status(404).json({ error: "College not in your list" }); return; }
-  if (college.status === "submitted") { res.status(400).json({ error: "Already submitted" }); return; }
+  if (college.status === "submitted") { res.status(409).json({ error: "Already submitted" }); return; }
 
-  const [profile, tests, essays] = await Promise.all([
-    db.query.studentProfilesTable.findFirst({ where: eq(studentProfilesTable.studentId, sid) }),
-    db.select().from(testScoresTable).where(eq(testScoresTable.studentId, sid)),
-    db.select().from(essaysTable).where(eq(essaysTable.studentId, sid)),
-  ]);
-
-  const missing: string[] = [];
-  if (!profile?.firstName || !profile?.lastName) missing.push("Profile name required");
-  if (tests.length === 0) missing.push("At least one test score required");
-  const psWords = essays.find((e) => e.type === "personal_statement")?.content
-    ?.trim().split(/\s+/).filter(Boolean).length ?? 0;
-  if (psWords < 250) missing.push("Personal statement must be at least 250 words");
-
-  if (missing.length > 0) {
-    res.status(400).json({ error: "Validation failed", missing });
-    return;
-  }
-
-  const submittedAt = new Date();
-  const payload = JSON.stringify({
-    profile,
-    tests,
-    essays: essays.map((e) => ({
-      ...e,
-      wordCount: e.content ? e.content.trim().split(/\s+/).filter(Boolean).length : 0,
-    })),
-    snapshotAt: submittedAt.toISOString(),
-  });
-
-  let syncResult: { applicationId: number; programId: number };
   try {
-    syncResult = await submitApplicationBundle({
+    const application = await ensureDraftApplication({ studentId: sid, universityId, programId });
+    const result = await submitApplication({
       studentId: sid,
-      universityId,
-      programId,
-      submittedAt,
-      collegePayload: payload,
-      collegeSignature: signature,
+      application,
+      signature,
+      paymentSimulated,
+    });
+
+    const [updated] = await db
+      .select()
+      .from(userCollegesTable)
+      .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
+      .limit(1);
+
+    const [uni] = await db
+      .select()
+      .from(universitiesTable)
+      .where(eq(universitiesTable.id, universityId))
+      .limit(1);
+
+    res.json({
+      ...(updated ?? college),
+      applicationId: result.application.id,
+      programId: result.application.programId,
+      university: uni ?? null,
+      paymentTransactionRef: result.paymentTransactionRef,
+      paymentAmountPkr: result.paymentAmountPkr,
     });
   } catch (err) {
-    if (err instanceof ApplicationSyncError && err.code === "NO_PROGRAM") {
-      res.status(400).json({ error: err.message });
+    if (err instanceof SubmissionError) {
+      res.status(err.httpStatus).json({
+        error: err.message,
+        ...(err.missing.length > 0 ? { missing: err.missing } : {}),
+      });
       return;
     }
     throw err;
   }
-
-  const [updated] = await db
-    .select()
-    .from(userCollegesTable)
-    .where(and(eq(userCollegesTable.studentId, sid), eq(userCollegesTable.universityId, universityId)))
-    .limit(1);
-
-  const [uni] = await db
-    .select()
-    .from(universitiesTable)
-    .where(eq(universitiesTable.id, universityId))
-    .limit(1);
-
-  const [prog] = await db
-    .select({ name: programsTable.name })
-    .from(programsTable)
-    .where(eq(programsTable.id, syncResult.programId))
-    .limit(1);
-
-  const studentUser = await db.query.usersTable.findFirst({
-    where: eq(usersTable.studentId, sid),
-  });
-  if (studentUser?.email && profile) {
-    sendApplicationSubmissionEmail({
-      to: studentUser.email,
-      fullName: [profile.firstName, profile.lastName].filter(Boolean).join(" ") || studentUser.fullName,
-      universityName: uni?.name ?? "University",
-      programName: prog?.name ?? "Program",
-    }).catch(() => {});
-  }
-
-  res.json({
-    ...(updated ?? college),
-    applicationId: syncResult.applicationId,
-    programId: syncResult.programId,
-    university: uni ?? null,
-  });
 });
 
 export default router;

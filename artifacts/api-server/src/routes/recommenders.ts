@@ -3,12 +3,12 @@ import { db } from "@workspace/db";
 import { recommendersTable, studentProfilesTable } from "@workspace/db";
 import { InviteRecommenderBody } from "@workspace/api-zod";
 import { eq, and } from "drizzle-orm";
-import { verifyJWT, getStudentId } from "../middleware/auth";
+import { requireStudent, getStudentId } from "../middleware/auth";
 import { sendRecommendationInvite } from "../utils/email";
 import { z } from "zod";
 
 const router = Router();
-router.use(verifyJWT);
+router.use(requireStudent);
 
 router.get("/me/recommenders", async (req, res) => {
   const sid = getStudentId(req);

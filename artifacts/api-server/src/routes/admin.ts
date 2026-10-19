@@ -14,9 +14,16 @@ import {
   usersTable,
   notificationsTable,
 } from "@workspace/db";
-import { eq, desc, ilike, or, and, ne } from "drizzle-orm";
+import { eq, desc, ilike, or, and, ne, count, sum, isNotNull } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
-import { getAdminUniversityScope, assertAdminApplicationAccess } from "../lib/adminScope";
+import {
+  getAdminUniversityScope,
+  assertAdminApplicationAccess,
+  resolveAdminScope,
+  requireSuperAdmin,
+} from "../lib/adminScope";
+import { getApplicationSnapshot } from "../lib/submission";
+import { syncProfileDocumentsToLocker } from "../lib/documentLocker";
 import { sendApplicationDecisionEmail } from "../utils/email";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -25,6 +32,59 @@ import { sql } from "drizzle-orm";
 const router = Router();
 
 router.use(requireAdmin);
+
+/**
+ * GET /admin/platform/overview — live platform metrics for global super-admins.
+ * University-scoped admissions staff receive 403.
+ */
+router.get("/platform/overview", requireSuperAdmin, async (_req, res) => {
+  const [
+    studentRows,
+    universityRows,
+    programRows,
+    applicationRows,
+    feeRows,
+  ] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(usersTable)
+      .where(eq(usersTable.role, "student")),
+    db.select({ total: count() }).from(universitiesTable),
+    db.select({ total: count() }).from(programsTable),
+    db
+      .select({ status: applicationsTable.status, total: count() })
+      .from(applicationsTable)
+      .groupBy(applicationsTable.status),
+    db
+      .select({ total: sum(applicationsTable.paymentAmountPkr) })
+      .from(applicationsTable)
+      .where(isNotNull(applicationsTable.paymentTransactionRef)),
+  ]);
+
+  const byStatus: Record<string, number> = {};
+  for (const row of applicationRows) {
+    byStatus[row.status] = Number(row.total);
+  }
+
+  const applications = {
+    draft: byStatus.draft ?? 0,
+    submitted: byStatus.submitted ?? 0,
+    under_review: byStatus.under_review ?? 0,
+    accepted: byStatus.accepted ?? 0,
+    rejected: byStatus.rejected ?? 0,
+    waitlisted: byStatus.waitlisted ?? 0,
+    withdrawn: byStatus.withdrawn ?? 0,
+    total: Object.values(byStatus).reduce((acc, n) => acc + n, 0),
+  };
+
+  res.json({
+    students: Number(studentRows[0]?.total ?? 0),
+    universities: Number(universityRows[0]?.total ?? 0),
+    programs: Number(programRows[0]?.total ?? 0),
+    applications,
+    simulatedFeeRevenuePkr: Number(feeRows[0]?.total ?? 0),
+  });
+});
 
 // ── GET /admin/stats ──────────────────────────────────────────────────────
 router.get("/stats", async (req, res) => {
@@ -44,9 +104,28 @@ router.get("/stats", async (req, res) => {
 // ── GET /admin/applications ────────────────────────────────────────────────
 router.get("/applications", async (req, res) => {
   const { search, universityId, status, sort } = req.query as Record<string, string>;
-  const scope = await getAdminUniversityScope(req.user!.userId);
+  const adminScope = await resolveAdminScope(req.user!.userId);
+  if (adminScope.kind === "none") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  // Institution staff are locked to their university_id. A query param for a
+  // different university is rejected rather than silently ignored.
+  if (adminScope.kind === "university" && universityId) {
+    const requested = parseInt(universityId, 10);
+    if (!Number.isNaN(requested) && requested !== adminScope.universityId) {
+      res.status(403).json({ error: "You can only view applications for your institution" });
+      return;
+    }
+  }
+
   const effectiveUniversityId =
-    scope ?? (universityId ? parseInt(universityId, 10) : undefined);
+    adminScope.kind === "university"
+      ? adminScope.universityId
+      : universityId
+        ? parseInt(universityId, 10)
+        : undefined;
 
   const rows = await db
     .select({
@@ -182,13 +261,88 @@ router.get("/applications/:id", async (req, res) => {
 
   if (!(await assertAdminApplicationAccess(req, res, app.universityId))) return;
 
+  const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, app.universityId));
+  const [prog] = await db.select().from(programsTable).where(eq(programsTable.id, app.programId));
+
+  const remarks = await db
+    .select()
+    .from(adminRemarksTable)
+    .where(eq(adminRemarksTable.applicationId, appId))
+    .orderBy(desc(adminRemarksTable.createdAt));
+
+  const applicationView = {
+    ...app,
+    universityName: uni?.name ?? "Unknown",
+    universityShortName: uni?.shortName ?? "UNI",
+    programName: prog?.name ?? "Unknown Program",
+  };
+
+  await syncProfileDocumentsToLocker(app.studentId);
+  const liveDocuments = await db
+    .select()
+    .from(documentsTable)
+    .where(eq(documentsTable.studentId, app.studentId));
+
+  const overlayVerification = (
+    frozen: Array<Record<string, unknown>>,
+  ): Array<Record<string, unknown>> => {
+    const byPath = new Map(
+      liveDocuments.map((d) => [d.objectPath, d] as const),
+    );
+    const seen = new Set<string>();
+    const merged = frozen.map((doc) => {
+      const raw = typeof doc.objectPath === "string" ? doc.objectPath : "";
+      const live =
+        byPath.get(raw) ??
+        byPath.get(raw.startsWith("/") ? raw.slice(1) : `/${raw}`);
+      if (!live) return doc;
+      seen.add(live.objectPath);
+      return {
+        ...doc,
+        id: live.id,
+        isVerified: live.isVerified,
+        objectPath: live.objectPath,
+        fileName: live.fileName,
+        category: live.category,
+      };
+    });
+    for (const live of liveDocuments) {
+      if (!seen.has(live.objectPath)) {
+        merged.push(live as unknown as Record<string, unknown>);
+      }
+    }
+    return merged;
+  };
+
+  // Reviewers always see the packet frozen at submission time. Later profile
+  // edits by the student never reach this view. Verification status is live.
+  const snapshot = await getApplicationSnapshot(appId);
+  if (snapshot) {
+    return res.json({
+      application: applicationView,
+      profile: snapshot.profile ?? null,
+      academics: snapshot.academics,
+      tests: snapshot.tests,
+      essays: snapshot.essays,
+      answers: snapshot.answers,
+      documents: overlayVerification(
+        (snapshot.documents ?? []) as Array<Record<string, unknown>>,
+      ),
+      remarks,
+      packet: {
+        source: "snapshot" as const,
+        version: snapshot.version,
+        submittedAt: snapshot.submittedAt,
+        signature: snapshot.signature,
+      },
+    });
+  }
+
+  // Legacy fallback: applications submitted before snapshots existed.
   const [profile] = await db
     .select()
     .from(studentProfilesTable)
     .where(eq(studentProfilesTable.studentId, app.studentId));
-
-  const [uni] = await db.select().from(universitiesTable).where(eq(universitiesTable.id, app.universityId));
-  const [prog] = await db.select().from(programsTable).where(eq(programsTable.id, app.programId));
 
   const academics = await db
     .select()
@@ -205,34 +359,61 @@ router.get("/applications/:id", async (req, res) => {
     .from(essaysTable)
     .where(eq(essaysTable.studentId, app.studentId));
 
-  const documents = await db
-    .select()
-    .from(documentsTable)
-    .where(eq(documentsTable.studentId, app.studentId));
-
-  const remarks = await db
-    .select()
-    .from(adminRemarksTable)
-    .where(eq(adminRemarksTable.applicationId, appId))
-    .orderBy(desc(adminRemarksTable.createdAt));
-
   return res.json({
-    application: {
-      ...app,
-      universityName: uni?.name ?? "Unknown",
-      universityShortName: uni?.shortName ?? "UNI",
-      programName: prog?.name ?? "Unknown Program",
-    },
+    application: applicationView,
     profile: profile ?? null,
     academics,
     tests,
     essays,
-    documents,
+    answers: [],
+    documents: liveDocuments,
     remarks,
+    packet: { source: "live" as const },
   });
 });
 
 // ── PUT /admin/applications/:id/decision ──────────────────────────────────
+const VerifyDocumentBody = z.object({
+  isVerified: z.boolean(),
+});
+
+/** PUT /admin/applications/:id/documents/:docId/verify — toggle locker verification. */
+router.put("/applications/:id/documents/:docId/verify", async (req, res) => {
+  const appId = parseInt(req.params.id, 10);
+  const docId = parseInt(req.params.docId, 10);
+  if (isNaN(appId) || isNaN(docId)) {
+    return res.status(400).json({ error: "Invalid application or document ID" });
+  }
+
+  const body = VerifyDocumentBody.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ error: body.error.errors[0].message });
+  }
+
+  const [app] = await db
+    .select({ universityId: applicationsTable.universityId, studentId: applicationsTable.studentId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, appId))
+    .limit(1);
+  if (!app) return res.status(404).json({ error: "Application not found" });
+  if (!(await assertAdminApplicationAccess(req, res, app.universityId))) return;
+
+  const [doc] = await db
+    .select()
+    .from(documentsTable)
+    .where(and(eq(documentsTable.id, docId), eq(documentsTable.studentId, app.studentId)))
+    .limit(1);
+  if (!doc) return res.status(404).json({ error: "Document not found for this applicant" });
+
+  const [updated] = await db
+    .update(documentsTable)
+    .set({ isVerified: body.data.isVerified })
+    .where(eq(documentsTable.id, doc.id))
+    .returning();
+
+  return res.json({ document: updated });
+});
+
 const DecisionBody = z.object({
   status: z.enum(["under_review", "accepted", "rejected", "waitlisted"]),
   decisionReason: z.string().optional(),
@@ -249,12 +430,19 @@ router.put("/applications/:id/decision", async (req, res) => {
   }
 
   const [existing] = await db
-    .select({ universityId: applicationsTable.universityId })
+    .select({ universityId: applicationsTable.universityId, status: applicationsTable.status })
     .from(applicationsTable)
     .where(eq(applicationsTable.id, appId))
     .limit(1);
   if (!existing) return res.status(404).json({ error: "Application not found" });
   if (!(await assertAdminApplicationAccess(req, res, existing.universityId))) return;
+
+  // Decisions apply only to applications the student has actually submitted.
+  if (existing.status === "draft" || existing.status === "withdrawn") {
+    return res.status(409).json({
+      error: `Cannot record a decision on a ${existing.status} application`,
+    });
+  }
 
   const [updated] = await db
     .update(applicationsTable)

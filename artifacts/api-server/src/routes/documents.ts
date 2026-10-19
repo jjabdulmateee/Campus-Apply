@@ -3,10 +3,11 @@ import { db } from "@workspace/db";
 import { documentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import { verifyJWT, getStudentId } from "../middleware/auth";
+import { requireStudent, getStudentId } from "../middleware/auth";
+import { assertUploadOwnedBy, UploadOwnershipError } from "../lib/uploadRegistry";
 
 const router = Router();
-router.use(verifyJWT);
+router.use(requireStudent);
 
 const DocumentCategoryEnum = z.enum([
   "cnic_front",
@@ -46,6 +47,17 @@ router.post("/", async (req, res) => {
   }
 
   const { category, fileName, fileSize, mimeType, objectPath } = parsed.data;
+
+  // Bind only objects this user uploaded — blocks claiming someone else's file.
+  try {
+    await assertUploadOwnedBy(objectPath, req.user!.userId);
+  } catch (err) {
+    if (err instanceof UploadOwnershipError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
 
   const [doc] = await db
     .insert(documentsTable)

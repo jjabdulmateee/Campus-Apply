@@ -4,9 +4,10 @@ import {
   useGetAdminApplication,
   useSubmitAdminDecision,
   useAddAdminRemark,
+  getGetAdminApplicationQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { cn, storageObjectUrl } from "@/lib/utils";
 import {
   ArrowLeft,
   User,
@@ -59,6 +60,7 @@ interface DocumentRow {
   category: string;
   fileName: string;
   isVerified: boolean;
+  objectPath?: string | null;
 }
 
 interface RemarkRow {
@@ -91,6 +93,9 @@ interface AppRow {
   programName: string;
   adminNotes?: string | null;
   decisionReason?: string | null;
+  paymentTransactionRef?: string | null;
+  paymentAmountPkr?: number | null;
+  paymentSimulatedAt?: string | null;
 }
 
 // ── Status config ─────────────────────────────────────────────────────────
@@ -176,6 +181,7 @@ export default function AdminApplicationDetail() {
   const [decisionReason, setDecisionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [newRemark, setNewRemark] = useState("");
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -375,22 +381,92 @@ export default function AdminApplicationDetail() {
                           {String(doc.category).replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
                         </div>
                         <div className="text-xs text-slate-400 truncate">{doc.fileName}</div>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-xs font-semibold px-2 py-0.5 rounded-full border",
-                          doc.isVerified
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200",
+                        {doc.objectPath && (
+                          <a
+                            href={storageObjectUrl(doc.objectPath) ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] font-semibold text-sky-600 hover:text-sky-800"
+                          >
+                            Open file
+                          </a>
                         )}
-                      >
-                        {doc.isVerified ? "Verified" : "Pending"}
-                      </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span
+                          className={cn(
+                            "text-xs font-semibold px-2 py-0.5 rounded-full border",
+                            doc.isVerified
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200",
+                          )}
+                        >
+                          {doc.isVerified ? "Verified" : "Pending"}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={verifyingId === doc.id}
+                          onClick={async () => {
+                            setVerifyingId(doc.id);
+                            try {
+                              const res = await fetch(
+                                `/api/admin/applications/${appId}/documents/${doc.id}/verify`,
+                                {
+                                  method: "PUT",
+                                  credentials: "include",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ isVerified: !doc.isVerified }),
+                                },
+                              );
+                              const json = await res.json();
+                              if (!res.ok) throw new Error(json.error ?? "Verification failed");
+                              toast({
+                                title: json.document?.isVerified ? "Document verified" : "Verification cleared",
+                              });
+                              queryClient.invalidateQueries({
+                                queryKey: getGetAdminApplicationQueryKey(appId),
+                              });
+                            } catch (err) {
+                              toast({
+                                title: err instanceof Error ? err.message : "Verification failed",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setVerifyingId(null);
+                            }
+                          }}
+                          className="text-[11px] font-semibold text-sky-700 hover:text-sky-900 disabled:opacity-50"
+                        >
+                          {verifyingId === doc.id
+                            ? "Saving…"
+                            : doc.isVerified
+                              ? "Mark pending"
+                              : "Mark verified"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </Section>
+
+            {application.paymentTransactionRef && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-2">
+                <h3 className="text-sm font-semibold text-slate-700">Simulated Fee Receipt</h3>
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                  Demo mode — no real payment was collected.
+                </p>
+                <Field label="Transaction reference" value={application.paymentTransactionRef} />
+                <Field
+                  label="Amount"
+                  value={
+                    application.paymentAmountPkr != null
+                      ? `PKR ${application.paymentAmountPkr.toLocaleString("en-PK")}`
+                      : null
+                  }
+                />
+              </div>
+            )}
 
             {/* Decision panel */}
             <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">

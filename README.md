@@ -1,4 +1,4 @@
-# PakApply — The Pakistani Common App
+# Campus Apply — The Pakistani Common App
 
 A full-stack Pakistani university application portal that lets students complete one profile and apply to multiple universities from a single place. University admissions staff can review and decide on applications through a built-in Admin Portal.
 

@@ -100,6 +100,26 @@ export function requireAdmin(
   }
 }
 
+/**
+ * Strict guard for student-owned resources (profile, documents, applications,
+ * uploads). Requires a valid session AND a student account with a studentId —
+ * admins and counselors are rejected with 403 instead of falling through to a
+ * thrown error. There is intentionally no demo/default-student fallback.
+ */
+export function requireStudent(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  verifyJWT(req, res, () => {
+    if (req.user?.role !== "student" || !req.user.studentId) {
+      res.status(403).json({ error: "Student account required" });
+      return;
+    }
+    next();
+  });
+}
+
 export function requireCounselor(
   req: Request,
   res: Response,

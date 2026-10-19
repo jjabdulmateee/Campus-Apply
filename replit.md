@@ -1,8 +1,8 @@
-# PakApply — Pakistani College Application Portal
+# Campus Apply — Pakistani College Application Portal
 
 ## Overview
 
-PakApply is a full-stack Common App equivalent for Pakistani university students. Students fill one profile and apply to multiple Pakistani universities from a single portal. University admissions staff can review, decide on, and track applications through the Admin Portal.
+Campus Apply is a full-stack Common App equivalent for Pakistani university students. Students fill one profile and apply to multiple Pakistani universities from a single portal. University admissions staff can review, decide on, and track applications through the Admin Portal.
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 

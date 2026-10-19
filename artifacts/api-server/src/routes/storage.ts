@@ -8,11 +8,15 @@ import {
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import {
   isLocalStorageBackend,
+  isValidLocalObjectId,
   prepareLocalUpload,
   saveLocalUpload,
   serveLocalObject,
-  getLocalUploadRoot,
+  LocalUploadError,
 } from "../lib/localDiskStorage";
+import { verifyJWT } from "../middleware/auth";
+import { canAccessStoredObject } from "../lib/storageAccess";
+import { registerUpload, markUploadCompleted } from "../lib/uploadRegistry";
 
 const router: IRouter = Router();
 const gcsStorage = new ObjectStorageService();
@@ -26,7 +30,8 @@ const ALLOWED_MIME_TYPES = [
 ];
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
 
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+/** Issue an upload target. Requires a signed-in user; the slot is bound to them. */
+router.post("/storage/uploads/request-url", verifyJWT, async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });
@@ -46,8 +51,18 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
   }
 
   try {
+    const uploaderUserId = req.user!.userId;
+
     if (isLocalStorageBackend()) {
-      const { uploadURL, objectPath } = await prepareLocalUpload();
+      const { uploadURL, objectPath } = await prepareLocalUpload(uploaderUserId);
+      await registerUpload({
+        objectPath,
+        uploaderUserId,
+        purpose: "document",
+        originalName: name,
+        contentType,
+        sizeBytes: size,
+      });
       res.json(
         RequestUploadUrlResponse.parse({
           uploadURL,
@@ -60,6 +75,14 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
 
     const uploadURL = await gcsStorage.getObjectEntityUploadURL();
     const objectPath = gcsStorage.normalizeObjectEntityPath(uploadURL);
+    await registerUpload({
+      objectPath,
+      uploaderUserId,
+      purpose: "document",
+      originalName: name,
+      contentType,
+      sizeBytes: size,
+    });
 
     res.json(
       RequestUploadUrlResponse.parse({
@@ -74,9 +97,13 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
   }
 });
 
-/** Local-dev PUT target for the signed-URL upload flow (frontend PUTs the raw file here). */
+/**
+ * Local-dev PUT target for the signed-URL upload flow. Only the user who
+ * requested the slot may write to it, and only once.
+ */
 router.put(
   "/storage/uploads/direct/:objectId",
+  verifyJWT,
   express.raw({ type: "*/*", limit: MAX_SIZE_BYTES }),
   async (req: Request, res: Response) => {
     if (!isLocalStorageBackend()) {
@@ -85,7 +112,7 @@ router.put(
     }
 
     const objectId = req.params.objectId;
-    if (!objectId || Array.isArray(objectId)) {
+    if (!objectId || Array.isArray(objectId) || !isValidLocalObjectId(objectId)) {
       res.status(400).json({ error: "Invalid object id" });
       return;
     }
@@ -105,28 +132,35 @@ router.put(
       await saveLocalUpload(
         objectId,
         body,
+        req.user!.userId,
         typeof req.headers["content-type"] === "string"
           ? req.headers["content-type"]
           : undefined,
       );
+      await markUploadCompleted(`/objects/uploads/${objectId}`);
       res.status(200).send();
     } catch (error) {
+      if (error instanceof LocalUploadError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
       req.log.error({ err: error }, "Error saving local upload");
       res.status(500).json({ error: "Failed to save upload" });
     }
   },
 );
 
+/**
+ * Public bucket objects (GCS only). Local disk mode has no public bucket —
+ * every local upload is private and must go through `/storage/objects/*`.
+ */
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
-  try {
-    if (isLocalStorageBackend()) {
-      const raw = req.params.filePath;
-      const filePath = Array.isArray(raw) ? raw.join("/") : raw;
-      const served = await serveLocalObject(`/objects/${filePath}`, res);
-      if (!served) res.status(404).json({ error: "File not found" });
-      return;
-    }
+  if (isLocalStorageBackend()) {
+    res.status(404).json({ error: "File not found" });
+    return;
+  }
 
+  try {
     const raw = req.params.filePath;
     const filePath = Array.isArray(raw) ? raw.join("/") : raw;
     const file = await gcsStorage.searchPublicObject(filePath);
@@ -152,11 +186,24 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
   }
 });
 
-router.get("/storage/objects/*path", async (req: Request, res: Response) => {
+/** Private objects: requires a session and an ownership / review-queue match. */
+router.get("/storage/objects/*path", verifyJWT, async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
+
+    const segments = wildcardPath.split("/");
+    if (segments.some((s) => s === "" || s === "." || s === "..")) {
+      res.status(400).json({ error: "Invalid object path" });
+      return;
+    }
+
     const objectPath = `/objects/${wildcardPath}`;
+
+    if (!(await canAccessStoredObject(req.user!, objectPath))) {
+      res.status(403).json({ error: "You do not have access to this file" });
+      return;
+    }
 
     if (isLocalStorageBackend()) {
       const served = await serveLocalObject(objectPath, res);
@@ -187,5 +234,4 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   }
 });
 
-export { getLocalUploadRoot };
 export default router;
