@@ -208,6 +208,6 @@ LUMS, NUST, FAST-NU, IBA, UET Lahore, AKU, COMSATS, University of Punjab, Univer
 
 ---
 
-## License
-
-MIT
+## License & Rights
+Source Available / Proprietary — All Rights Reserved.  
+This repository is publicly visible for code review and evaluation purposes only. No open-source reuse, modification, or redistribution permissions are granted without explicit authorization.
